@@ -1,0 +1,173 @@
+{
+  "description": "Дополнительные референсы персонажей для улучшения консистентности",
+  "tasks": [
+    {
+      "task_id": "ref_amin_sitting",
+      "character": "Amin",
+      "ingredients": ["персонажи_hq/char_amin_full.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions, sitting on a sofa, arms resting on knees, neutral expression. Full body visible. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Сидящая поза для S02 (на диване в гараже)",
+      "priority": 1
+    },
+    {
+      "task_id": "ref_amin_apathetic",
+      "character": "Amin",
+      "ingredients": ["персонажи_hq/char_amin_full.jpeg", "персонажи_hq/char_amin_face.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Close-up portrait. Blank stare, emotionally withdrawn, looking down. Flat diffused lighting. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Апатичное выражение для S01-S02 (эмоциональная арка начала)",
+      "priority": 1
+    },
+    {
+      "task_id": "ref_amin_surprised",
+      "character": "Amin",
+      "ingredients": ["персонажи_hq/char_amin_full.jpeg", "персонажи_hq/char_amin_face.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Close-up portrait. Eyes wide with surprise, eyebrows raised, mouth slightly open. Bright frontal lighting. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Удивление/заинтерес. для S05 (услышал сигнал)",
+      "priority": 1
+    },
+    {
+      "task_id": "ref_amin_focused",
+      "character": "Amin",
+      "ingredients": ["персонажи_hq/char_amin_full.jpeg", "персонажи_hq/char_amin_face.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Close-up portrait. Intense focused expression, eyes narrowed with concentration, leaning slightly forward. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Сосредоточенность для S05 (настраивает радио)",
+      "priority": 2
+    },
+    {
+      "task_id": "ref_amin_profile",
+      "character": "Amin",
+      "ingredients": ["персонажи_hq/char_amin_full.jpeg", "персонажи_hq/char_amin_sheet.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Full body, profile view from the side. Standing naturally with hands in pockets. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Профиль для боковых ракурсов",
+      "priority": 2
+    },
+    {
+      "task_id": "ref_karim_threequarter",
+      "character": "Karim",
+      "ingredients": ["персонажи_hq/char_karim_full.jpeg", "персонажи_hq/char_karim_face.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Full body, 3/4 view, standing with one hand gesturing as if explaining something. Confident expression. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "3/4 ракурс + жест для S02 (Карим пытается расшевелить Амина)",
+      "priority": 1
+    },
+    {
+      "task_id": "ref_karim_sitting",
+      "character": "Karim",
+      "ingredients": ["персонажи_hq/char_karim_full.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Sitting casually, leaning back, arms crossed. Full body visible. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Сидящая поза для S02",
+      "priority": 2
+    },
+    {
+      "task_id": "ref_tako_face",
+      "character": "Tako",
+      "ingredients": ["персонажи_hq/char_tako_full.jpeg", "персонажи_hq/char_tako_full2.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Close-up portrait of face. Cheerful expression with a small smile. Bright frontal lighting. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Face close-up (отсутствует в текущих рефах)",
+      "priority": 1
+    },
+    {
+      "task_id": "ref_tako_subdued",
+      "character": "Tako",
+      "ingredients": ["персонажи_hq/char_tako_full.jpeg", "персонажи_hq/char_tako_full2.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Close-up portrait. Subdued expression, sensing something is wrong, looking down slightly. Soft diffused lighting. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Грустное/подавленное выражение для S02_C",
+      "priority": 1
+    },
+    {
+      "task_id": "ref_tako_carrying",
+      "character": "Tako",
+      "ingredients": ["персонажи_hq/char_tako_full.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Full body, walking forward carrying a large object in both arms. Proud expression. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Поза 'несёт что-то' для S02_B (антенна)",
+      "priority": 2
+    },
+    {
+      "task_id": "ref_papa_doorway",
+      "character": "Papa",
+      "ingredients": ["персонажи_hq/char_papa_full.jpeg", "персонажи_hq/char_papa_face.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Full body, standing still in a neutral pose, hands at sides. Observing silently with a calm neutral expression. 3/4 view. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Нейтральная поза + 3/4 для S03 (стоит в дверном проёме, молча наблюдает)",
+      "priority": 1
+    },
+    {
+      "task_id": "ref_mama_worried",
+      "character": "Mama",
+      "ingredients": ["персонажи_hq/char_mama_full.jpeg", "персонажи_hq/char_mama_face.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Close-up portrait. Worried expression, slight furrow between brows, concerned eyes. Soft diffused lighting. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Обеспокоенное выражение для S04",
+      "priority": 1
+    },
+    {
+      "task_id": "ref_aya_face",
+      "character": "Aya",
+      "ingredients": ["персонажи_hq/char_aya_full.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Close-up portrait of face. Gentle neutral expression. Bright frontal lighting. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Face close-up (отсутствует, есть только 1 full body)",
+      "priority": 1
+    },
+    {
+      "task_id": "ref_aya_threequarter",
+      "character": "Aya",
+      "ingredients": ["персонажи_hq/char_aya_full.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Full body, 3/4 view, standing with hands clasped in front. Calm expression. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "3/4 ракурс (есть только фронт)",
+      "priority": 2
+    },
+    {
+      "task_id": "ref_rami_sad",
+      "character": "Rami",
+      "ingredients": ["персонажи_hq/char_rami_full.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Close-up portrait. Sad expression, downcast eyes, slight frown, looking at the ground. Soft diffused lighting. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Грустное лицо крупно для S03 (украли велосипед)",
+      "priority": 1
+    },
+    {
+      "task_id": "ref_rami_sheet",
+      "character": "Rami",
+      "ingredients": ["персонажи_hq/char_rami_full.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Character reference sheet: front view, 3/4 view, and profile view side by side. Neutral standing pose. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Мульти-ракурсный sheet (сейчас только 1 фронтальная поза)",
+      "priority": 1
+    },
+    {
+      "task_id": "ref_hasan_alarmed",
+      "character": "Hasan",
+      "ingredients": ["персонажи_hq/char_hasan_full.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Close-up portrait. Alarmed expression, wide eyes, mouth slightly open as if urgently telling news. Bright frontal lighting. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Встревоженное лицо для S06 (прибегает с новостью о краже)",
+      "priority": 1
+    },
+    {
+      "task_id": "ref_hasan_running",
+      "character": "Hasan",
+      "ingredients": ["персонажи_hq/char_hasan_full.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Full body, running forward, one arm extended as if trying to get attention. Urgent expression. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Бегущая поза для S06 (подбегает к Тако с новостью)",
+      "priority": 1
+    },
+    {
+      "task_id": "ref_shaki_menacing",
+      "character": "Shaki",
+      "ingredients": ["персонажи_hq/char_shaki_sheet.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Close-up portrait. Menacing expression, narrowed eyes, sharp suspicious glare, jaw clenched. Dramatic side lighting. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Угрожающее выражение для S02 ч.2 (замечает героев, преследует)",
+      "priority": 1
+    },
+    {
+      "task_id": "ref_shaki_chasing",
+      "character": "Shaki",
+      "ingredients": ["персонажи_hq/char_shaki_sheet.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Full body, sprinting aggressively, leaning forward in pursuit. Determined fierce expression. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Поза преследования для S02 ч.2 (гонится за ребятами)",
+      "priority": 1
+    },
+    {
+      "task_id": "ref_samir_face",
+      "character": "Samir",
+      "ingredients": ["персонажи_hq/char_samir_sheet.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Close-up portrait. Upset worried expression, furrowed brows, lips pressed together. Soft diffused lighting. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Расстроенное лицо (жертва кражи велосипеда, упоминается в S06)",
+      "priority": 2
+    }
+  ]
+}

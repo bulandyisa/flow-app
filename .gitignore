@@ -1,0 +1,33 @@
+# Session data (Google cookies, ElevenLabs)
+.session/
+.session_2/
+.session_elevenlabs/
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Output (generated/large files)
+output/clips/
+output/frames/
+output/review/
+output/audio/tts/
+output/audio/sfx/
+output/audio/clips_voiced/
+output/audio/final/
+output/audio/mixed/
+output/generated_refs/
+output/screenshots/
+output/flow_login_screenshot.png
+
+# Large reference images
+персонажи_hq/
+локации_hq/
+
+# Credentials
+config/credentials.yaml
+.env
+
+# OS
+.DS_Store

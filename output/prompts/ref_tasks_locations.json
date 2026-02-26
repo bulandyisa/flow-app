@@ -1,0 +1,133 @@
+{
+  "description": "Генерация недостающих локаций для сценария «Сигнал» (части 1 и 2)",
+  "tasks": [
+    {
+      "task_id": "loc_ulitsa_wide",
+      "location": "Улица района",
+      "ingredients": ["локации_hq/loc_dom_outside_front.jpg"],
+      "prompt": "A quiet residential street in a small Middle Eastern neighborhood. Low houses with flat roofs, dusty sidewalks, a few trees providing shade, power lines overhead. Afternoon sunlight casting long shadows. The street is empty. A small corner shop visible in the distance. Consistent 3D Pixar-style animation, family-friendly. Wide establishing shot. No characters, no text, no watermarks.",
+      "purpose": "Основная улица для S03 (дети идут по району), S06-ч1, S02-ч2",
+      "priority": 1
+    },
+    {
+      "task_id": "loc_ulitsa_corner_shop",
+      "location": "Улица у магазина",
+      "ingredients": ["локации_hq/loc_dom_outside_front.jpg"],
+      "prompt": "A small corner shop on a quiet Middle Eastern neighborhood street. Metal pole near the entrance with a cut padlock hanging from it. Empty bicycle parking spot next to the pole. Low houses visible in the background. Warm afternoon light. 3D Pixar-style animation, family-friendly. Medium wide shot. No characters, no text, no watermarks.",
+      "purpose": "У магазина где украли велик Рами (S03-ч1)",
+      "priority": 2
+    },
+    {
+      "task_id": "loc_school_fence",
+      "location": "Школьный двор / забор",
+      "ingredients": ["локации_hq/loc_dom_outside_front.jpg"],
+      "prompt": "An old rusty transformer box mounted on a concrete post next to a metal school fence. The box is weathered and non-functional. Behind the fence, a school yard is visible with a simple one-story school building. Daytime, warm light. 3D Pixar-style animation, family-friendly. Medium shot. No characters, no text, no watermarks.",
+      "purpose": "Трансформаторный ящик у школы — первая точка квеста (S03-ч1)",
+      "priority": 1
+    },
+    {
+      "task_id": "loc_school_yard",
+      "location": "Школьный двор",
+      "ingredients": ["локации_hq/loc_dom_outside_front.jpg"],
+      "prompt": "A school courtyard with a simple one-story school building in the background. Metal fence with a gap/hole in one section. A few trees, dusty ground. Morning light. Middle Eastern neighborhood style. 3D Pixar-style animation, family-friendly. Wide shot. No characters, no text, no watermarks.",
+      "purpose": "Школьный двор для S06-ч1 (перемена, Хасан подбегает)",
+      "priority": 2
+    },
+    {
+      "task_id": "loc_park_trees",
+      "location": "Парк — старая часть",
+      "ingredients": ["локации_hq/loc_dom_outside_aerial.jpg"],
+      "prompt": "An old section of a neighborhood park with huge ancient trees, thick trunks with gnarled bark. One prominent tree in the center has a visible hollow/hole at chest height. Dappled sunlight filtering through the canopy. A small kiosk/stall visible in the distance. Warm afternoon atmosphere. 3D Pixar-style animation, family-friendly. Medium wide shot. No characters, no text, no watermarks.",
+      "purpose": "Парк с деревом-дуплом для S04-ч1 (4-я точка квеста)",
+      "priority": 1
+    },
+    {
+      "task_id": "loc_park_path",
+      "location": "Парк — тропинка",
+      "ingredients": ["локации_hq/loc_dom_outside_aerial.jpg"],
+      "prompt": "A park path winding between old tall trees in a small Middle Eastern neighborhood park. Benches along the path, dry grass, scattered leaves. Afternoon golden light. Peaceful and slightly overgrown atmosphere. 3D Pixar-style animation, family-friendly. Wide shot looking down the path. No characters, no text, no watermarks.",
+      "purpose": "Тропинка в парке для подхода к дереву (S04-ч1)",
+      "priority": 2
+    },
+    {
+      "task_id": "loc_bridge_wide",
+      "location": "Мост через ручей",
+      "ingredients": ["локации_hq/loc_dom_outside_aerial.jpg"],
+      "prompt": "A small old concrete pedestrian bridge over a narrow stream on the outskirts of a Middle Eastern neighborhood. Simple metal railing. Under the bridge, concrete support beams and pillars visible. A few rocks and shallow water below. Grassy banks. Daytime, open sky. 3D Pixar-style animation, family-friendly. Wide establishing shot. No characters, no text, no watermarks.",
+      "purpose": "Мост — 5-я точка квеста (S05-ч1)",
+      "priority": 1
+    },
+    {
+      "task_id": "loc_bridge_under",
+      "location": "Под мостом",
+      "ingredients": ["локации_hq/loc_dom_outside_aerial.jpg"],
+      "prompt": "View from under a small concrete bridge looking out. Concrete support beams overhead, one prominent beam has a small paper note taped to it. Shallow stream with pebbles below. Grassy bank visible outside. Shaded, cool atmosphere. 3D Pixar-style animation, family-friendly. Low angle medium shot looking up at the beam. No characters, no text, no watermarks.",
+      "purpose": "Под мостом — записка на балке (S05-ч1)",
+      "priority": 1
+    },
+    {
+      "task_id": "loc_abandoned_shop_exterior",
+      "location": "Заброшенный магазин — снаружи",
+      "ingredients": ["локации_hq/loc_dom_outside_front.jpg"],
+      "prompt": "An abandoned one-story shop building in a Middle Eastern neighborhood. Boarded-up windows, crumbling plaster walls. The main door has a conspicuously new shiny padlock on old rusty door. A small rusty ventilation grate near ground level on the side wall. Overgrown weeds around the base. Daytime. 3D Pixar-style animation, family-friendly. Medium wide shot. No characters, no text, no watermarks.",
+      "purpose": "Заброшенный магазин — 6-я точка квеста (S06-ч1)",
+      "priority": 1
+    },
+    {
+      "task_id": "loc_abandoned_shop_basement",
+      "location": "Подвал заброшенного магазина",
+      "ingredients": [],
+      "prompt": "A dark dusty basement of an abandoned building. Concrete walls, exposed pipes. A flashlight beam cutting through the darkness illuminates cardboard boxes stacked in a corner. The boxes look new and clean compared to the dusty surroundings. Narrow ventilation shaft opening visible on one wall. Damp, claustrophobic atmosphere. 3D Pixar-style animation, family-friendly. Low angle medium shot. No characters, no text, no watermarks.",
+      "purpose": "Подвал — Тако находит коробки с запчастями (S06-ч1)",
+      "priority": 1
+    },
+    {
+      "task_id": "loc_wasteland_warehouse",
+      "location": "Пустырь / склад",
+      "ingredients": ["локации_hq/loc_dom_outside_front.jpg"],
+      "prompt": "A desolate wasteland area on the outskirts of a Middle Eastern neighborhood. An old warehouse/storage building with large metal gates. A dirt path leading to the gates. Overgrown area with scattered debris, old tires, and scrubby vegetation. Evening golden light with long shadows. 3D Pixar-style animation, family-friendly. Wide establishing shot. No characters, no text, no watermarks.",
+      "purpose": "Пустырь у склада — обнаружение краденых велосипедов (S02-ч2)",
+      "priority": 1
+    },
+    {
+      "task_id": "loc_warehouse_inside",
+      "location": "Внутри склада",
+      "ingredients": [],
+      "prompt": "Interior of an old warehouse with large open metal gates. Inside, more than ten bicycles in various states — some disassembled, some repainted in different colors. Paint cans, brushes, and tools scattered on the floor. A van backed up to the gates for loading. Dim industrial lighting mixed with evening light from the open gates. 3D Pixar-style animation, family-friendly. Wide interior shot from the doorway. No characters, no text, no watermarks.",
+      "purpose": "Внутри склада с крадеными велосипедами (S02-ч2)",
+      "priority": 1
+    },
+    {
+      "task_id": "loc_water_tower_exterior",
+      "location": "Водонапорная башня — снаружи",
+      "ingredients": ["локации_hq/loc_dom_outside_aerial.jpg"],
+      "prompt": "An old brick water tower on top of a hill overlooking a Middle Eastern neighborhood. Tall cylindrical structure, weathered brickwork, a welded-shut metal door at the base. On the back side, a rusty metal ladder leads up, but the lowest rungs are missing — bare metal rails with no steps for the first 1.5 meters. Old wooden crates and boards scattered near the base. Morning sunlight. 3D Pixar-style animation, family-friendly. Wide shot from below looking up. No characters, no text, no watermarks.",
+      "purpose": "Водонапорная башня — финальная точка квеста (S04-ч2)",
+      "priority": 1
+    },
+    {
+      "task_id": "loc_water_tower_top",
+      "location": "Верх водонапорной башни",
+      "ingredients": ["локации_hq/loc_dom_outside_aerial.jpg"],
+      "prompt": "A rooftop observation platform on top of an old water tower. Metal railing around the edge. Panoramic view of a Middle Eastern neighborhood below — rooftops of houses, trees, a mosque minaret, roads, the whole district visible. A sealed cardboard box sits against the wall of the tower structure. Bright morning sunlight, blue sky. 3D Pixar-style animation, family-friendly. Wide panoramic shot. No characters, no text, no watermarks.",
+      "purpose": "Вершина башни — коробка с блокнотом и линзой (S04-ч2)",
+      "priority": 1
+    },
+    {
+      "task_id": "loc_alley_garages",
+      "location": "Проулок между гаражами",
+      "ingredients": ["локации_hq/loc_garazh_wide.jpg"],
+      "prompt": "A narrow alley between rows of garage buildings in a Middle Eastern neighborhood. Concrete walls on both sides, metal garage doors. Dumpsters and trash bins along one wall providing hiding spots. Dim evening light, shadows. A path leading between the garages. 3D Pixar-style animation, family-friendly. Medium shot down the alley. No characters, no text, no watermarks.",
+      "purpose": "Проулок — погоня от Шаки, Тако прячется за баками (S02-ч2)",
+      "priority": 2
+    },
+    {
+      "task_id": "loc_night_street",
+      "location": "Ночная улица",
+      "ingredients": ["локации_hq/loc_dom_outside_front.jpg"],
+      "prompt": "A quiet residential street at night in a Middle Eastern neighborhood. Street lamps casting pools of warm light. Dark shadows between buildings. Empty street, slightly eerie atmosphere. A lone silhouette barely visible in the distance near a building corner. 3D Pixar-style animation, family-friendly. Wide atmospheric shot. No characters, no text, no watermarks.",
+      "purpose": "Кадр «наблюдателя» — силуэт на улице ночью (S03-ч1, S06-ч1)",
+      "priority": 2
+    }
+  ]
+}
