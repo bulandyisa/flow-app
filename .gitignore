@@ -1,17 +1,20 @@
 # Session data (Google cookies, ElevenLabs)
 .session/
+.session_1b/
 .session_2/
+.session_2b/
+.session_test_clean/
 .session_elevenlabs/
 
 # Python
 venv/
+venv_new/
 __pycache__/
 *.pyc
 
 # Output (generated/large files)
 output/clips/
 output/frames/
-output/review/
 output/audio/tts/
 output/audio/sfx/
 output/audio/clips_voiced/
@@ -20,14 +23,28 @@ output/audio/mixed/
 output/generated_refs/
 output/screenshots/
 output/flow_login_screenshot.png
+output/debug_*.png
 
-# Large reference images
-персонажи_hq/
-локации_hq/
+# Large reference images (originals)
+персонажи/
+локации/
 
 # Credentials
 config/credentials.yaml
 .env
+
+# Session backups
+.session_backup_*/
+.session_old_backup/
+
+# IDE / Editor
+.vscode/
+.streamlit/
+
+# Temp/log files
+*.log
+*.bak
+flow_modes_output.txt
 
 # OS
 .DS_Store

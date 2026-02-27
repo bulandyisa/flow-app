@@ -168,6 +168,22 @@
       "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Close-up portrait. Upset worried expression, furrowed brows, lips pressed together. Soft diffused lighting. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
       "purpose": "Расстроенное лицо (жертва кражи велосипеда, упоминается в S06)",
       "priority": 2
+    },
+    {
+      "task_id": "ref_nazir_menacing",
+      "character": "Nazir",
+      "ingredients": ["персонажи_hq/char_nazir_full.jpeg", "персонажи_hq/char_nazir_face.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Close-up portrait. Threatening intimidating expression, cold stare, slight sneer. Dramatic low-key lighting with deep shadows. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Угрожающее лицо антагониста для S02 ч.2 (главарь воров)",
+      "priority": 1
+    },
+    {
+      "task_id": "ref_nazir_sheet",
+      "character": "Nazir",
+      "ingredients": ["персонажи_hq/char_nazir_full.jpeg", "персонажи_hq/char_nazir_face.jpeg"],
+      "prompt": "The exact character from Image 1, preserving identical facial features and proportions. Character reference sheet: front view, 3/4 view, and profile view side by side. Standing with arms crossed, confident intimidating posture. Plain white background. 3D Pixar-style animation, family-friendly, cinematic. No text, no subtitles, no watermarks.",
+      "purpose": "Мульти-ракурсный sheet антагониста (фронт + 3/4 + профиль)",
+      "priority": 1
     }
   ]
 }

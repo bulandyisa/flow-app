@@ -11,15 +11,28 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 PYTHON="$PROJECT_DIR/venv/bin/python3"
-TIMEOUT="${FLOW_TIMEOUT:-600}"
+BOT="$SCRIPT_DIR/flow_bot_v2.py"
+TIMEOUT="${FLOW_TIMEOUT:-1200}"
 
-# Убить зомби-браузеры перед запуском
-pkill -f "Google Chrome for Testing" 2>/dev/null
-rm -f "$PROJECT_DIR/.session/SingletonLock" "$PROJECT_DIR/.session_2/SingletonLock" \
-      "$PROJECT_DIR/.session/SingletonCookie" "$PROJECT_DIR/.session_2/SingletonCookie" \
-      "$PROJECT_DIR/.session/SingletonSocket" "$PROJECT_DIR/.session_2/SingletonSocket" 2>/dev/null
+# Определить сессию по --account (для очистки только своих lock-файлов)
+ACCOUNT=""
+for arg in "$@"; do
+    if [ "$prev" = "--account" ]; then ACCOUNT="$arg"; fi
+    prev="$arg"
+done
 
-echo "Starting flow_bot.py with ${TIMEOUT}s timeout..."
+# Очистить lock-файлы только для своего аккаунта
+case "$ACCOUNT" in
+    1) SESSION_DIR="$PROJECT_DIR/.session" ;;
+    2) SESSION_DIR="$PROJECT_DIR/.session_1b" ;;
+    3) SESSION_DIR="$PROJECT_DIR/.session_2" ;;
+    4) SESSION_DIR="$PROJECT_DIR/.session_2b" ;;
+    *) SESSION_DIR="$PROJECT_DIR/.session" ;;
+esac
+rm -f "$SESSION_DIR/SingletonLock" "$SESSION_DIR/SingletonCookie" "$SESSION_DIR/SingletonSocket" 2>/dev/null
+
+echo "Starting flow_bot_v2.py with ${TIMEOUT}s timeout..."
+echo "Account: ${ACCOUNT:-1}, Session: $(basename $SESSION_DIR)"
 echo "Args: $@"
 echo ""
 
@@ -31,23 +44,22 @@ elif command -v timeout &>/dev/null; then
 else
     echo "WARNING: no timeout command found. Install coreutils: brew install coreutils"
     echo "Running without system timeout (Python signal timeout still active)."
-    FLOW_TIMEOUT="$TIMEOUT" "$PYTHON" "$SCRIPT_DIR/flow_bot.py" "$@"
+    PYTHONUNBUFFERED=1 FLOW_TIMEOUT="$TIMEOUT" "$PYTHON" -u "$BOT" "$@"
     EXIT_CODE=$?
     exit $EXIT_CODE
 fi
 
-FLOW_TIMEOUT="$TIMEOUT" "$TIMEOUT_CMD" --signal=KILL "$((TIMEOUT + 30))" \
-    "$PYTHON" "$SCRIPT_DIR/flow_bot.py" "$@"
+PYTHONUNBUFFERED=1 FLOW_TIMEOUT="$TIMEOUT" "$TIMEOUT_CMD" --signal=KILL "$((TIMEOUT + 30))" \
+    "$PYTHON" -u "$BOT" "$@"
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 137 ]; then
     echo ""
     echo "================================================"
     echo "  KILLED by system timeout after ${TIMEOUT}s"
-    echo "  Cleaning up zombie processes..."
+    echo "  Cleaning up..."
     echo "================================================"
-    pkill -f "Google Chrome for Testing" 2>/dev/null
-    rm -f "$PROJECT_DIR/.session/SingletonLock" "$PROJECT_DIR/.session_2/SingletonLock" 2>/dev/null
+    rm -f "$SESSION_DIR/SingletonLock" "$SESSION_DIR/SingletonCookie" "$SESSION_DIR/SingletonSocket" 2>/dev/null
 elif [ $EXIT_CODE -eq 42 ]; then
     echo ""
     echo "Exited by Python global timeout."

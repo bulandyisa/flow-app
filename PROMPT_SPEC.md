@@ -125,10 +125,15 @@ NB Pro — это «думающая» модель (Thinking Process). Она �
 - `night atmosphere, single lamp` — ночь
 
 ### 5. Style (СТИЛЬ)
-Всегда завершать:
+Для NB Pro (изображений) завершать:
 ```
-3D Pixar-style animation, family-friendly, cinematic.
+3D Pixar-style, family-friendly, cinematic.
 ```
+Для VEO (видео) завершать:
+```
+3D Pixar-style animation, family-friendly.
+```
+**Важно:** слово `animation` только для VEO промптов, НЕ для NB изображений.
 
 ---
 
