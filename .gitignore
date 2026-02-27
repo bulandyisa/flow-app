@@ -39,7 +39,6 @@ config/credentials.yaml
 
 # IDE / Editor
 .vscode/
-.streamlit/
 
 # Temp/log files
 *.log
