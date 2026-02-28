@@ -15,6 +15,7 @@ __pycache__/
 # Output (generated/large files)
 output/clips/
 output/frames/
+output/review/
 output/audio/tts/
 output/audio/sfx/
 output/audio/clips_voiced/
