@@ -103,6 +103,34 @@
           "prompt_b": "First, the exact character from Image 1, preserving identical facial features and proportions, studies an atlas while walking through a tree-lined park path, head down, navigating. Then, the exact character from Image 2, preserving identical facial features, scans the tree trunks, searching for something. Then, the exact character from Image 3, preserving identical facial features, looks up at the canopy with wonder. A sunlit park with ancient trees, soft grass. Medium shot, slight high angle. Warm afternoon light, leaf shadows dancing. No text, no watermarks. 3D Pixar-style animation, family-friendly, cinematic.",
           "batch_a_count": 3,
           "batch_b_count": 15
+        },
+        {
+          "attempt": 2,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, walks along a park path between mature trees, holding an open atlas, checking coordinates. Then, the exact character from Image 2, preserving identical facial features, walks alongside, looking around at the surroundings. Then, the exact character from Image 3, preserving identical facial features, follows behind, curious and alert. Use Image 4 as the exact background location. Medium-wide shot, eye-level. Bright daylight filtering through leaves, green and warm tones. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_4.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
         }
       ],
       "selected_variant_a": null,
