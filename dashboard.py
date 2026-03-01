@@ -19,9 +19,9 @@ FRAMES_DIR = BASE_DIR / "output" / "frames"
 CLIPS_DIR = BASE_DIR / "output" / "clips"
 REVIEW_DIR = BASE_DIR / "output" / "review"
 SCENE_DIR = BASE_DIR / "output" / "scene"
-CHARS_DIR = BASE_DIR / "персонажи"
-LOCS_DIR = BASE_DIR / "локации"
-SCENARIO_FILE = BASE_DIR / "scenario_signal.txt"
+CHARS_DIR = BASE_DIR / "персонажи_hq"
+LOCS_DIR = BASE_DIR / "локации_hq"
+SCENARIO_FILE = BASE_DIR / "scenario_signal_part1.txt"
 STATUS_FILE = BASE_DIR / "output" / "status.json"
 
 SCENE_COLORS = {
@@ -74,23 +74,31 @@ def load_status() -> dict:
 
 
 def get_status(clip_id: str) -> str:
-    """Determine clip status from status.json, with local file fallback."""
+    """Determine clip status from status.json component statuses."""
     status_data = load_status()
     clip_status = status_data.get("clips", {}).get(clip_id)
     if clip_status:
-        return clip_status["status"]
+        # clip_status is {nb_first: "accepted", nb_last: "pending", veo: "pending", ...}
+        if isinstance(clip_status, dict) and "status" in clip_status:
+            return clip_status["status"]
+        # Derive overall status from component statuses
+        comps = clip_status if isinstance(clip_status, dict) else {}
+        vals = [v for v in comps.values() if isinstance(v, str)]
+        accepted = sum(1 for v in vals if v == "accepted")
+        if accepted >= 3:  # nb_first + nb_last + veo
+            return "done"
+        elif accepted >= 1:
+            return "partial"
+        return "todo"
 
-    # Fallback: check local files (works only when running locally)
+    # Fallback: check local files
     has_first = (FRAMES_DIR / f"{clip_id}_first.png").exists() or (FRAMES_DIR / clip_id / "first.png").exists()
     has_last = (FRAMES_DIR / f"{clip_id}_last.png").exists() or (FRAMES_DIR / clip_id / "last.png").exists()
     has_clip = (CLIPS_DIR / f"{clip_id}_clip.mp4").exists()
-    has_veo_review = (REVIEW_DIR / clip_id / "veo").exists() and any((REVIEW_DIR / clip_id / "veo").glob("attempt_*/*.mp4")) if (REVIEW_DIR / clip_id / "veo").exists() else False
-    if not has_veo_review and (REVIEW_DIR / clip_id / "veo").exists():
-        has_veo_review = any((REVIEW_DIR / clip_id / "veo").glob("attempt_*/*/*.mp4"))
 
     if has_first and has_last and has_clip:
         return "done"
-    elif has_first or has_last or has_clip or has_veo_review:
+    elif has_first or has_last or has_clip:
         return "partial"
     return "todo"
 
@@ -817,8 +825,8 @@ def page_timeline():
         clip_id = clip["clip_id"]
         status = get_status(clip_id)
         _, status_icon = STATUS_MAP[status]
-        dur = clip.get("veo_duration", 0)
-        chars = ", ".join(CHAR_DISPLAY.get(c, c) for c in clip["characters"])
+        dur = clip.get("veo_duration") or 0
+        chars = ", ".join(CHAR_DISPLAY.get(c, c) for c in clip.get("characters", []))
 
         # Timeline row
         cols = st.columns([1, 3, 1, 1])
