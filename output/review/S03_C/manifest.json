@@ -1,0 +1,109 @@
+{
+  "clip_id": "S03_C",
+  "components": {
+    "nb_first": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, stands boldly in front of an adult, gesturing with both hands enthusiastically, mouth open mid-question, expression of exaggerated innocent curiosity. The adult figure faces Image 1 character, turned away from the background. Use Image 4 as the exact background location. Medium shot, eye-level. Bright afternoon light, open school area. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 5 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": {
+                "char_face": 8,
+                "char_outfit": 8,
+                "char_count": 10,
+                "anatomy_hands": 9,
+                "anatomy_body": 9,
+                "anatomy_face": 9,
+                "scale": 9,
+                "physics": 9,
+                "spatial": 9,
+                "scenario_action": 10,
+                "scenario_emotion": 9,
+                "scenario_objects": 9,
+                "loc_match": 9,
+                "lighting": 9,
+                "artifacts": 9,
+                "style_3d": 10,
+                "composition": 9
+              },
+              "avg": 9.058823529411764
+            }
+          ],
+          "best_variant": 1,
+          "best_avg": 9.058823529411764
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 1,
+        "variant": 1
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "nb_mid": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_last": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 2, preserving identical facial features and proportions, crouches beside the open metal box, carefully removing a small note taped inside the lid, expression focused and quick, one hand steadying the lid silently. Then, the exact character from Image 3, preserving identical facial features, crouches beside Image 2, keeping watch, body tense, glancing back over shoulder. Use Image 4 as the exact background location. Close-up, low angle. Bright daylight from above, shadows inside the box. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 5.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": {
+                "char_face": 8,
+                "char_outfit": 9,
+                "char_count": 10,
+                "anatomy_hands": 9,
+                "anatomy_body": 9,
+                "anatomy_face": 9,
+                "scale": 9,
+                "physics": 9,
+                "spatial": 9,
+                "scenario_action": 10,
+                "scenario_emotion": 9,
+                "scenario_objects": 9,
+                "loc_match": 9,
+                "lighting": 9,
+                "artifacts": 9,
+                "style_3d": 10,
+                "composition": 9
+              },
+              "avg": 9.117647058823529
+            }
+          ],
+          "best_variant": 1,
+          "best_avg": 9.117647058823529
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 1,
+        "variant": 1
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "veo": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    }
+  }
+}

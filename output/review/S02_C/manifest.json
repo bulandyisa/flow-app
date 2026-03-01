@@ -1,0 +1,176 @@
+{
+  "clip_id": "S02_C",
+  "components": {
+    "nb_first": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, writes rapidly on a piece of paper at the workbench, pen gripped tightly, brow furrowed in concentration, recalling numbers from memory. Then, the exact character from Image 2, preserving identical facial features, watches from beside, leaning over to see what is being written, expression curious. Use Image 3 as the exact background location. Close-up, slightly high angle on the writing hand and faces. Warm garage light focused on the paper, soft shadows. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 4 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "variants": [
+            {
+              "file": "prompt_a/variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_a/variant_2.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_a/variant_3.png",
+              "scores": {
+                "char_face": 8,
+                "char_outfit": 10,
+                "char_count": 10,
+                "anatomy_hands": 8,
+                "anatomy_body": 9,
+                "anatomy_face": 9,
+                "scale": 9,
+                "physics": 9,
+                "spatial": 9,
+                "scenario_action": 10,
+                "scenario_emotion": 9,
+                "scenario_objects": 9,
+                "loc_match": 8,
+                "lighting": 9,
+                "artifacts": 9,
+                "style_3d": 9,
+                "composition": 9
+              },
+              "avg": 9.0
+            },
+            {
+              "file": "prompt_a/variant_4.png",
+              "scores": {
+                "char_face": 8,
+                "char_outfit": 10,
+                "char_count": 10,
+                "anatomy_hands": 8,
+                "anatomy_body": 9,
+                "anatomy_face": 9,
+                "scale": 9,
+                "physics": 9,
+                "spatial": 9,
+                "scenario_action": 10,
+                "scenario_emotion": 10,
+                "scenario_objects": 9,
+                "loc_match": 8,
+                "lighting": 9,
+                "artifacts": 9,
+                "style_3d": 9,
+                "composition": 9
+              },
+              "avg": 9.058823529411764
+            },
+            {
+              "file": "prompt_b/variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_b/variant_2.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_b/variant_3.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": 3,
+          "best_avg": 9.058823529411764,
+          "prompt_b": "First, the exact character from Image 1, preserving identical facial features and proportions, hunches over the workbench, scribbling two rows of numbers on a scrap of paper, expression of intense recall, eyes half-closed. Then, the exact character from Image 2, preserving identical facial features, stands beside, arms crossed, watching intently, head tilted. Use Image 3 as the exact background location. Close-up, eye-level. Warm directional light from a desk lamp, pen casting a narrow shadow. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 4 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "batch_a_count": 4,
+          "batch_b_count": 3
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 1,
+        "variant": 2
+      },
+      "selected_variant_b": {
+        "attempt": 1,
+        "variant": 3
+      },
+      "status": "accepted"
+    },
+    "nb_mid": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_last": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, holds an open atlas on the workbench, one finger pressing on a point on the map, eyes wide with realization, a spark of excitement breaking through the usual calm expression. Then, the exact character from Image 2, preserving identical facial features, peers at the atlas, expression shifting to understanding, leaning forward. Use Image 3 as the exact background location. Medium close-up, eye-level. Warm garage light, the atlas pages illuminated. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+          "variants": [
+            {
+              "file": "prompt_a/variant_1.png",
+              "scores": {
+                "char_face": 9,
+                "char_outfit": 10,
+                "char_count": 10,
+                "anatomy_hands": 9,
+                "anatomy_body": 9,
+                "anatomy_face": 9,
+                "scale": 9,
+                "physics": 9,
+                "spatial": 9,
+                "scenario_action": 10,
+                "scenario_emotion": 10,
+                "scenario_objects": 9,
+                "loc_match": 9,
+                "lighting": 9,
+                "artifacts": 9,
+                "style_3d": 10,
+                "composition": 9
+              },
+              "avg": 9.294117647058824
+            },
+            {
+              "file": "prompt_a/variant_2.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_a/variant_3.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_a/variant_4.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_b/variant_1.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": 0,
+          "best_avg": 9.294117647058824,
+          "prompt_b": "First, the exact character from Image 1, preserving identical facial features and proportions, leans over an open paper atlas, finger tracing a path to a specific point, lips parting in surprise, eyes alive with sudden purpose. Then, the exact character from Image 2, preserving identical facial features, points at the same spot on the map, nodding with recognition. Use Image 3 as the exact background location. Close-up from slightly above, focus on faces and atlas. Warm overhead light, the map detail visible. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+          "batch_a_count": 4,
+          "batch_b_count": 1
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 1,
+        "variant": 0
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "veo": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    }
+  }
+}

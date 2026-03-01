@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["python311"]
+
+[phases.install]
+cmds = ["pip install streamlit>=1.32.0"]
+
+[start]
+cmd = "streamlit run dashboard.py --server.port $PORT --server.address 0.0.0.0 --server.headless true"

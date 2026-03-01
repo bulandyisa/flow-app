@@ -1,0 +1,157 @@
+{
+  "clip_id": "S07_B",
+  "components": {
+    "nb_first": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, turns sharply toward Image 2 character at the workbench, expression of flaring frustration, mouth open mid-outburst, hands gripping the bench edge. Then, the exact character from Image 2, preserving identical facial features, recoils slightly, expression startled and hurt, falling silent. Then, the exact character from Image 3, preserving identical facial features, freezes in the corner, wide-eyed, shocked by the outburst. Use Image 4 as the exact background location. Medium shot, eye-level. Garage light, tense confrontational atmosphere. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        },
+        {
+          "attempt": 2,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, turns sharply toward Image 2 character at the workbench, expression of flaring frustration, mouth open mid-outburst, hands gripping the bench edge. Then, the exact character from Image 2, preserving identical facial features, recoils slightly, expression startled and hurt, falling silent. Then, the exact character from Image 3, preserving identical facial features, freezes in the corner, wide-eyed, shocked by the outburst. Use Image 4 as the exact background location. Medium shot, eye-level. Garage light, tense confrontational atmosphere. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 5 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        },
+        {
+          "attempt": 3,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, turns sharply toward Image 2 character at the workbench, expression of flaring frustration, mouth open mid-outburst, hands gripping the bench edge. Then, the exact character from Image 2, preserving identical facial features, recoils slightly, expression startled and hurt, falling silent. Then, the exact character from Image 3, preserving identical facial features, freezes in the corner, wide-eyed, shocked by the outburst. Use Image 4 as the exact background location. Medium shot, eye-level. Garage light, tense confrontational atmosphere. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 5 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_4.png",
+              "scores": {
+                "char_face": 9,
+                "char_outfit": 10,
+                "char_count": 10,
+                "anatomy_hands": 9,
+                "anatomy_body": 9,
+                "anatomy_face": 9,
+                "scale": 9,
+                "physics": 9,
+                "spatial": 9,
+                "scenario_action": 9,
+                "scenario_emotion": 10,
+                "scenario_objects": 9,
+                "loc_match": 10,
+                "lighting": 9,
+                "artifacts": 10,
+                "style_3d": 10,
+                "composition": 9
+              },
+              "avg": 9.352941176470589
+            }
+          ],
+          "best_variant": 3,
+          "best_avg": 9.352941176470589
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 3,
+        "variant": 3
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "nb_mid": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_last": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, sits at the workbench, shoulders slumped, looking down, expression shifting from anger to guilt and quiet sadness, mumbling an apology. Then, the exact character from Image 2, preserving identical facial features, sits beside, expression softened with forgiveness, a gentle nod. Then, the exact character from Image 3, preserving identical facial features, watches quietly from the corner, expression of empathy. Use Image 4 as the exact background location. Medium shot, eye-level. Softer garage light, the tension dissolving into quiet vulnerability. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 5.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_4.png",
+              "scores": {
+                "char_face": 9,
+                "char_outfit": 10,
+                "char_count": 10,
+                "anatomy_hands": 9,
+                "anatomy_body": 9,
+                "anatomy_face": 10,
+                "scale": 9,
+                "physics": 9,
+                "spatial": 9,
+                "scenario_action": 9,
+                "scenario_emotion": 10,
+                "scenario_objects": 10,
+                "loc_match": 10,
+                "lighting": 10,
+                "artifacts": 10,
+                "style_3d": 10,
+                "composition": 9
+              },
+              "avg": 9.529411764705882
+            }
+          ],
+          "best_variant": 3,
+          "best_avg": 9.529411764705882
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 1,
+        "variant": 3
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "veo": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "Static medium shot. One character says something — the other snaps back, voice raised, hand slamming the desk. Silence. Then the outburst fades — shoulders drop, eyes lower. Says: \"Sorry. I just... can't.\" The other listens silently, nods. Audio: raised voice, palm hitting wood, heavy silence, soft murmured apology. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [
+            {
+              "file": "variant_1.mp4",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    }
+  }
+}

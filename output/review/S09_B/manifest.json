@@ -1,0 +1,143 @@
+{
+  "clip_id": "S09_B",
+  "components": {
+    "nb_first": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "The exact character from Image 1, preserving identical facial features and proportions, stands at a doorway, one hand on the door frame, turning back to speak, expression confident and purposeful, eyes bright with anticipation. Use Image 3 as the exact background location. Medium shot, slight low angle from inside the room. Warm lamp light on the face, doorway framing the figure. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 4 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": {
+                "char_face": 9,
+                "char_outfit": 10,
+                "char_count": 9,
+                "anatomy_hands": 9,
+                "anatomy_body": 10,
+                "anatomy_face": 9,
+                "scale": 9,
+                "physics": 10,
+                "spatial": 9,
+                "scenario_action": 9,
+                "scenario_emotion": 9,
+                "scenario_objects": 9,
+                "loc_match": 10,
+                "lighting": 10,
+                "artifacts": 10,
+                "style_3d": 10,
+                "composition": 9
+              },
+              "avg": 9.411764705882353
+            },
+            {
+              "file": "variant_3.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_4.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": 1,
+          "best_avg": 9.411764705882353
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 1,
+        "variant": 1
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "nb_mid": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_last": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 2, preserving identical facial features and proportions, sits behind the desk, watching Image 1 character leave, expression of quiet pride and a barely visible nod, a father watching growth unfold. Then, the exact character from Image 1, preserving identical facial features, is visible at the door, already half-gone, one hand raised in a small wave. Use Image 3 as the exact background location. Medium-wide shot, eye-level. Warm lamp light, the doorway as a visual divide, bittersweet tender moment. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 4.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": {
+                "char_face": 9,
+                "char_outfit": 10,
+                "char_count": 10,
+                "anatomy_hands": 9,
+                "anatomy_body": 10,
+                "anatomy_face": 10,
+                "scale": 9,
+                "physics": 10,
+                "spatial": 10,
+                "scenario_action": 10,
+                "scenario_emotion": 10,
+                "scenario_objects": 9,
+                "loc_match": 10,
+                "lighting": 10,
+                "artifacts": 10,
+                "style_3d": 10,
+                "composition": 10
+              },
+              "avg": 9.764705882352942
+            }
+          ],
+          "best_variant": 1,
+          "best_avg": 9.764705882352942
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 1,
+        "variant": 1
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "veo": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "Static medium shot. The character at the door turns back. Says: \"Tomorrow — the tower.\" The character behind the desk looks up. \"What tower?\" \"The water tower. Last point.\" A quiet nod. The door closes gently. Audio: calm voice, questioning reply, door clicking shut softly. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [
+            {
+              "file": "variant_1.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.mp4",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    }
+  }
+}

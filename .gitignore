@@ -14,8 +14,6 @@ __pycache__/
 
 # Output (generated/large files)
 output/clips/
-output/frames/
-output/review/
 output/audio/tts/
 output/audio/sfx/
 output/audio/clips_voiced/
@@ -26,9 +24,15 @@ output/screenshots/
 output/flow_login_screenshot.png
 output/debug_*.png
 
-# Large reference images (originals)
+# Dashboard needs: output/frames/, output/prompts/, output/status.json
+# These are NOT ignored
+
+# Large reference images (originals, low-res)
 персонажи/
 локации/
+
+# Dashboard needs: персонажи_hq/, локации_hq/
+# These are NOT ignored
 
 # Credentials
 config/credentials.yaml

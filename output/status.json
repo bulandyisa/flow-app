@@ -1,0 +1,284 @@
+{
+  "clips": {
+    "S01_A": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "review",
+      "status": "done"
+    },
+    "S01_B": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "review",
+      "status": "done"
+    },
+    "S01_C": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "pending",
+      "status": "partial"
+    },
+    "S02_A": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "review",
+      "status": "done"
+    },
+    "S02_B": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "pending",
+      "status": "partial"
+    },
+    "S02_C": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "pending",
+      "status": "partial"
+    },
+    "S02_D": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "pending",
+      "status": "partial"
+    },
+    "S03_A": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "pending",
+      "status": "partial"
+    },
+    "S03_B": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "pending",
+      "status": "partial"
+    },
+    "S03_C": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "pending",
+      "status": "partial"
+    },
+    "S03_D": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "pending",
+      "status": "partial"
+    },
+    "S03_E": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "pending",
+      "status": "partial"
+    },
+    "S04_A": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "review",
+      "status": "done"
+    },
+    "S04_B": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "review",
+      "status": "done"
+    },
+    "S04_C": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "review",
+      "status": "done"
+    },
+    "S05_A": {
+      "nb_first": "pending",
+      "nb_mid": "pending",
+      "nb_last": "pending",
+      "veo": "pending",
+      "status": "todo"
+    },
+    "S05_B": {
+      "nb_first": "pending",
+      "nb_mid": "pending",
+      "nb_last": "pending",
+      "veo": "pending",
+      "status": "todo"
+    },
+    "S05_C": {
+      "nb_first": "pending",
+      "nb_mid": "pending",
+      "nb_last": "pending",
+      "veo": "pending",
+      "status": "todo"
+    },
+    "S06_A": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "review",
+      "status": "done"
+    },
+    "S06_B": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "review",
+      "status": "done"
+    },
+    "S06_C": {
+      "nb_first": "pending",
+      "nb_mid": "pending",
+      "nb_last": "pending",
+      "veo": "pending",
+      "status": "todo"
+    },
+    "S06_D": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "review",
+      "status": "done"
+    },
+    "S06_E": {
+      "nb_first": "pending",
+      "nb_mid": "pending",
+      "nb_last": "pending",
+      "veo": "pending",
+      "status": "todo"
+    },
+    "S07_A": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "review",
+      "status": "done"
+    },
+    "S07_B": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "review",
+      "status": "done"
+    },
+    "S07_C": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "review",
+      "status": "done"
+    },
+    "S08_A": {
+      "nb_first": "pending",
+      "nb_mid": "pending",
+      "nb_last": "pending",
+      "veo": "pending",
+      "status": "todo"
+    },
+    "S08_B": {
+      "nb_first": "pending",
+      "nb_mid": "pending",
+      "nb_last": "pending",
+      "veo": "pending",
+      "status": "todo"
+    },
+    "S08_C": {
+      "nb_first": "pending",
+      "nb_mid": "pending",
+      "nb_last": "pending",
+      "veo": "pending",
+      "status": "todo"
+    },
+    "S09_A": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "review",
+      "status": "done"
+    },
+    "S09_B": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "review",
+      "status": "done"
+    },
+    "S10_A": {
+      "nb_first": "pending",
+      "nb_mid": "pending",
+      "nb_last": "pending",
+      "veo": "pending",
+      "status": "todo"
+    },
+    "S10_B": {
+      "nb_first": "pending",
+      "nb_mid": "pending",
+      "nb_last": "pending",
+      "veo": "pending",
+      "status": "todo"
+    },
+    "S10_C": {
+      "nb_first": "pending",
+      "nb_mid": "pending",
+      "nb_last": "pending",
+      "veo": "pending",
+      "status": "todo"
+    },
+    "S10_D": {
+      "nb_first": "pending",
+      "nb_mid": "pending",
+      "nb_last": "pending",
+      "veo": "pending",
+      "status": "todo"
+    },
+    "S11_A": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "review",
+      "status": "done"
+    },
+    "S11_B": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "review",
+      "status": "done"
+    },
+    "S11_C": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "review",
+      "status": "done"
+    },
+    "S12_A": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "review",
+      "status": "done"
+    },
+    "S12_B": {
+      "nb_first": "accepted",
+      "nb_mid": "pending",
+      "nb_last": "accepted",
+      "veo": "review",
+      "status": "done"
+    }
+  }
+}

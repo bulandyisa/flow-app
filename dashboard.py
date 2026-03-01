@@ -1,6 +1,7 @@
 """
 СИГНАЛ — Production Dashboard
 Streamlit-дашборд для анимационного проекта
+v2.1 — compact thumbnails, video section fix
 """
 
 import json
@@ -18,8 +19,8 @@ FRAMES_DIR = BASE_DIR / "output" / "frames"
 CLIPS_DIR = BASE_DIR / "output" / "clips"
 REVIEW_DIR = BASE_DIR / "output" / "review"
 SCENE_DIR = BASE_DIR / "output" / "scene"
-CHARS_DIR = BASE_DIR / "персонажи"
-LOCS_DIR = BASE_DIR / "локации"
+CHARS_DIR = BASE_DIR / "персонажи_hq" if (BASE_DIR / "персонажи_hq").exists() else BASE_DIR / "персонажи"
+LOCS_DIR = BASE_DIR / "локации_hq" if (BASE_DIR / "локации_hq").exists() else BASE_DIR / "локации"
 SCENARIO_FILE = BASE_DIR / "scenario_signal.txt"
 STATUS_FILE = BASE_DIR / "output" / "status.json"
 
@@ -29,14 +30,28 @@ SCENE_COLORS = {
     "S03": "#E85A49",  # red
     "S04": "#6BE849",  # green
     "S05": "#C149E8",  # purple
+    "S06": "#E89849",  # orange
+    "S07": "#49E8D6",  # teal
+    "S08": "#E84980",  # pink
+    "S09": "#8B49E8",  # violet
+    "S10": "#B8E849",  # lime
+    "S11": "#E8D649",  # amber
+    "S12": "#4998E8",  # steel blue
 }
 
 SCENE_LABELS = {
-    "S01": "Сцена 1 — Холодное открытие",
-    "S02": "Сцена 2 — Гараж, 4 дня назад",
-    "S03": "Сцена 3 — Дом Амина, вечер",
-    "S04": "Сцена 4 — Гараж, 3 дня назад",
-    "S05": "Сцена 5 — Гараж, вечер",
+    "S01": "Сцена 1 — Кухня, ужин",
+    "S02": "Сцена 2 — Гараж, радиоприёмник",
+    "S03": "Сцена 3 — Магазин, велосипед",
+    "S04": "Сцена 4 — Парк, поиски",
+    "S05": "Сцена 5 — Мост через ручей",
+    "S06": "Сцена 6 — Школа, перемена",
+    "S07": "Сцена 7 — Гараж, задача",
+    "S08": "Сцена 8 — Пустырь, склад",
+    "S09": "Сцена 9 — Кабинет папы",
+    "S10": "Сцена 10 — Водонапорная башня",
+    "S11": "Сцена 11 — Кабинет папы, линза",
+    "S12": "Сцена 12 — Комната Тако, ночь",
 }
 
 CHAR_DISPLAY = {
@@ -56,14 +71,14 @@ CHAR_DISPLAY = {
 # Helpers
 # ---------------------------------------------------------------------------
 
-@st.cache_data
+@st.cache_data(ttl=60)
 def load_clips() -> list[dict]:
     """Load clip data from all_prompts.json."""
     with open(PROMPTS_FILE, encoding="utf-8") as f:
         return json.load(f)
 
 
-@st.cache_data
+@st.cache_data(ttl=60)
 def load_status() -> dict:
     """Load clip statuses from status.json (for Streamlit Cloud compatibility)."""
     if STATUS_FILE.exists():
@@ -433,9 +448,9 @@ def render_nb_review_variants(clip_id: str, component: str = "nb_first"):
                 )
                 st.markdown(f'<div class="prompt-label">{label} ({len(imgs)} фото)</div>',
                             unsafe_allow_html=True)
-                cols = st.columns(min(len(imgs), 4))
+                cols = st.columns(4)
                 for i, ipath in enumerate(imgs):
-                    with cols[i % len(cols)]:
+                    with cols[i % 4]:
                         st.image(str(ipath), use_container_width=True)
                         st.caption(ipath.name)
 
@@ -460,45 +475,34 @@ def render_veo_variants(clip_id: str):
     if all_videos_count == 0:
         return
 
-    st.markdown(f"**VEO варианты** ({all_videos_count} видео)")
-
+    # Collect all videos from all attempts into groups (Pair A, Pair B, etc.)
+    all_groups = []
     for attempt_dir in attempt_dirs:
-        attempt_num = attempt_dir.name.replace("attempt_", "")
-
-        # Collect videos from prompt_a and prompt_b subdirectories
-        batches = []
         for batch_name in ["prompt_a", "prompt_b"]:
             batch_dir = attempt_dir / batch_name
             if batch_dir.exists():
                 videos = sorted(batch_dir.glob("*.mp4"))
                 if videos:
-                    batches.append((batch_name, videos))
-
+                    all_groups.append(videos)
         # Also check for flat structure (videos directly in attempt dir)
         flat_videos = sorted(attempt_dir.glob("*.mp4"))
-        if flat_videos and not batches:
-            batches.append(("variants", flat_videos))
+        if flat_videos:
+            all_groups.append(flat_videos)
 
-        if not batches:
-            continue
+    if not all_groups:
+        return
 
-        total_videos = sum(len(vids) for _, vids in batches)
-        with st.expander(f"Попытка {attempt_num} — {total_videos} видео", expanded=(len(attempt_dirs) == 1)):
-            for batch_name, videos in batches:
-                label = "Промпт A" if batch_name == "prompt_a" else (
-                    "Промпт B" if batch_name == "prompt_b" else "Варианты"
-                )
-                st.markdown(f'<div class="prompt-label">{label} ({len(videos)} видео)</div>',
-                            unsafe_allow_html=True)
-                cols = st.columns(min(len(videos), 4))
-                for i, vpath in enumerate(videos):
-                    with cols[i % len(cols)]:
-                        st.video(str(vpath))
-                        # Show first extracted frame as thumbnail caption
-                        frames_dir = vpath.parent / "frames" / vpath.stem
-                        if not frames_dir.exists():
-                            frames_dir = vpath.parent / vpath.stem
-                        st.caption(vpath.name)
+    # Show videos grouped as Pair A, Pair B, etc.
+    pair_labels = ["Пара A", "Пара B", "Пара C", "Пара D"]
+    for idx, videos in enumerate(all_groups):
+        label = pair_labels[idx] if idx < len(pair_labels) else f"Группа {idx + 1}"
+        st.markdown(f'<div class="prompt-label">{label} ({len(videos)} видео)</div>',
+                    unsafe_allow_html=True)
+        cols = st.columns(4)
+        for i, vpath in enumerate(videos):
+            with cols[i % 4]:
+                st.video(str(vpath))
+                st.caption(vpath.name)
 
 
 def render_clip_card(clip: dict, status: str, status_label: str, status_class: str):
@@ -807,6 +811,107 @@ def page_references():
             st.warning("Папка локаций не найдена.")
 
 
+def page_keyframe_pairs():
+    """Overview of all clips with first+last keyframe pairs for quick review."""
+    st.header("Пары кадров")
+
+    clips = load_clips()
+
+    # Stats
+    total = len(clips)
+    pairs_done = sum(
+        1 for c in clips
+        if (FRAMES_DIR / f"{c['clip_id']}_first.png").exists()
+        and (FRAMES_DIR / f"{c['clip_id']}_last.png").exists()
+    )
+    veo_done = 0
+    for c in clips:
+        veo_dir = REVIEW_DIR / c["clip_id"] / "veo"
+        if veo_dir.exists():
+            for ad in veo_dir.glob("attempt_*"):
+                if list(ad.glob("*.mp4")) or list(ad.glob("*/*.mp4")):
+                    veo_done += 1
+                    break
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Пары кадров", f"{pairs_done}/{total}")
+    with col2:
+        st.metric("VEO видео", f"{veo_done}/{total}")
+    with col3:
+        st.progress(pairs_done / total if total else 0)
+
+    st.markdown("---")
+
+    # Group by scene
+    current_scene = None
+    for clip in clips:
+        if clip["scene_id"] != current_scene:
+            current_scene = clip["scene_id"]
+            color = SCENE_COLORS.get(current_scene, "#888")
+            label = SCENE_LABELS.get(current_scene, current_scene)
+            st.markdown(
+                f'<h4 style="border-left:4px solid {color};padding-left:12px;'
+                f'margin-top:20px;margin-bottom:8px;">{label}</h4>',
+                unsafe_allow_html=True,
+            )
+
+        clip_id = clip["clip_id"]
+        first_frame = FRAMES_DIR / f"{clip_id}_first.png"
+        last_frame = FRAMES_DIR / f"{clip_id}_last.png"
+
+        has_first = first_frame.exists()
+        has_last = last_frame.exists()
+        has_veo = False
+        veo_count = 0
+        veo_dir = REVIEW_DIR / clip_id / "veo"
+        if veo_dir.exists():
+            for ad in veo_dir.glob("attempt_*"):
+                vids = list(ad.glob("*.mp4")) + list(ad.glob("*/*.mp4"))
+                veo_count += len(vids)
+            has_veo = veo_count > 0
+
+        # Status badge
+        if has_first and has_last and has_veo:
+            badge = '<span style="background:#1B5E20;color:#A5D6A7;padding:2px 8px;border-radius:4px;font-size:0.8em;">VEO готово</span>'
+        elif has_first and has_last:
+            badge = '<span style="background:#E65100;color:#FFE0B2;padding:2px 8px;border-radius:4px;font-size:0.8em;">Кадры готовы</span>'
+        elif has_first or has_last:
+            badge = '<span style="background:#4A148C;color:#CE93D8;padding:2px 8px;border-radius:4px;font-size:0.8em;">Частично</span>'
+        else:
+            badge = '<span style="background:#B71C1C;color:#FFCDD2;padding:2px 8px;border-radius:4px;font-size:0.8em;">Не начато</span>'
+
+        # Row: clip_id | first | last | status
+        cols = st.columns([1.5, 3, 3, 2])
+        with cols[0]:
+            veo_info = f" ({veo_count} vid)" if has_veo else ""
+            st.markdown(f"**{clip_id}**{veo_info}")
+        with cols[1]:
+            if has_first:
+                st.image(str(first_frame), use_container_width=True, caption="First")
+            else:
+                st.markdown(
+                    '<div style="background:#1A1D26;border:1px dashed #333;border-radius:6px;'
+                    'padding:30px;text-align:center;color:#555;font-size:0.8em;">—</div>',
+                    unsafe_allow_html=True,
+                )
+        with cols[2]:
+            if has_last:
+                st.image(str(last_frame), use_container_width=True, caption="Last")
+            else:
+                st.markdown(
+                    '<div style="background:#1A1D26;border:1px dashed #333;border-radius:6px;'
+                    'padding:30px;text-align:center;color:#555;font-size:0.8em;">—</div>',
+                    unsafe_allow_html=True,
+                )
+        with cols[3]:
+            st.markdown(badge, unsafe_allow_html=True)
+            desc = clip.get("scene_description_ru", "")
+            if desc:
+                st.markdown(f'<span style="font-size:0.75em;color:#888;">{desc[:60]}...</span>',
+                            unsafe_allow_html=True)
+
+
 def page_timeline():
     """Visual timeline of all clips."""
     st.header("Таймлайн")
@@ -883,12 +988,14 @@ def main():
     # --- Navigation ---
     page = st.sidebar.radio(
         "Навигация",
-        ["Клипы", "Таймлайн", "Сценарий", "Референсы"],
+        ["Пары кадров", "Клипы", "Таймлайн", "Сценарий", "Референсы"],
         label_visibility="collapsed",
     )
 
     # --- Page routing ---
-    if page == "Клипы":
+    if page == "Пары кадров":
+        page_keyframe_pairs()
+    elif page == "Клипы":
         st.title("Клипы")
         page_clips()
     elif page == "Таймлайн":

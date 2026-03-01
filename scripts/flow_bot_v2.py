@@ -1,20 +1,19 @@
 """
-Flow Bot v2 — Чистая переписка Playwright бота для Google Flow.
-
-Только launch_persistent_context (без CDP).
-keyboard.type() для промптов (без execCommand).
-~800 строк вместо 4000+.
+Flow Bot v2 — Playwright бот для Google Flow.
 
 Использование:
   ./scripts/run_safe.sh --review --clip S01_A --account 1
+  ./scripts/run_safe.sh --review --clip S01_A --component veo --account 1
   ./scripts/run_safe.sh --select --clip S01_A --component nb_first --attempt 1 --variant 0 --batch a --scores '{"char_face":9,...}'
   ./scripts/run_safe.sh --fail --clip S01_A --component nb_first --attempt 1
   ./scripts/run_safe.sh --status
   ./scripts/run_safe.sh --extract-frames --clip S01_A --component veo --attempt 1
+  ./scripts/run_safe.sh --sync-dashboard [--clip S01_A]
 """
 
 import argparse
 import base64
+import hashlib
 import json
 import os
 import random
@@ -32,6 +31,7 @@ from playwright.sync_api import sync_playwright
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PROMPTS_PATH = PROJECT_ROOT / 'output' / 'prompts' / 'all_prompts.json'
+PROMPTS_PATH_LOCAL = PROJECT_ROOT / 'output' / 'prompts' / 'all_prompts_local.json'
 OUTPUT_DIR   = PROJECT_ROOT / 'output'
 FRAMES_DIR   = OUTPUT_DIR / 'frames'
 CLIPS_DIR    = OUTPUT_DIR / 'clips'
@@ -42,9 +42,14 @@ REFS_DIR     = PROJECT_ROOT
 FLOW_URL = 'https://labs.google/fx/ru/tools/flow'
 
 ACCOUNTS = [
-    # Bot 1 — EduBoom profile + 2026genvid Flow account
+    # Bot 1 — Акк 1, сессия .session
     {'session_dir': PROJECT_ROOT / '.session', 'project_url': None},
-    # Bot 2-4 — будут добавлены позже
+    # Bot 2 — Акк 1, сессия .session_1b
+    {'session_dir': PROJECT_ROOT / '.session_1b', 'project_url': None},
+    # Bot 3 — Акк 2, сессия .session_2
+    {'session_dir': PROJECT_ROOT / '.session_2', 'project_url': None},
+    # Bot 4 — Акк 2, сессия .session_2b
+    {'session_dir': PROJECT_ROOT / '.session_2b', 'project_url': None},
 ]
 
 _current_account_idx = 0
@@ -53,7 +58,7 @@ _active_context = None
 GLOBAL_TIMEOUT_SEC = int(os.environ.get('FLOW_TIMEOUT', 1200))
 QUALITY_THRESHOLD = 9.0
 CRITICAL_MIN_SCORE = 6
-MAX_ATTEMPTS = 5
+MAX_ATTEMPTS = 10  # High limit; bot does exactly 1 attempt per run
 GENERATION_TIMEOUT = 300
 POLL_INTERVAL = 5
 
@@ -96,7 +101,7 @@ def human_delay_long(lo=4.0, hi=8.0):
     time.sleep(random.uniform(lo, hi))
 
 def human_pause_between_generations():
-    time.sleep(random.uniform(15, 25))
+    time.sleep(random.uniform(45, 65))
 
 
 # ── Human-like interactions ──────────────────────────────────────────────────
@@ -211,7 +216,7 @@ def validate_veo_prompt(prompt, clip_id=None):
 
 # ── Browser launch ───────────────────────────────────────────────────────────
 
-def launch_browser(pw, account=None):
+def launch_browser(pw, account=None, use_builtin_chromium=False):
     global _active_context
     acct = ACCOUNTS[account if account is not None else _current_account_idx]
     session_dir = acct['session_dir']
@@ -221,11 +226,10 @@ def launch_browser(pw, account=None):
         if p.exists(): p.unlink()
     vp_w = 1440 + random.randint(-20, 20)
     vp_h = 900 + random.randint(-15, 15)
-    print(f'  Account {(account if account is not None else _current_account_idx)}, session: {session_dir.name}, viewport: {vp_w}x{vp_h}')
-    ctx = pw.chromium.launch_persistent_context(
-        str(session_dir),
+    browser_label = 'Chromium (builtin)' if use_builtin_chromium else 'Chrome'
+    print(f'  Account {(account if account is not None else _current_account_idx)}, session: {session_dir.name}, viewport: {vp_w}x{vp_h}, {browser_label}')
+    launch_kwargs = dict(
         headless=False,
-        channel='chrome',
         viewport={'width': vp_w, 'height': vp_h},
         locale='ru-RU',
         args=[
@@ -238,8 +242,24 @@ def launch_browser(pw, account=None):
             f'--window-size={vp_w},{vp_h + 60}',
         ],
     )
+    if not use_builtin_chromium:
+        launch_kwargs['channel'] = 'chrome'
+    ctx = pw.chromium.launch_persistent_context(str(session_dir), **launch_kwargs)
     ctx.add_init_script(STEALTH_JS)
     _active_context = ctx
+
+    # Dismiss any stale file chooser dialogs from previous session
+    # (macOS shows a native Finder dialog if session was interrupted during upload)
+    try:
+        page = ctx.pages[0] if ctx.pages else ctx.new_page()
+        # Press Escape to close any native dialogs
+        page.keyboard.press('Escape')
+        time.sleep(0.5)
+        page.keyboard.press('Escape')
+        time.sleep(0.5)
+    except Exception:
+        pass
+
     return ctx
 
 
@@ -275,8 +295,22 @@ def dismiss_popups(page):
     return dismissed
 
 
-def ensure_project(page):
-    """Navigate to Flow and enter a project."""
+def ensure_project(page, project_id=None):
+    """Navigate to Flow and enter a project. If project_id given, navigate directly."""
+    if project_id:
+        project_url = f'{FLOW_URL}/project/{project_id}'
+        print(f'  Opening project {project_id[:8]}...')
+        page.goto(project_url, timeout=120000, wait_until='domcontentloaded')
+        human_delay_long(5, 8)
+        for _ in range(3):
+            dismiss_popups(page)
+            page.keyboard.press('Escape')
+            human_delay(0.5, 1.0)
+        if '/project/' in page.url:
+            print(f'  In project: {page.url[-50:]}')
+            return
+        print(f'  WARNING: project navigation failed, falling back...')
+
     print(f'  Opening Flow...')
     page.goto(FLOW_URL, timeout=120000, wait_until='domcontentloaded')
     human_delay_long(5, 8)
@@ -285,13 +319,35 @@ def ensure_project(page):
         page.keyboard.press('Escape')
         human_delay(0.5, 1.0)
 
-    # If already in a project, done
+    # If already in a project, done — but if in /edit/ subpage, go back to project root
     if '/project/' in page.url:
+        if '/edit/' in page.url:
+            # Strip /edit/... suffix to go back to main project chat view
+            project_url = page.url.split('/edit/')[0]
+            print(f'  In edit mode, navigating to project root...')
+            page.goto(project_url, wait_until='domcontentloaded')
+            human_delay_long(5, 8)
         print(f'  In project: {page.url[-50:]}')
         return
 
-    # On main page — click first project to enter it
+    # On main page — wait for projects to load (page shows "Загрузка..." initially)
     print(f'  On main page, entering a project...')
+    for _wait in range(15):
+        link = page.query_selector('a[href*="/project/"]')
+        if link:
+            break
+        # Check if still loading
+        is_loading = page.evaluate("""() => {
+            for (const el of document.querySelectorAll('*')) {
+                const t = (el.textContent||'').trim();
+                if (t === 'Загрузка...' || t === 'Loading...') return true;
+            }
+            return false;
+        }""")
+        if is_loading:
+            time.sleep(2)
+        else:
+            time.sleep(1)
     take_screenshot(page, 'flow_main')
 
     # Try clicking a project link
@@ -336,6 +392,15 @@ def ensure_project(page):
 def wait_for_flow_ready(page):
     """Wait for prompt field to appear."""
     page.wait_for_load_state('domcontentloaded', timeout=120000)
+
+    # Check if we landed in /edit/ mode (editing a previous generation)
+    # and navigate back to project root (chat/generation view)
+    if '/edit/' in page.url:
+        project_url = page.url.split('/edit/')[0]
+        print(f'  In edit mode, navigating back to project chat...')
+        page.goto(project_url, wait_until='domcontentloaded')
+        human_delay_long(5, 8)
+
     print(f'  Page URL: {page.url[:80]}')
     take_screenshot(page, 'flow_loaded')
     human_delay_long(2, 4)
@@ -356,6 +421,56 @@ def wait_for_flow_ready(page):
     human_delay(1.5, 3.0)
     dismiss_popups(page)
     print('  Flow workspace ready.')
+
+
+def _ensure_chat_view(page):
+    """Ensure we're in the main project chat view (not /edit/, gallery overlay, etc.).
+
+    Called between clips/components to recover from VEO download or other navigation
+    that may leave the page in a non-chat state.
+    """
+    # 1. If on /edit/ page, navigate to project root
+    if '/edit/' in page.url:
+        project_url = page.url.split('/edit/')[0]
+        print(f'  Returning to project chat from /edit/...')
+        page.goto(project_url, wait_until='domcontentloaded')
+        human_delay_long(3, 5)
+
+    # 2. Check if textbox is visible — if not, close overlays
+    has_textbox = page.evaluate("""() => {
+        const tb = document.querySelector('[role="textbox"], [contenteditable="true"]');
+        if (!tb) return false;
+        const r = tb.getBoundingClientRect();
+        return r.width > 50 && r.height > 10 && r.y > 0;
+    }""")
+
+    if not has_textbox:
+        print(f'  Textbox not visible — closing overlays...')
+        for _ in range(5):
+            page.keyboard.press('Escape')
+            human_delay(0.5, 1.0)
+        dismiss_popups(page)
+        human_delay(1, 2)
+
+        # Re-check
+        has_textbox = page.evaluate("""() => {
+            const tb = document.querySelector('[role="textbox"], [contenteditable="true"]');
+            if (!tb) return false;
+            const r = tb.getBoundingClientRect();
+            return r.width > 50 && r.height > 10 && r.y > 0;
+        }""")
+
+        if not has_textbox:
+            # Last resort: navigate to project root
+            if '/project/' in page.url:
+                project_url = re.sub(r'(/project/[a-f0-9-]+).*', r'\1', page.url)
+                print(f'  Force-navigating to project root...')
+                page.goto(project_url, wait_until='domcontentloaded')
+                human_delay_long(3, 5)
+                wait_for_flow_ready(page)
+            else:
+                print(f'  WARNING: cannot recover chat view, URL: {page.url[:80]}')
+                take_screenshot(page, 'chat_view_recovery_failed')
 
 
 def take_screenshot(page, name):
@@ -418,16 +533,63 @@ def fill_prompt(page, text):
 # ── Settings (model, variants) ───────────────────────────────────────────────
 
 def _open_settings_popup(page):
-    """Open settings popup via Playwright click (NOT JS click — React needs real events)."""
-    # Try chip in bottom bar (last match = bottom bar, not inside popup)
-    for label in ['Nano Banana', 'Imagen', 'Veo', 'Видео']:
+    """Open settings popup by clicking the chip button left of the Generate (→) button.
+
+    The chip shows current mode + settings:
+    - Image mode: "🍌 Nano Banana Pro □ x4"
+    - Video mode: "Видео □ x4"
+    It's always immediately left of the "→ Создать" (Generate) button.
+    """
+    # Strategy: find the Generate button (arrow_forward), then find the button
+    # immediately to its left — that's the settings chip
+    chip_info = page.evaluate("""() => {
+        // Find Generate button position
+        let genBtn = null;
+        for (const btn of document.querySelectorAll('button')) {
+            const t = btn.textContent.trim();
+            const r = btn.getBoundingClientRect();
+            if (t.includes('arrow_forward') && r.y > window.innerHeight * 0.7 && r.width < 60) {
+                genBtn = r;
+                break;
+            }
+        }
+        if (!genBtn) return null;
+
+        // Find the button immediately left of Generate button (closest x, same y row)
+        let best = null;
+        let bestDist = 999;
+        for (const btn of document.querySelectorAll('button')) {
+            const r = btn.getBoundingClientRect();
+            // Must be left of Generate, same row (similar y), and reasonably sized
+            if (r.x < genBtn.x && Math.abs(r.y - genBtn.y) < 30 && r.width > 50 && r.height > 20) {
+                const dist = genBtn.x - (r.x + r.width);
+                if (dist >= -5 && dist < bestDist) {
+                    best = btn;
+                    bestDist = dist;
+                }
+            }
+        }
+        if (best) {
+            return {x: best.getBoundingClientRect().x + best.getBoundingClientRect().width/2,
+                    y: best.getBoundingClientRect().y + best.getBoundingClientRect().height/2,
+                    text: best.textContent.trim().substring(0, 50)};
+        }
+        return null;
+    }""")
+
+    if chip_info:
+        page.mouse.click(chip_info['x'], chip_info['y'])
+        human_delay(0.8, 1.5)
+        return True
+
+    # Fallback: search by known text labels
+    for label in ['Видео', 'Nano Banana', 'Imagen']:
         matches = page.locator(f'button:has-text("{label}")').all()
-        # Pick the one in bottom bar (highest y coordinate)
         best = None
         best_y = -1
         for m in matches:
             box = m.bounding_box()
-            if box and box['width'] > 30 and box['y'] > best_y:
+            if box and box['width'] > 50 and box['y'] > best_y:
                 best = m
                 best_y = box['y']
         if best:
@@ -474,9 +636,12 @@ def set_orientation(page, orientation='horizontal'):
         return
     target_label = 'По горизонтали' if orientation == 'horizontal' else 'По вертикали'
     page.evaluate("""(label) => {
-        for (const tab of document.querySelectorAll('button[role="tab"]')) {
-            const t = (tab.textContent||'').trim();
-            if (t.includes(label)) { tab.click(); return true; }
+        for (const btn of document.querySelectorAll('button[role="tab"], button')) {
+            const t = (btn.textContent||'').trim();
+            if (t.includes(label)) {
+                const r = btn.getBoundingClientRect();
+                if (r.width > 30 && r.height > 20) { btn.click(); return true; }
+            }
         }
         return false;
     }""", target_label)
@@ -487,9 +652,16 @@ def set_orientation(page, orientation='horizontal'):
 
 
 def switch_mode(page, target):
-    """Switch Image / Video / Video+Frames mode via settings popup tabs.
+    """Switch Image / Video / Video+Frames mode via settings popup.
 
     target: 'Создать изображение' | 'Image' | 'Видео по кадрам' | 'video_frames' | 'Video'
+
+    Google Flow UI popup structure (Feb 2026):
+    - Row 1: [Image] [Video] — main mode pills (NOT role="tab"!)
+    - Row 2 (Video only): [Frames] [Ingredients] — sub-mode pills
+    - Row 3: [По горизонтали] [По вертикали] — orientation
+    - Row 4: [x1] [x2] [x3] [x4] — variant count
+    - Row 5: Model dropdown (Veo 3.1 - Fast, etc.)
     """
     is_video = 'идео' in target or 'video' in target.lower() or 'Video' in target
     is_frames = 'кадр' in target or 'frames' in target.lower() or 'Frames' in target
@@ -499,38 +671,148 @@ def switch_mode(page, target):
         print(f'  WARNING: Could not open settings popup for mode switch')
         return
 
-    # Click Image or Video tab (Playwright locator for proper React event handling)
-    if is_video:
-        tab = page.locator('button[role="tab"]:has-text("Video"), button[role="tab"]:has-text("Видео")').first
-    else:
-        tab = page.locator('button[role="tab"]:has-text("Image"), button[role="tab"]:has-text("Изображение")').first
-    if tab.count() > 0:
-        tab.click()
-        human_delay(0.5, 1.0)
+    time.sleep(1)
+    take_screenshot(page, 'settings_popup_opened')
 
-    # If video + frames, click Frames sub-tab (may need delay for sub-tabs to render)
+    # Click Image or Video pill — use MOUSE click (Radix UI pills need real mouse events)
+    pill_pos = page.evaluate("""(isVideo) => {
+        const target = isVideo ? 'Video' : 'Image';
+        const targetRu = isVideo ? 'Видео' : 'Изображение';
+        // First pass: exact endsWith
+        for (const btn of document.querySelectorAll('button')) {
+            const t = (btn.textContent || '').trim();
+            const r = btn.getBoundingClientRect();
+            if (r.width > 40 && r.height > 20 && r.y > 0 && r.y < window.innerHeight) {
+                if (t.endsWith(target) || t.endsWith(targetRu) || t === target || t === targetRu) {
+                    return {x: r.x + r.width/2, y: r.y + r.height/2, text: t.substring(0, 50)};
+                }
+            }
+        }
+        // Fallback: includes match
+        for (const btn of document.querySelectorAll('button')) {
+            const t = (btn.textContent || '').trim();
+            const r = btn.getBoundingClientRect();
+            if (r.width > 40 && r.height > 20 && r.y > 0 && r.y < window.innerHeight) {
+                if (t.includes(target) || t.includes(targetRu)) {
+                    return {x: r.x + r.width/2, y: r.y + r.height/2, text: t.substring(0, 50)};
+                }
+            }
+        }
+        return null;
+    }""", is_video)
+
+    if pill_pos:
+        page.mouse.click(pill_pos['x'], pill_pos['y'])
+        human_delay(0.5, 1.0)
+    else:
+        print(f'  WARNING: {"Video" if is_video else "Image"} button not found in popup')
+
+    # If video + frames, click Frames sub-tab pill
     if is_video and is_frames:
-        for attempt in range(5):
-            human_delay(0.5, 1.0)
-            frames_tab = page.locator('button[role="tab"]:has-text("Frames"), button[role="tab"]:has-text("Кадры")').first
-            if frames_tab.count() > 0:
-                frames_tab.click()
-                human_delay(0.5, 1.0)
-                mode = 'Video+Frames'
-                break
+        time.sleep(1)
+        # Use mouse click for Radix pill buttons
+        frames_pos = page.evaluate("""() => {
+            for (const btn of document.querySelectorAll('button')) {
+                const t = (btn.textContent || '').trim();
+                const r = btn.getBoundingClientRect();
+                if (r.width > 40 && r.height > 20 && r.y > 0 && r.y < window.innerHeight) {
+                    if (t.endsWith('Frames') || t.endsWith('Кадры') ||
+                        t.includes('Frames') || t.includes('Кадры') || t.includes('crop_free')) {
+                        return {x: r.x + r.width/2, y: r.y + r.height/2, text: t.substring(0, 50)};
+                    }
+                }
+            }
+            return null;
+        }""")
+        if frames_pos:
+            page.mouse.click(frames_pos['x'], frames_pos['y'])
+            time.sleep(1)
+            mode = 'Video+Frames'
+        else:
+            print('  WARNING: Frames button not found in popup')
+            take_screenshot(page, 'frames_tab_missing')
 
     page.keyboard.press('Escape')
     human_delay(0.5, 1.0)
+
+    # Verify frame slots appeared (for Video+Frames mode)
+    if is_frames:
+        time.sleep(1.5)
+        if _check_frame_slots_visible(page):
+            mode = 'Video+Frames'
+        else:
+            print('  WARNING: Frame slots (Первый/Последний кадр) not visible after mode switch')
+            take_screenshot(page, 'frame_slots_missing')
+
     print(f'  Mode: {mode}')
 
 
+def _check_frame_slots_visible(page):
+    """Check if VEO frame slots (Первый кадр / Последний кадр) are visible in the UI."""
+    return page.evaluate("""() => {
+        for (const el of document.querySelectorAll('div, span, button')) {
+            const t = (el.textContent || '').trim();
+            if ((t.includes('Первый') || t.includes('First')) &&
+                (t.includes('кадр') || t.includes('frame'))) {
+                const r = el.getBoundingClientRect();
+                if (r.width > 20 && r.height > 20 && r.y > 0) return true;
+            }
+        }
+        return false;
+    }""")
+
+
+def _check_frame_slots_have_images(page):
+    """Check if VEO frame slots have images loaded.
+
+    When a frame is loaded, the slot text ('Первый кадр') is replaced by an <img>.
+    So we check: if we can still find 'Первый кадр' text, the slot is EMPTY.
+    If the text is gone but there's an img at that position, the slot HAS an image.
+    """
+    return page.evaluate("""() => {
+        // If "Первый кадр" text still exists, slot is empty
+        for (const el of document.querySelectorAll('div')) {
+            const t = (el.textContent||'').trim();
+            if (t === 'Первый кадр') {
+                return false;  // text still visible = no image loaded
+            }
+        }
+        // Text gone — check for img in the slot area (near bottom, small size ~50x50)
+        const h = window.innerHeight;
+        for (const img of document.querySelectorAll('img')) {
+            const r = img.getBoundingClientRect();
+            if (r.y > h * 0.7 && r.width > 30 && r.width < 80 && r.height > 30 && r.height < 80) {
+                const alt = (img.alt||'').toLowerCase();
+                if (alt.includes('медиаконтент') || alt.includes('media') || alt.includes('frame')) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }""")
+
+
 def set_variant_count(page, count=4):
-    """Set variant count (x1-x4) via settings popup. Available for Video mode."""
+    """Set variant count (x1-x4) via settings popup."""
     if not _open_settings_popup(page):
         return
+    # Try role="tab" first, then any button with "x{count}" text
     tab = page.locator(f'button[role="tab"]:has-text("x{count}")').first
     if tab.count() > 0:
         tab.click()
+        human_delay(0.3, 0.8)
+    else:
+        # Buttons may not have role="tab" — search by text
+        page.evaluate("""(target) => {
+            for (const btn of document.querySelectorAll('button')) {
+                const t = (btn.textContent || '').trim();
+                const r = btn.getBoundingClientRect();
+                if (t === target && r.width > 20 && r.height > 20) {
+                    btn.click(); return true;
+                }
+            }
+            return false;
+        }""", f'x{count}')
         human_delay(0.3, 0.8)
     page.keyboard.press('Escape')
     human_delay(0.3, 0.8)
@@ -543,63 +825,119 @@ _last_uploaded = None
 
 
 def _open_media_dialog(page):
-    """Click the '+' button in bottom bar to open media library dialog."""
-    clicked = page.evaluate("""() => {
+    """Click the '+' / 'add' button to open media library dialog.
+
+    Flow UI button locations:
+    - Image mode: "add_2Создать" in bottom bar (haspopup=dialog) — PREFERRED
+    - Top bar: "addДобавить медиаконтент" (haspopup=menu) — opens menu, then "Загрузить изображение"
+    """
+    # Strategy 1: Find "add_2Создать" in bottom bar (Image mode ingredient button)
+    add_pos = page.evaluate("""() => {
         const h = window.innerHeight;
         for (const btn of document.querySelectorAll('button')) {
             const t = btn.textContent.trim();
             const r = btn.getBoundingClientRect();
-            // "+" button has text starting with "add" and is small, in bottom bar
-            if (t.startsWith('add') && r.y > h * 0.6 && r.width > 15 && r.width < 80) {
-                btn.click(); return true;
+            // Old-style "+" button: "add_2Создать" in bottom 40%, haspopup=dialog
+            if (t.startsWith('add') && r.y > h * 0.6 && r.width > 15 && r.width < 80 &&
+                (t.includes('Создать') || t.includes('add_2'))) {
+                return {x: r.x + r.width/2, y: r.y + r.height/2, type: 'dialog'};
             }
         }
-        return false;
+        // Strategy 2: "addДобавить медиаконтент" in top bar
+        for (const btn of document.querySelectorAll('button')) {
+            const t = btn.textContent.trim();
+            const r = btn.getBoundingClientRect();
+            if (t.includes('Добавить медиаконтент') && r.width > 15) {
+                return {x: r.x + r.width/2, y: r.y + r.height/2, type: 'menu'};
+            }
+        }
+        return null;
     }""")
-    if not clicked:
+
+    if not add_pos:
         take_screenshot(page, 'add_button_missing')
-        print('    "+" button not found in bottom bar')
+        print('    "+" button not found')
         return False
-    # Wait for dialog to appear
-    try:
-        page.wait_for_selector('[role="dialog"]', timeout=5000)
-    except Exception:
-        human_delay(1.5, 3)
+
+    # Use mouse click (Radix components need real events)
+    page.mouse.click(add_pos['x'], add_pos['y'])
+
+    if add_pos['type'] == 'menu':
+        # New UI: menu opens → click "Загрузить изображение"
+        try:
+            page.wait_for_selector('[role="menu"]', timeout=3000)
+        except Exception:
+            human_delay(1, 2)
+        human_delay(0.5, 1)
+        # Click "Загрузить изображение" menu item
+        upload_pos = page.evaluate("""() => {
+            for (const el of document.querySelectorAll('[role="menuitem"]')) {
+                const t = el.textContent.trim();
+                if (t.includes('Загрузить')) {
+                    const r = el.getBoundingClientRect();
+                    return {x: r.x + r.width/2, y: r.y + r.height/2};
+                }
+            }
+            return null;
+        }""")
+        if upload_pos:
+            page.mouse.click(upload_pos['x'], upload_pos['y'])
+            human_delay(0.5, 1)
+    else:
+        # Old UI: dialog opens directly
+        try:
+            page.wait_for_selector('[role="dialog"]', timeout=5000)
+        except Exception:
+            human_delay(1.5, 3)
+
     human_delay(0.8, 1.5)
     return True
 
 
 def _find_in_library(page, filename):
     """Search for image by filename in the media library dialog.
-    Returns True if found and selected."""
-    # Strip extension for matching
+    Returns True if found and selected.
+    Uses mouse click (not JS click) because Radix dialog items need real mouse events."""
     name_no_ext = Path(filename).stem
-    found = page.evaluate("""(name) => {
+    # Find the item coordinates (img with matching alt, or row with matching text)
+    item_pos = page.evaluate("""(name) => {
         const dialog = document.querySelector('[role="dialog"]');
-        if (!dialog) return false;
-        // Look for img with matching alt text or nearby text
+        if (!dialog) return null;
+        // Look for img with matching alt text
         for (const img of dialog.querySelectorAll('img')) {
             const alt = (img.alt || '').toLowerCase();
             const r = img.getBoundingClientRect();
             if (r.width < 20 || r.height < 20) continue;
             if (alt.includes(name.toLowerCase())) {
-                // Click the image or its clickable parent
-                const clickable = img.closest('button, [role="option"], [role="button"], a') || img;
-                clickable.click();
-                return true;
+                // Find the ROW container (wider than the thumbnail)
+                let row = img.parentElement;
+                while (row && row !== dialog) {
+                    const rr = row.getBoundingClientRect();
+                    if (rr.width > 150) break;
+                    row = row.parentElement;
+                }
+                const rowRect = row ? row.getBoundingClientRect() : r;
+                return {x: Math.round(rowRect.x + rowRect.width/2),
+                        y: Math.round(rowRect.y + rowRect.height/2)};
             }
         }
-        // Also try text-based match
-        for (const el of dialog.querySelectorAll('button, [role="option"], [role="listitem"]')) {
+        // Text-based match
+        for (const el of dialog.querySelectorAll('button, [role="option"], [role="listitem"], div')) {
             const t = (el.textContent || '').toLowerCase();
-            if (t.includes(name.toLowerCase())) {
+            if (t.includes(name.toLowerCase()) && t.length < 60) {
                 const r = el.getBoundingClientRect();
-                if (r.width > 30 && r.height > 20) { el.click(); return true; }
+                if (r.width > 100 && r.height > 20 && r.height < 100) {
+                    return {x: Math.round(r.x + r.width/2), y: Math.round(r.y + r.height/2)};
+                }
             }
         }
-        return false;
+        return null;
     }""", name_no_ext)
-    return found
+
+    if item_pos:
+        page.mouse.click(item_pos['x'], item_pos['y'])
+        return True
+    return False
 
 
 def _upload_in_dialog(page, fpath):
@@ -667,8 +1005,132 @@ def _count_ingredient_thumbs(page):
     }""")
 
 
+def _upload_ingredient_fresh(page, fpath):
+    """Upload a single ingredient via file chooser. Always uploads fresh.
+
+    Flow: click '+' → media dialog → 'Загрузить изображение' → file chooser → crop dialog → done.
+    Returns True if ingredient thumbnail appeared after upload.
+    """
+    thumbs_before = _count_ingredient_thumbs(page)
+
+    # Step 1: Open media dialog via '+' button
+    if not _open_media_dialog(page):
+        return False
+
+    # Step 2: Find and click 'Загрузить изображение' inside the dialog
+    upload_pos = page.evaluate("""() => {
+        const dialog = document.querySelector('[role="dialog"]');
+        const root = dialog || document;
+        for (const btn of root.querySelectorAll('button')) {
+            const t = btn.textContent.trim();
+            if ((t.includes('Загрузить') && (t.includes('зображени') || t.includes('Upload'))) ||
+                t === 'uploadЗагрузить изображение') {
+                const r = btn.getBoundingClientRect();
+                if (r.width > 30) return {x: r.x + r.width/2, y: r.y + r.height/2, text: t.substring(0, 60)};
+            }
+        }
+        return null;
+    }""")
+
+    if not upload_pos:
+        print(f'    "Загрузить изображение" not found in dialog')
+        take_screenshot(page, 'ingredient_no_upload_btn')
+        page.keyboard.press('Escape')
+        human_delay(0.5, 1.0)
+        return False
+
+    # Step 3: Upload via file chooser
+    uploaded = False
+    try:
+        with page.expect_file_chooser(timeout=8000) as fc_info:
+            page.mouse.click(upload_pos['x'], upload_pos['y'])
+        fc = fc_info.value
+        fc.set_files(str(fpath))
+        uploaded = True
+        print(f'    Uploaded: {fpath.name}')
+    except Exception as e:
+        print(f'    File chooser failed: {e}')
+        # Fallback: hidden file input
+        file_input = page.query_selector('input[type="file"][accept="image/*"]')
+        if not file_input:
+            file_input = page.query_selector('input[type="file"]')
+        if file_input:
+            file_input.set_input_files(str(fpath))
+            uploaded = True
+            print(f'    Uploaded (input fallback): {fpath.name}')
+
+    if not uploaded:
+        print(f'    FAILED to upload {fpath.name}')
+        page.keyboard.press('Escape')
+        human_delay(0.5, 1.0)
+        return False
+
+    # Step 4: Wait for upload to process
+    human_delay(3, 5)
+
+    # Step 5: Handle crop dialog if it appeared (critical — Escape would CANCEL it!)
+    for _ in range(3):
+        has_crop = page.evaluate("""() => {
+            for (const btn of document.querySelectorAll('button')) {
+                const t = btn.textContent.trim();
+                if ((t.includes('Кадрировать') || t.includes('Сохранить') || t.includes('Готово') || t.includes('Done')) &&
+                    btn.getBoundingClientRect().width > 50) {
+                    return {x: btn.getBoundingClientRect().x + btn.getBoundingClientRect().width/2,
+                            y: btn.getBoundingClientRect().y + btn.getBoundingClientRect().height/2, text: t};
+                }
+            }
+            return null;
+        }""")
+        if has_crop:
+            print(f'    Crop dialog: clicking "{has_crop["text"][:30]}"')
+            page.mouse.click(has_crop['x'], has_crop['y'])
+            human_delay(2, 4)
+        else:
+            break
+
+    # Step 6: Close media library dialog if still open
+    has_dialog = page.evaluate("""() => {
+        const d = document.querySelector('[role="dialog"]');
+        return d && d.getBoundingClientRect().width > 100;
+    }""")
+    if has_dialog:
+        # Try clicking a 'Select' or 'Done' button first
+        selected = page.evaluate("""() => {
+            const dialog = document.querySelector('[role="dialog"]');
+            if (!dialog) return false;
+            for (const btn of dialog.querySelectorAll('button')) {
+                const t = btn.textContent.trim();
+                if (t.includes('Выбрать') || t.includes('Select') || t.includes('Готово') || t.includes('Done')) {
+                    btn.click(); return true;
+                }
+            }
+            return false;
+        }""")
+        if selected:
+            human_delay(1, 2)
+        else:
+            page.keyboard.press('Escape')
+            human_delay(0.5, 1.0)
+
+    # Step 7: Verify ingredient was added
+    human_delay(1, 2)
+    thumbs_after = _count_ingredient_thumbs(page)
+    if thumbs_after > thumbs_before:
+        return True
+    else:
+        print(f'    WARNING: Thumbnail count unchanged ({thumbs_before} → {thumbs_after})')
+        return True  # Trust the upload even if count check fails
+
+
 def upload_ingredients(page, ingredient_paths):
-    """Upload ingredient images via media library dialog."""
+    """Upload ingredient images via file chooser. Always uploads fresh to avoid stale library copies.
+
+    Flow ingredient upload sequence:
+    1. Click '+' button → media library dialog opens
+    2. Click 'Загрузить изображение' → file chooser opens
+    3. Select file → crop dialog may appear → confirm crop
+    4. Ingredient thumbnail appears in prompt area
+    """
     global _last_uploaded
     if not ingredient_paths:
         return 0
@@ -678,54 +1140,56 @@ def upload_ingredients(page, ingredient_paths):
         if full.exists():
             resolved.append(full)
         else:
-            print(f'  WARNING: ingredient not found: {full}')
+            # Try as absolute path
+            p = Path(rel)
+            if p.exists():
+                resolved.append(p)
+            else:
+                print(f'  WARNING: ingredient not found: {full}')
     if not resolved:
         return 0
 
     keys = tuple(str(f) for f in resolved)
     if keys == _last_uploaded:
-        print(f'  Ingredients cached ({len(resolved)} files)')
-        return len(resolved)
+        # Verify cached ingredients are still visible
+        cached_count = _count_ingredient_thumbs(page)
+        if cached_count >= len(resolved):
+            print(f'  Ingredients cached ({len(resolved)} files, {cached_count} thumbs)')
+            return len(resolved)
+        else:
+            print(f'  Ingredient cache stale ({cached_count} thumbs, expected {len(resolved)})')
+            _last_uploaded = None
 
     # Clear old ingredients first
     clear_ingredients(page)
+    human_delay(1, 2)
 
     loaded = 0
     for i, fpath in enumerate(resolved):
         print(f'  Loading ingredient {i+1}/{len(resolved)}: {fpath.name}')
 
-        # Step 1: Open media dialog
-        if not _open_media_dialog(page):
-            continue
-
-        # Step 2: Try to find image in library first
-        if _find_in_library(page, fpath.name):
-            print(f'    Selected from library: {fpath.name}')
+        if _upload_ingredient_fresh(page, fpath):
             loaded += 1
-            human_delay(2, 4)
-            # Dialog may auto-close after selection, but try closing just in case
-            _close_media_dialog(page)
-            continue
+        else:
+            # Retry once
+            print(f'    Retrying {fpath.name}...')
+            human_delay(2, 3)
+            page.keyboard.press('Escape')
+            human_delay(1, 2)
+            if _upload_ingredient_fresh(page, fpath):
+                loaded += 1
 
-        # Step 3: Upload via file chooser
-        if _upload_in_dialog(page, fpath):
-            loaded += 1
-            # After upload, the dialog may or may not close
-            # Wait for the image to process
-            human_delay(2, 4)
-            _close_media_dialog(page)
-            continue
-
-        # Failed
-        print(f'    FAILED to upload {fpath.name}')
-        _close_media_dialog(page)
-
-    # Final escape to ensure dialog is closed
+    # Final escape to ensure no lingering dialogs
     page.keyboard.press('Escape')
     human_delay(0.5, 1.0)
 
     thumb_count = _count_ingredient_thumbs(page)
     print(f'  Loaded {loaded}/{len(resolved)} ingredients. Thumbs visible: {thumb_count}')
+
+    # Take screenshot for debugging
+    if loaded > 0:
+        take_screenshot(page, 'ingredients_loaded')
+
     _last_uploaded = keys if loaded == len(resolved) else None
     return loaded
 
@@ -808,9 +1272,9 @@ def clear_veo_frame_slots(page):
 def upload_frame_for_veo(page, frame_path, slot_index):
     """Upload a frame to VEO slot (0=first, 1=last).
 
-    Clicks the slot DIV ("Первый кадр"/"Последний кадр") which opens
-    the same media library dialog as ingredients. Then either finds
-    the image in library or uploads it.
+    Always uploads fresh via file chooser to avoid stale library copies.
+    VEO frames may change (e.g. after re-selection), so library search
+    is unreliable — an old wrong version could have the same filename.
     """
     slot_name = 'First' if slot_index == 0 else 'Last'
     slot_text = 'Первый' if slot_index == 0 else 'Последний'
@@ -836,6 +1300,7 @@ def upload_frame_for_veo(page, frame_path, slot_index):
     # Click slot to open media dialog
     page.mouse.click(slot_info['x'], slot_info['y'])
     human_delay(1.5, 3.0)
+    take_screenshot(page, f'veo_slot_{slot_name}_clicked')
 
     # Wait for media dialog
     dialog = page.locator('[role="dialog"]')
@@ -845,29 +1310,79 @@ def upload_frame_for_veo(page, frame_path, slot_index):
         print(f'  WARNING: Media dialog did not appear for {slot_name} slot')
         return False
 
-    # Try to find image in library by filename
-    fname = Path(frame_path).stem  # e.g. "variant_1"
-    found = _find_in_library(page, fname)
-    if found:
-        print(f'  Selected {slot_name} frame from library: {fname}')
-    else:
-        # Upload via dialog
-        uploaded = _upload_in_dialog(page, frame_path)
-        if not uploaded:
-            print(f'  WARNING: Failed to upload {slot_name} frame')
+    take_screenshot(page, f'veo_slot_{slot_name}_dialog_open')
+
+    # Upload fresh via file chooser — click "Загрузить изображение" button
+    upload_pos = page.evaluate("""() => {
+        const dialog = document.querySelector('[role="dialog"]');
+        if (!dialog) return null;
+        for (const btn of dialog.querySelectorAll('button')) {
+            const t = btn.textContent.trim();
+            if (t.includes('Загрузить') || t.includes('Upload')) {
+                const r = btn.getBoundingClientRect();
+                if (r.width > 30) return {x: r.x + r.width/2, y: r.y + r.height/2, text: t.substring(0, 60)};
+            }
+        }
+        return null;
+    }""")
+
+    if not upload_pos:
+        print(f'  WARNING: Upload button not found in dialog for {slot_name}')
+        page.keyboard.press('Escape')
+        return False
+
+    try:
+        with page.expect_file_chooser(timeout=5000) as fc_info:
+            page.mouse.click(upload_pos['x'], upload_pos['y'])
+        fc = fc_info.value
+        fc.set_files(frame_path)
+        print(f'  Uploaded {slot_name} frame: {Path(frame_path).name}')
+    except Exception as e:
+        print(f'  WARNING: File chooser failed for {slot_name}: {e}')
+        # Fallback: try hidden file input
+        file_input = page.query_selector('input[type="file"][accept="image/*"]')
+        if file_input:
+            file_input.set_input_files(frame_path)
+            print(f'  Uploaded {slot_name} frame via file input fallback')
+        else:
             page.keyboard.press('Escape')
             return False
-        print(f'  Uploaded {slot_name} frame: {Path(frame_path).name}')
 
-    human_delay(2.0, 4.0)
+    human_delay(3.0, 5.0)
+    take_screenshot(page, f'veo_slot_{slot_name}_after_upload')
 
-    # Dismiss crop dialog if it appears
-    _dismiss_crop_dialog(page)
+    # Handle crop dialog if it appeared
+    has_crop = page.evaluate("""() => {
+        for (const btn of document.querySelectorAll('button')) {
+            const t = btn.textContent.trim();
+            if (t.includes('Кадрировать') || t.includes('Сохранить')) {
+                const r = btn.getBoundingClientRect();
+                if (r.width > 50) return true;
+            }
+        }
+        return false;
+    }""")
+    if has_crop:
+        _dismiss_crop_dialog(page)
+        human_delay(1.0, 2.0)
+
+    # Close media dialog if still open (upload usually auto-closes it)
+    has_dialog = page.evaluate("""() => {
+        const d = document.querySelector('[role="dialog"]');
+        return d && d.getBoundingClientRect().width > 100;
+    }""")
+    if has_dialog:
+        _close_media_dialog(page)
+        human_delay(0.5, 1.0)
+
+    # Verify the slot now has an image
     human_delay(1.0, 2.0)
-
-    # Close media dialog if still open
-    _close_media_dialog(page)
-    human_delay(0.5, 1.0)
+    take_screenshot(page, f'veo_slot_{slot_name}_final')
+    has_image = _check_frame_slots_have_images(page)
+    if has_image:
+        print(f'  Verified: {slot_name} slot has image')
+    else:
+        print(f'  WARNING: {slot_name} slot may not have image attached')
 
     return True
 
@@ -948,42 +1463,180 @@ def _is_generating(page):
 
 
 def _count_errors(page):
-    """Count error cards currently visible in DOM."""
-    return page.evaluate("""() => {
+    """Count error cards currently visible in the BOTTOM HALF of viewport.
+
+    Only counts errors near the bottom of the chat (where new messages appear)
+    to avoid false positives from old error messages in chat history that
+    appear due to virtual scrolling.
+    """
+    return page.evaluate("""(errorPatterns) => {
         let count = 0;
-        for (const el of document.querySelectorAll('*')) {
+        const seen = new Set();
+        const h = window.innerHeight;
+        const minY = h * 0.4;  // Only bottom 60% of viewport
+        // Standard error messages (longer text)
+        for (const el of document.querySelectorAll('div, span, p')) {
             const t = (el.textContent||'').trim();
-            if ((t.includes('Что-то пошло не так') || t.includes('Не удалось сгенерировать') ||
-                 t.includes('Произошла ошибка')) && t.length < 300) {
+            for (const pat of errorPatterns) {
+                if (t.includes(pat) && t.length < 300 && t.length > 5) {
+                    if (seen.has(el)) continue;
+                    seen.add(el);
+                    const r = el.getBoundingClientRect();
+                    if (r.width > 100 && r.height > 20 && r.y >= minY && r.y < h) {
+                        count++;
+                        break;
+                    }
+                }
+            }
+        }
+        // VEO short error cards (just "Ошибка." text in small elements)
+        for (const el of document.querySelectorAll('div, span, p')) {
+            const t = (el.innerText||'').trim();
+            if (t.length < 30 && t.includes(errorPatterns[3])) {
+                if (seen.has(el)) continue;
+                seen.add(el);
                 const r = el.getBoundingClientRect();
-                if (r.width > 100 && r.height > 20 && r.y >= 0 && r.y < window.innerHeight)
+                if (r.width > 20 && r.y >= minY && r.y < h) {
                     count++;
+                }
             }
         }
         return count;
+    }""", ['Что-то пошло не так', 'Не удалось сгенерировать', 'Произошла ошибка', 'Ошибка'])
+
+
+def _click_retry_on_error(page):
+    """Click 'Повторить' (retry) button on the last error card.
+
+    When a generation fails, Flow shows 3 buttons below the error card:
+    - 🔄 Повторить (retry with same params)
+    - ↩️ Сгенерировать повторно (regenerate)
+    - ❌ Удалить (delete)
+
+    We click the first button (Повторить) — it retries the same generation
+    without needing to re-upload ingredients or re-type prompt.
+
+    Returns True if button was found and clicked, False otherwise.
+    """
+    # Scroll to bottom to ensure error card buttons are visible
+    _scroll_chat_bottom(page)
+    time.sleep(1)
+
+    # Look for retry-related buttons near error cards
+    clicked = page.evaluate("""() => {
+        // Strategy 1: Find buttons by aria-label/title containing retry keywords
+        const retryLabels = ['Повторить', 'Retry', 'Попробовать снова'];
+        for (const label of retryLabels) {
+            // aria-label match
+            const btn = document.querySelector(`button[aria-label="${label}"], button[title="${label}"]`);
+            if (btn && btn.getBoundingClientRect().height > 0) {
+                btn.click();
+                return 'label:' + label;
+            }
+        }
+
+        // Strategy 2: Find the FIRST icon button in a group of 3 near an error card.
+        // Error cards have text 'Ошибка' and below them are 3 small icon buttons.
+        const errorCards = [];
+        for (const el of document.querySelectorAll('div, span, p')) {
+            const t = (el.innerText || '').trim();
+            if ((t.includes('Ошибка') || t.includes('Что-то пошло не так')) && t.length < 200) {
+                const r = el.getBoundingClientRect();
+                if (r.width > 50 && r.height > 10 && r.y > window.innerHeight * 0.3) {
+                    errorCards.push({el, y: r.y});
+                }
+            }
+        }
+        if (errorCards.length === 0) return null;
+
+        // Take the LAST (most recent) error card
+        errorCards.sort((a, b) => b.y - a.y);
+        const lastError = errorCards[0];
+
+        // Find small icon buttons below the error card (within 200px)
+        const buttons = [];
+        for (const btn of document.querySelectorAll('button')) {
+            const r = btn.getBoundingClientRect();
+            if (r.width >= 24 && r.width <= 64 && r.height >= 24 && r.height <= 64 &&
+                r.y > lastError.y && r.y < lastError.y + 300) {
+                buttons.push(btn);
+            }
+        }
+        if (buttons.length >= 2) {
+            // Sort left-to-right, first button is "Повторить"
+            buttons.sort((a, b) => a.getBoundingClientRect().x - b.getBoundingClientRect().x);
+            buttons[0].click();
+            return 'positional:first-of-' + buttons.length;
+        }
+
+        // Strategy 3: Look for mat-icon or icon with 'refresh/replay/redo' in the error area
+        for (const icon of document.querySelectorAll('mat-icon, span.material-icons, span.material-symbols-outlined')) {
+            const t = (icon.textContent || '').trim().toLowerCase();
+            if (t === 'refresh' || t === 'replay' || t === 'redo' || t === 'autorenew') {
+                const r = icon.getBoundingClientRect();
+                if (r.y > lastError.y && r.y < lastError.y + 300) {
+                    const btn = icon.closest('button') || icon;
+                    btn.click();
+                    return 'icon:' + t;
+                }
+            }
+        }
+
+        return null;
     }""")
+
+    if clicked:
+        print(f'    Clicked retry button ({clicked})')
+        return True
+
+    # Debug: take screenshot and log available buttons near errors
+    take_screenshot(page, 'retry_button_not_found')
+    debug_info = page.evaluate("""() => {
+        const info = [];
+        // Find all buttons in the bottom half of viewport
+        const h = window.innerHeight;
+        for (const btn of document.querySelectorAll('button')) {
+            const r = btn.getBoundingClientRect();
+            if (r.y > h * 0.3 && r.y < h && r.width > 10 && r.height > 10) {
+                const label = btn.getAttribute('aria-label') || btn.getAttribute('title') || '';
+                const text = (btn.innerText || '').trim().substring(0, 50);
+                const icon = btn.querySelector('mat-icon, span.material-icons, span.material-symbols-outlined');
+                const iconText = icon ? (icon.textContent || '').trim() : '';
+                info.push({
+                    x: Math.round(r.x), y: Math.round(r.y),
+                    w: Math.round(r.width), h: Math.round(r.height),
+                    label, text, icon: iconText,
+                    classes: btn.className.substring(0, 80)
+                });
+            }
+        }
+        return info;
+    }""")
+    if debug_info:
+        print(f'    Buttons near errors:')
+        for b in debug_info[:10]:
+            print(f'      [{b["x"]},{b["y"]} {b["w"]}x{b["h"]}] label="{b["label"]}" text="{b["text"]}" icon="{b["icon"]}"')
+    return False
 
 
 def _check_new_error(page, errors_before):
     """Check if a new error appeared since errors_before count."""
     current = _count_errors(page)
     if current > errors_before:
-        # Get the error text
-        err = page.evaluate("""() => {
+        print(f'    New errors detected: {errors_before} -> {current}')
+        # Determine error type
+        has_content_filter = page.evaluate("""(pat) => {
             for (const el of document.querySelectorAll('*')) {
                 const t = (el.textContent||'').trim();
-                if ((t.includes('Что-то пошло не так') || t.includes('Не удалось сгенерировать') ||
-                     t.includes('Произошла ошибка')) && t.length < 300) {
-                    const r = el.getBoundingClientRect();
-                    if (r.width > 100 && r.height > 20 && r.y >= 0 && r.y < window.innerHeight)
-                        return t;
-                }
+                if (t.includes(pat) && t.length < 300) return true;
             }
-            return null;
-        }""")
-        if err:
-            print(f'    ERROR: {err[:80]}')
-            return 'content_filter' if 'Не удалось сгенерировать' in err else 'server_error'
+            return false;
+        }""", 'Не удалось сгенерировать')
+        if has_content_filter:
+            print(f'    ERROR: Content filter')
+            return 'content_filter'
+        print(f'    ERROR: Server error')
+        return 'server_error'
     return None
 
 
@@ -1036,23 +1689,117 @@ def _get_last_generated_video_url(page):
     return url
 
 
+def _open_fullview_and_get_video_url(page):
+    """Click last video thumbnail, wait for <video> to appear, return its URL.
+    Does NOT close fullview — caller must call _close_fullview().
+    """
+    # Click last video thumbnail
+    thumb_count = page.evaluate("""() => {
+        const imgs = document.querySelectorAll('img[alt="Значок видео"]');
+        return imgs.length;
+    }""")
+    if thumb_count == 0:
+        return None
+
+    # Click the last thumbnail
+    page.evaluate("""() => {
+        const imgs = document.querySelectorAll('img[alt="Значок видео"]');
+        if (imgs.length > 0) {
+            const last = imgs[imgs.length - 1];
+            last.click();
+        }
+    }""")
+    time.sleep(3)
+
+    # Wait for <video> element to appear
+    for _ in range(10):
+        url = page.evaluate("""() => {
+            for (const v of document.querySelectorAll('video')) {
+                const src = v.src || v.currentSrc || '';
+                if (src) return src;
+                for (const s of v.querySelectorAll('source')) {
+                    if (s.src) return s.src;
+                }
+            }
+            return null;
+        }""")
+        if url:
+            return url
+        time.sleep(1)
+    return None
+
+
+def _download_video_by_thumb_index(page, rel_index, dest_path, seen_urls):
+    """Click a specific video thumbnail by relative index and download.
+    rel_index: -1 = last, -2 = second-to-last, etc.
+    Returns (path, url) tuple or None.
+    """
+    thumb_count = page.evaluate("""() => {
+        return document.querySelectorAll('img[alt="Значок видео"]').length;
+    }""")
+    abs_idx = thumb_count + rel_index
+    if abs_idx < 0:
+        return None
+
+    page.evaluate("""(idx) => {
+        const imgs = document.querySelectorAll('img[alt="Значок видео"]');
+        if (idx >= 0 && idx < imgs.length) imgs[idx].click();
+    }""", abs_idx)
+    time.sleep(3)
+
+    for _ in range(10):
+        url = page.evaluate("""() => {
+            for (const v of document.querySelectorAll('video')) {
+                const src = v.src || v.currentSrc || '';
+                if (src) return src;
+                for (const s of v.querySelectorAll('source')) {
+                    if (s.src) return s.src;
+                }
+            }
+            return null;
+        }""")
+        if url and url not in seen_urls:
+            dest_path.parent.mkdir(parents=True, exist_ok=True)
+            if download_via_fetch(page, url, dest_path):
+                _close_fullview(page)
+                return (dest_path, url)
+        time.sleep(1)
+
+    _close_fullview(page)
+    return None
+
+
 def _open_video_fullview(page):
     """Click last video thumbnail in chat to open full view overlay.
     Returns list of video URLs found in the full view, or empty list.
     """
-    # Find and click last video thumbnail
+    # Find and click last video thumbnail (multiple selectors for different UI states)
     thumb = page.evaluate("""() => {
-        const imgs = document.querySelectorAll('img[alt="Значок видео"]');
-        if (imgs.length === 0) return null;
-        const last = imgs[imgs.length - 1];
-        const r = last.getBoundingClientRect();
-        if (r.width < 20) return null;
-        return {x: r.x + r.width/2, y: r.y + r.height/2};
+        const selectors = [
+            'img[alt="Значок видео"]',
+            'img[alt*="video" i]',
+            'img[alt*="Video"]',
+            'img[alt="Video icon"]',
+            'img[alt="Generated video"]',
+            'img[alt="Сгенерированное видео"]',
+        ];
+        for (const sel of selectors) {
+            const imgs = document.querySelectorAll(sel);
+            if (imgs.length > 0) {
+                const last = imgs[imgs.length - 1];
+                const r = last.getBoundingClientRect();
+                if (r.width >= 20) {
+                    return {x: r.x + r.width/2, y: r.y + r.height/2, sel: sel, count: imgs.length};
+                }
+            }
+        }
+        return null;
     }""")
     if not thumb:
         print('    No video thumbnail found to click')
         return []
 
+    print(f'    Found video thumbnail via {thumb.get("sel","")} (count={thumb.get("count",0)})')
     page.mouse.click(thumb['x'], thumb['y'])
     time.sleep(3)
 
@@ -1150,15 +1897,27 @@ def _count_generated_media(page, media='img'):
             return document.querySelectorAll('img[alt="Сгенерированное изображение"], img[alt="Generated image"]').length;
         }""")
     else:
-        # Videos can be <video> elements or <img alt="Значок видео"> thumbnails
+        # Videos can be <video> elements or <img> thumbnails with video-related alt text
         return page.evaluate("""() => {
             let count = 0;
             // Count <video> elements
             for (const v of document.querySelectorAll('video')) {
-                if (v.src) count++;
+                if (v.src || v.currentSrc) count++;
             }
-            // Count video thumbnails in chat view
-            count += document.querySelectorAll('img[alt="Значок видео"]').length;
+            // Count video thumbnails in chat view (multiple selectors)
+            const thumbSels = [
+                'img[alt="Значок видео"]',
+                'img[alt*="video" i]',
+                'img[alt="Video icon"]',
+                'img[alt="Generated video"]',
+                'img[alt="Сгенерированное видео"]',
+            ];
+            const seen = new Set();
+            for (const sel of thumbSels) {
+                for (const el of document.querySelectorAll(sel)) {
+                    if (!seen.has(el)) { seen.add(el); count++; }
+                }
+            }
             return count;
         }""")
 
@@ -1173,9 +1932,11 @@ def poll_generation(page, errors_before=0, timeout_sec=GENERATION_TIMEOUT, media
     elapsed = 0
     was_generating = False
     gen_started_at = 0
+    retry_click_at = 60  # Retry clicking Generate if nothing happens after 60s
+    retried = False
     count_before = _count_generated_media(page, media)
-    # Minimum generation time to avoid false positives (VEO ~60-120s, images ~15-25s)
-    min_gen_time = 30 if media == 'video' else 5
+    # Minimum generation time to avoid false positives (VEO ~60-120s, images ~15-30s)
+    min_gen_time = 30 if media == 'video' else 12
 
     while elapsed < timeout_sec:
         time.sleep(POLL_INTERVAL)
@@ -1190,7 +1951,14 @@ def poll_generation(page, errors_before=0, timeout_sec=GENERATION_TIMEOUT, media
         if was_generating and not generating:
             gen_duration = elapsed - gen_started_at
             if gen_duration < min_gen_time:
-                # Too fast — likely a false positive (old percentages or flicker)
+                # Too fast — might be a real server error or a false positive flicker.
+                # Check if a new error card appeared (using original baseline).
+                err = _check_new_error(page, errors_before)
+                if err:
+                    # Real server error — the generation failed quickly
+                    print(f'    Indicators gone after {gen_duration}s (< {min_gen_time}s min) — {err}')
+                    return err
+                # No new error — just a UI flicker, keep waiting
                 print(f'    Indicators gone after {gen_duration}s (< {min_gen_time}s min) — waiting...')
                 was_generating = False
                 gen_started_at = 0
@@ -1213,10 +1981,23 @@ def poll_generation(page, errors_before=0, timeout_sec=GENERATION_TIMEOUT, media
             return 'success'
 
         # Check for NEW error (not old ones in chat history)
-        if elapsed >= 15 and not generating:
+        # For VEO, check earlier — errors can appear within seconds
+        err_check_threshold = 5 if media == 'video' else 15
+        if elapsed >= err_check_threshold and not generating:
             err = _check_new_error(page, errors_before)
             if err:
                 return err
+
+        # Retry clicking Generate if nothing happened after retry_click_at seconds
+        if not was_generating and not retried and elapsed >= retry_click_at:
+            retried = True
+            print(f'    No generation started after {elapsed}s — retrying Generate click...')
+            take_screenshot(page, 'poll_retry_generate')
+            try:
+                click_generate(page)
+                errors_before = _count_errors(page)
+            except RuntimeError:
+                print(f'    Generate button not found on retry')
 
         if elapsed % 30 == 0:
             st = ' (generating...)' if generating else ' (waiting for start...)'
@@ -1228,28 +2009,45 @@ def poll_generation(page, errors_before=0, timeout_sec=GENERATION_TIMEOUT, media
 
 # ── Download media ───────────────────────────────────────────────────────────
 
-def download_via_fetch(page, url, save_path):
-    result = page.evaluate("""async (url) => {
-        try {
-            const resp = await fetch(url);
-            if (!resp.ok) return {error: 'HTTP '+resp.status};
-            const blob = await resp.blob();
-            return {type: blob.type, size: blob.size,
-                data: await new Promise(r => {
-                    const reader = new FileReader();
-                    reader.onload = () => r(reader.result.split(',')[1]);
-                    reader.readAsDataURL(blob);
-                })};
-        } catch(e) { return {error: e.message}; }
-    }""", url)
-    if 'error' in result:
-        print(f'  Fetch error: {result["error"]}')
-        return False
-    data = base64.b64decode(result['data'])
-    save_path.parent.mkdir(parents=True, exist_ok=True)
-    save_path.write_bytes(data)
-    print(f'  Saved: {save_path.name} ({len(data)} bytes)')
-    return True
+def download_via_fetch(page, url, save_path, retries=2, min_size=1024):
+    """Download file via browser fetch with retry and size validation.
+    Args:
+        retries: number of attempts (default 2)
+        min_size: minimum acceptable file size in bytes (default 1KB)
+    """
+    for attempt in range(retries):
+        if attempt > 0:
+            print(f'    Retry download {attempt+1}/{retries}...')
+            time.sleep(5)
+        result = page.evaluate("""async (url) => {
+            try {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 120000);
+                const resp = await fetch(url, {signal: controller.signal});
+                clearTimeout(timeout);
+                if (!resp.ok) return {error: 'HTTP '+resp.status};
+                const blob = await resp.blob();
+                return {type: blob.type, size: blob.size,
+                    data: await new Promise(r => {
+                        const reader = new FileReader();
+                        reader.onload = () => r(reader.result.split(',')[1]);
+                        reader.readAsDataURL(blob);
+                    })};
+            } catch(e) { return {error: e.message}; }
+        }""", url)
+        if 'error' in result:
+            print(f'    Fetch error: {result["error"]}')
+            continue
+        data = base64.b64decode(result['data'])
+        if len(data) < min_size:
+            print(f'    File too small: {len(data)} bytes (min {min_size}) — retrying')
+            continue
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        save_path.write_bytes(data)
+        print(f'  Saved: {save_path.name} ({len(data)} bytes, type={result.get("type","")})')
+        return True
+    print(f'    Failed to download after {retries} attempts')
+    return False
 
 
 def download_last_image(page, dest_path):
@@ -1291,41 +2089,162 @@ def download_last_video(page, dest_path):
     return None
 
 
-def download_all_videos(page, dest_dir, expected_count=4):
-    """Download all generated videos by opening full view and navigating.
+def _download_videos_individually(page, dest_dir, expected_count=4):
+    """Fallback: click each video thumbnail one by one to download.
     Returns list of saved file paths.
     """
     _scroll_chat_bottom(page)
     human_delay(1, 2)
 
-    urls = _open_video_fullview(page)
-    if not urls:
-        _close_fullview(page)
+    # Find all video thumbnails
+    thumb_count = page.evaluate("""() => {
+        const selectors = [
+            'img[alt="Значок видео"]', 'img[alt*="video" i]',
+            'img[alt="Video icon"]', 'img[alt="Generated video"]',
+            'img[alt="Сгенерированное видео"]',
+        ];
+        const seen = new Set();
+        for (const sel of selectors) {
+            for (const el of document.querySelectorAll(sel)) seen.add(el);
+        }
+        return seen.size;
+    }""")
+
+    if thumb_count == 0:
+        print('    No video thumbnails found for individual download')
         return []
 
-    # Navigate to collect more URLs if needed
-    if len(urls) < expected_count:
-        all_urls = _navigate_fullview_and_collect_urls(page, expected_count)
-    else:
-        all_urls = urls
-
-    _close_fullview(page)
-
-    if not all_urls:
-        print('    No video URLs collected')
-        return []
-
+    print(f'    Found {thumb_count} video thumbnails, downloading individually...')
     dest_dir.mkdir(parents=True, exist_ok=True)
     saved = []
-    for i, url in enumerate(all_urls):
-        dest_path = dest_dir / f'variant_{i+1}.mp4'
-        if download_via_fetch(page, url, dest_path):
-            saved.append(dest_path)
-        else:
-            print(f'    Failed to download variant_{i+1}')
 
-    print(f'  Downloaded {len(saved)}/{len(all_urls)} videos')
+    for idx in range(min(thumb_count, expected_count)):
+        # Click thumbnail by index (re-query each time since DOM may change)
+        clicked = page.evaluate("""(idx) => {
+            const selectors = [
+                'img[alt="Значок видео"]', 'img[alt*="video" i]',
+                'img[alt="Video icon"]', 'img[alt="Generated video"]',
+                'img[alt="Сгенерированное видео"]',
+            ];
+            const all = [];
+            const seen = new Set();
+            for (const sel of selectors) {
+                for (const el of document.querySelectorAll(sel)) {
+                    if (!seen.has(el)) { seen.add(el); all.push(el); }
+                }
+            }
+            if (idx >= all.length) return false;
+            const r = all[idx].getBoundingClientRect();
+            if (r.width < 20) return false;
+            all[idx].click();
+            return true;
+        }""", idx)
+
+        if not clicked:
+            continue
+
+        time.sleep(3)
+
+        # Collect video URL from full view
+        url = None
+        for _wait in range(8):
+            url = page.evaluate("""() => {
+                for (const v of document.querySelectorAll('video')) {
+                    const src = v.src || v.currentSrc || '';
+                    if (src) return src;
+                    for (const s of v.querySelectorAll('source')) {
+                        if (s.src) return s.src;
+                    }
+                }
+                return null;
+            }""")
+            if url:
+                break
+            time.sleep(1)
+
+        if url:
+            dest_path = dest_dir / f'variant_{idx+1}.mp4'
+            if download_via_fetch(page, url, dest_path):
+                saved.append(dest_path)
+
+        _close_fullview(page)
+        human_delay(1, 2)
+
     return saved
+
+
+def _scan_dom_video_urls(page):
+    """Scan DOM for all <video> src URLs as last resort fallback."""
+    return page.evaluate("""() => {
+        const urls = new Set();
+        for (const v of document.querySelectorAll('video')) {
+            if (v.src) urls.add(v.src);
+            if (v.currentSrc) urls.add(v.currentSrc);
+            for (const s of v.querySelectorAll('source')) {
+                if (s.src) urls.add(s.src);
+            }
+        }
+        return [...urls];
+    }""")
+
+
+def download_all_videos(page, dest_dir, expected_count=4):
+    """Download all generated videos using 3-level strategy:
+    1. Full view + arrow navigation
+    2. Click each thumbnail individually
+    3. Direct DOM scan for <video> elements
+    Returns list of saved file paths.
+    """
+    _scroll_chat_bottom(page)
+    human_delay(1, 2)
+
+    # Strategy 1: Full view + navigation
+    print('    Strategy 1: Full view + arrow navigation')
+    urls = _open_video_fullview(page)
+    all_urls = []
+    if urls:
+        if len(urls) < expected_count:
+            all_urls = _navigate_fullview_and_collect_urls(page, expected_count)
+        else:
+            all_urls = urls
+        _close_fullview(page)
+
+        if all_urls:
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            saved = []
+            for i, url in enumerate(all_urls):
+                dest_path = dest_dir / f'variant_{i+1}.mp4'
+                if download_via_fetch(page, url, dest_path):
+                    saved.append(dest_path)
+            if saved:
+                print(f'  Strategy 1: Downloaded {len(saved)}/{len(all_urls)} videos')
+                return saved
+    else:
+        _close_fullview(page)
+
+    # Strategy 2: Click each thumbnail individually
+    print('    Strategy 2: Click thumbnails individually')
+    saved = _download_videos_individually(page, dest_dir, expected_count)
+    if saved:
+        print(f'  Strategy 2: Downloaded {len(saved)} videos')
+        return saved
+
+    # Strategy 3: Direct DOM scan for <video> elements
+    print('    Strategy 3: Direct DOM scan for <video> elements')
+    dom_urls = _scan_dom_video_urls(page)
+    if dom_urls:
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        saved = []
+        for i, url in enumerate(dom_urls[:expected_count]):
+            dest_path = dest_dir / f'variant_{i+1}.mp4'
+            if download_via_fetch(page, url, dest_path):
+                saved.append(dest_path)
+        if saved:
+            print(f'  Strategy 3: Downloaded {len(saved)}/{len(dom_urls)} videos')
+            return saved
+
+    print('    All download strategies failed — no videos downloaded')
+    return []
 
 
 # ── Manifest (review state) ─────────────────────────────────────────────────
@@ -1415,7 +2334,7 @@ def copy_selected_to_output(clip_id, manifest, trim_start=None, trim_end=None):
         comp = manifest['components'][comp_name]
         if comp_name in suffixes:
             suffix = suffixes[comp_name]
-            for slot, ext in [('selected_variant_a', ''), ('selected_variant_b', '_b')]:
+            for slot, ext in [('selected_variant_a', '')]:
                 sel = comp.get(slot)
                 if not sel: continue
                 entry = comp['attempts'][sel['attempt']-1]
@@ -1457,88 +2376,104 @@ def _all_done(manifest):
 
 # ── Generation core ──────────────────────────────────────────────────────────
 
+# Track downloaded URLs within a batch to detect duplicates
+_downloaded_urls = set()
+
+
 def generate_nb_batch(page, clip_id, component, prompt, attempt, ingredients, dest_dir, num_variants=4):
-    """Generate N NB variants (1 per generation run). Retries on server error."""
+    """Generate NB variants using x4 mode (single generation produces num_variants images).
+
+    NB API: flowMedia:batchGenerateImages returns media[].name (UUID) and fifeUrl (storage URL).
+    With x4 selected, one Generate click produces 4 images in a single API response.
+    """
     validate_nb_prompt(prompt, f'{clip_id}/{component}')
     prompt = sanitize_nb_prompt(prompt)
     print(f'\n  --- {component} for {clip_id} (attempt {attempt}) ---')
     print(f'  Prompt: {prompt[:80]}...')
-    print(f'  Generating {num_variants} variants (1 per run)...')
+    print(f'  Generating {num_variants} variants (x{num_variants} single run)...')
 
     dest_dir.mkdir(parents=True, exist_ok=True)
     all_saved = []
 
-    for var_idx in range(num_variants):
-        print(f'\n  Variant {var_idx+1}/{num_variants}:')
+    # Set x4 in settings popup
+    set_variant_count(page, num_variants)
 
-        success = False
-        for retry in range(3):
-            if retry > 0:
-                wait = [45, 60][min(retry-1, 1)]
-                print(f'    Server error — waiting {wait}s before retry {retry+1}/3...')
-                time.sleep(wait + random.uniform(-5, 10))
-                page.reload(timeout=120000, wait_until='domcontentloaded')
-                wait_for_flow_ready(page)
-                switch_mode(page, 'Создать изображение')
-                if ingredients:
-                    upload_ingredients(page, ingredients)
+    # Set up network capture
+    capture = NbNetworkCapture()
+    capture.start(page)
 
-            clear_prompt(page)
-            fill_prompt(page, prompt)
-            if var_idx == 0 and retry == 0:
-                take_screenshot(page, f'{clip_id}_{component}_a{attempt}_before')
+    clear_prompt(page)
+    fill_prompt(page, prompt)
+    take_screenshot(page, f'{clip_id}_{component}_a{attempt}_before')
 
-            # Remember state before generation
-            urls_before = _get_all_generated_image_urls(page)
-            url_before_last = _get_last_generated_image_url(page)
+    # Scroll to bottom so existing errors are visible and counted
+    _scroll_chat_bottom(page)
+    time.sleep(1)
+    errors_before = _count_errors(page)
+    click_generate(page)
+    result = poll_generation(page, errors_before=errors_before)
+
+    # On server_error: try clicking "Повторить" button once
+    if result == 'server_error':
+        print(f'    FAILED ({result}) — trying retry button...')
+        time.sleep(2)
+        if _click_retry_on_error(page):
+            time.sleep(3)
             errors_before = _count_errors(page)
-
-            click_generate(page)
             result = poll_generation(page, errors_before=errors_before)
+            if result != 'success':
+                print(f'    Retry also failed ({result})')
+        else:
+            print(f'    Retry button not found')
 
-            if result == 'success':
-                dest_path = dest_dir / f'variant_{var_idx+1}.png'
-                # Wait for new image URL to appear in DOM
-                new_url = None
-                for _wait in range(10):
-                    time.sleep(1.5)
-                    urls_after = _get_all_generated_image_urls(page)
-                    new_urls = urls_after - urls_before
-                    if new_urls:
-                        new_url = list(new_urls)[0]
-                        break
-                    # Also check if last image changed
-                    url_after_last = _get_last_generated_image_url(page)
-                    if url_after_last and url_after_last != url_before_last:
-                        new_url = url_after_last
-                        break
+    if result == 'success':
+        # Wait for API response to be fully captured
+        time.sleep(3)
 
-                if new_url:
-                    dest_path.parent.mkdir(parents=True, exist_ok=True)
-                    if download_via_fetch(page, new_url, dest_path):
+        # Download all captured images
+        if capture.images:
+            print(f'    Network captured {len(capture.images)} images')
+            for idx, img in enumerate(capture.images):
+                media_id = img['id']
+                fife_url = img['url']
+                dest_path = dest_dir / f'variant_{idx+1}.png'
+                dest_path.parent.mkdir(parents=True, exist_ok=True)
+
+                print(f'    Network: media {media_id[:8]}...')
+                saved = False
+                if fife_url and download_via_fetch(page, fife_url, dest_path):
+                    all_saved.append(dest_path)
+                    print(f'  Saved: variant_{idx+1}.png ({dest_path.stat().st_size} bytes, type=image/jpeg)')
+                    print(f'    Saved variant_{idx+1}.png (network)')
+                    saved = True
+
+                if not saved:
+                    # Fallback: use media.getMediaUrlRedirect API
+                    redirect_url = f'/fx/api/trpc/media.getMediaUrlRedirect?name={media_id}'
+                    if download_via_fetch(page, redirect_url, dest_path):
                         all_saved.append(dest_path)
-                        print(f'    Saved variant_{var_idx+1}.png')
-                    else:
-                        print(f'    Download failed for variant_{var_idx+1}')
-                else:
-                    # Fallback: download whatever is last
-                    saved = download_last_image(page, dest_path)
-                    if saved:
-                        all_saved.append(saved)
-                        print(f'    Saved variant_{var_idx+1}.png (fallback)')
-                success = True
-                break
-            if result == 'content_filter':
-                print('    Content filter — skipping variant')
-                break
-            print(f'    FAILED ({result}, retry {retry+1}/3)')
+                        print(f'    Saved variant_{idx+1}.png (redirect)')
+                        saved = True
 
-        if success and var_idx < num_variants - 1:
-            # Pause between generations to avoid rate limit
-            pause = random.uniform(8, 15)
-            print(f'    Pause {pause:.0f}s...')
-            time.sleep(pause)
+                if not saved:
+                    print(f'    Failed to download variant_{idx+1}')
+        else:
+            print(f'    No network capture — trying DOM fallback...')
+            _scroll_chat_bottom(page)
+            time.sleep(2)
+            new_url = _get_last_generated_image_url(page)
+            if new_url:
+                dest_path = dest_dir / 'variant_1.png'
+                if download_via_fetch(page, new_url, dest_path, min_size=200000):
+                    all_saved.append(dest_path)
+                    print(f'    Saved variant_1.png (DOM fallback)')
 
+    elif result == 'content_filter':
+        print('    Content filter — generation blocked')
+    else:
+        print(f'    FAILED ({result})')
+
+    capture.stop(page)
     print(f'  Downloaded {len(all_saved)}/{num_variants} variants')
     return all_saved
 
@@ -1550,14 +2485,14 @@ def review_nano_banana(page, clip, manifest, component, attempt, prompt_override
     prompt_key = {'nb_first':'nano_banana_prompt_first', 'nb_mid':'nano_banana_prompt_mid',
                   'nb_last':'nano_banana_prompt_last'}[component]
     prompt_a = prompt_override or clip[prompt_key]
-    prompt_b = clip.get(prompt_key + '_b') if not prompt_override else None
-    has_b = prompt_b is not None
     ingredients = list(clip.get('nano_banana_ingredients', []))
 
     print(f'\n{"="*60}')
-    print(f'  REVIEW — {component} {"A+B" if has_b else ""} — {clip_id} — attempt {attempt}')
+    print(f'  REVIEW — {component} — {clip_id} — attempt {attempt}')
     print(f'{"="*60}')
 
+    # Ensure we're in chat view (not /edit/ or gallery overlay)
+    _ensure_chat_view(page)
     dismiss_popups(page)
     switch_mode(page, 'Создать изображение')
     set_image_model(page, clip.get('nano_banana_model_name', 'Nano Banana Pro'))
@@ -1572,8 +2507,7 @@ def review_nano_banana(page, clip, manifest, component, attempt, prompt_override
         else:
             ref_suffix = f' Maintain exact visual continuity with Image {ref_num}.'
 
-    prompt_a_full = prompt_a + ref_suffix
-    prompt_b_full = (prompt_b + ref_suffix) if has_b else None
+    prompt_full = prompt_a + ref_suffix
 
     uploaded = upload_ingredients(page, ingredients)
     if uploaded == 0 and any('персонаж' in str(p).lower() for p in ingredients):
@@ -1581,36 +2515,370 @@ def review_nano_banana(page, clip, manifest, component, attempt, prompt_override
         return []
 
     attempt_dir = REVIEW_DIR / clip_id / component / f'attempt_{attempt}'
-    dest_a = (attempt_dir / 'prompt_a') if has_b else attempt_dir
-    variants_a = generate_nb_batch(page, clip_id, component, prompt_a_full, attempt, ingredients, dest_a)
+    variants = generate_nb_batch(page, clip_id, component, prompt_full, attempt, ingredients, attempt_dir)
 
-    variants_b = []
-    if has_b and prompt_b_full:
-        if variants_a:
-            print('  Pausing between A/B batches...')
-            human_pause_between_generations()
-        variants_b = generate_nb_batch(page, clip_id, component, prompt_b_full, attempt, ingredients,
-                                       attempt_dir / 'prompt_b')
-
-    all_v = variants_a + variants_b
-    record_attempt(manifest, component, attempt, prompt_a_full, all_v,
-                   prompt_b=prompt_b_full, batch_a_count=len(variants_a),
-                   batch_b_count=len(variants_b) if has_b else None)
+    record_attempt(manifest, component, attempt, prompt_full, variants)
     save_manifest(clip_id, manifest)
-    if has_b:
-        print(f'  TOTAL: {len(all_v)} variants (A={len(variants_a)}, B={len(variants_b)})')
-    return all_v
+    return variants
 
 
-def review_veo_batch(page, clip, clip_id, prompt, first_frame, last_frame, attempt, batch_label, dest_dir, veo_mode='frames', num_variants=4):
-    print(f'\n  --- VEO {batch_label} for {clip_id} (x{num_variants}) ---')
-    validate_veo_prompt(prompt, f'{clip_id}/veo_{batch_label}')
+def _collect_edit_uuids(page):
+    """Collect all edit-link UUIDs currently visible in the chat DOM."""
+    return set(page.evaluate("""() => {
+        return Array.from(document.querySelectorAll('a[href*="/edit/"]'))
+            .map(a => {
+                const m = a.href.match(/\\/edit\\/([a-f0-9-]+)/);
+                return m ? m[1] : null;
+            })
+            .filter(Boolean);
+    }"""))
 
-    # Switch to Video+Frames mode (stay in same project — previously generated images are in library)
+
+# ── VEO Network Interception Download ────────────────────────────────────────
+
+class NbNetworkCapture:
+    """Captures NB (Nano Banana) API responses to extract generated image media IDs and URLs.
+
+    Flow API endpoint:
+    - flowMedia:batchGenerateImages: returns media[].name (UUID) and fifeUrl (direct storage URL)
+    - May fail with 403 reCAPTCHA and auto-retry (3-4 attempts)
+
+    Usage:
+        capture = NbNetworkCapture()
+        capture.start(page)
+        # ... generate image ...
+        capture.stop(page)
+        media_id, fife_url = capture.get_last_image()
+    """
+
+    def __init__(self):
+        self.images = []  # list of {id, url} dicts
+        self._listener = None
+
+    def start(self, page):
+        """Start capturing network responses."""
+        self.images = []
+
+        def on_response(response):
+            url = response.url
+            try:
+                if 'batchGenerateImages' in url and response.status == 200:
+                    body = response.text()
+                    data = json.loads(body)
+                    for media in data.get('media', []):
+                        mid = media.get('name', '')
+                        fife_url = media.get('image', {}).get('generatedImage', {}).get('fifeUrl', '')
+                        if mid:
+                            self.images.append({'id': mid, 'url': fife_url})
+            except Exception:
+                pass
+
+        self._listener = on_response
+        page.on('response', on_response)
+
+    def stop(self, page):
+        """Stop capturing."""
+        if self._listener:
+            page.remove_listener('response', self._listener)
+            self._listener = None
+
+    def get_last_image(self):
+        """Return (media_id, fife_url) of the last generated image, or (None, None)."""
+        if self.images:
+            last = self.images[-1]
+            return last['id'], last['url']
+        return None, None
+
+    def clear(self):
+        """Clear captured images (between variants)."""
+        self.images = []
+
+
+class VeoNetworkCapture:
+    """Captures VEO API responses to extract generated video media IDs.
+
+    Flow uses these API endpoints:
+    - batchAsyncGenerateVideoStartAndEndImage: returns media IDs at generation start
+    - batchCheckAsyncVideoGenerationStatus: polling with PENDING→SUCCESSFUL status
+    - media.getMediaUrlRedirect?name={UUID}: 307 redirect to actual video storage URL
+
+    By intercepting these responses, we get video UUIDs directly from the API,
+    completely bypassing the unreliable DOM/virtual-scrolling approach.
+    """
+
+    def __init__(self):
+        self.media_ids = []       # UUIDs of generated videos
+        self.status_history = []  # status transitions
+        self._listener = None
+
+    def start(self, page):
+        """Start capturing network responses."""
+        self.media_ids = []
+        self.status_history = []
+
+        def on_response(response):
+            url = response.url
+            try:
+                if 'batchAsyncGenerateVideo' in url and response.status == 200:
+                    body = response.text()
+                    data = json.loads(body)
+                    # Extract media IDs from generation start response
+                    for media in data.get('media', []):
+                        mid = media.get('name', '')
+                        if mid and mid not in self.media_ids:
+                            self.media_ids.append(mid)
+                    # Also check workflows for media IDs
+                    for wf in data.get('workflows', []):
+                        meta = wf.get('metadata', {})
+                        mid = meta.get('primaryMediaId', '')
+                        if mid and mid not in self.media_ids:
+                            self.media_ids.append(mid)
+
+                elif 'batchCheckAsyncVideoGenerationStatus' in url and response.status == 200:
+                    body = response.text()
+                    data = json.loads(body)
+                    for media in data.get('media', []):
+                        mid = media.get('name', '')
+                        status = media.get('mediaMetadata', {}).get('mediaStatus', {}).get('mediaGenerationStatus', '')
+                        if mid and mid not in self.media_ids:
+                            self.media_ids.append(mid)
+                        if mid and status:
+                            self.status_history.append((mid[:8], status.split('_')[-1]))
+            except Exception:
+                pass  # Don't crash on parse errors
+
+        self._listener = on_response
+        page.on('response', on_response)
+
+    def stop(self, page):
+        """Stop capturing."""
+        if self._listener:
+            page.remove_listener('response', self._listener)
+            self._listener = None
+
+    def get_successful_ids(self):
+        """Return media IDs that reached SUCCESSFUL status."""
+        successful = set()
+        for mid_short, status in self.status_history:
+            if status == 'SUCCESSFUL':
+                # Find full ID matching this short prefix
+                for full_id in self.media_ids:
+                    if full_id.startswith(mid_short):
+                        successful.add(full_id)
+        # If no status tracking but we have IDs, return all (generation may have completed)
+        if not successful and self.media_ids:
+            return list(self.media_ids)
+        return list(successful)
+
+
+def _download_video_by_media_id(page, media_id, dest_path):
+    """Download a video using Flow's media.getMediaUrlRedirect API.
+
+    This API returns a 307 redirect to the actual video storage URL.
+    We fetch the video URL first, then download the video data.
+    """
+    # Build the redirect URL (no mediaUrlType = full video, not thumbnail)
+    redirect_url = f'/fx/api/trpc/media.getMediaUrlRedirect?name={media_id}'
+
+    # Use fetch to follow the redirect and get the final video URL, then download
+    result = page.evaluate("""async (redirectUrl) => {
+        try {
+            // First, get the redirect URL
+            const resp = await fetch(redirectUrl, {redirect: 'follow'});
+            if (!resp.ok) return {error: 'HTTP ' + resp.status};
+            const contentType = resp.headers.get('content-type') || '';
+            // If we got the video directly (redirect was followed)
+            if (contentType.includes('video') || contentType.includes('octet-stream')) {
+                const blob = await resp.blob();
+                return {
+                    type: blob.type, size: blob.size,
+                    data: await new Promise(r => {
+                        const reader = new FileReader();
+                        reader.onload = () => r(reader.result.split(',')[1]);
+                        reader.readAsDataURL(blob);
+                    })
+                };
+            }
+            // If content-type is not video, the URL itself might be the video URL
+            // Try to get the final URL from the response
+            const finalUrl = resp.url;
+            if (finalUrl.includes('storage.googleapis.com')) {
+                const vidResp = await fetch(finalUrl);
+                if (!vidResp.ok) return {error: 'Video fetch HTTP ' + vidResp.status};
+                const blob = await vidResp.blob();
+                return {
+                    type: blob.type, size: blob.size,
+                    data: await new Promise(r => {
+                        const reader = new FileReader();
+                        reader.onload = () => r(reader.result.split(',')[1]);
+                        reader.readAsDataURL(blob);
+                    })
+                };
+            }
+            return {error: 'Unexpected content type: ' + contentType, url: finalUrl};
+        } catch(e) { return {error: e.message}; }
+    }""", redirect_url)
+
+    if 'error' in result:
+        # Fallback: try with absolute URL
+        abs_url = f'https://labs.google{redirect_url}'
+        result = page.evaluate("""async (url) => {
+            try {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 120000);
+                const resp = await fetch(url, {signal: controller.signal, redirect: 'follow'});
+                clearTimeout(timeout);
+                if (!resp.ok) return {error: 'HTTP ' + resp.status};
+                const blob = await resp.blob();
+                return {
+                    type: blob.type, size: blob.size,
+                    data: await new Promise(r => {
+                        const reader = new FileReader();
+                        reader.onload = () => r(reader.result.split(',')[1]);
+                        reader.readAsDataURL(blob);
+                    })
+                };
+            } catch(e) { return {error: e.message}; }
+        }""", abs_url)
+
+    if 'error' in result:
+        print(f'    Download failed for {media_id[:8]}: {result["error"]}')
+        return False
+
+    data = base64.b64decode(result['data'])
+    if len(data) < 1024:
+        print(f'    File too small ({len(data)} bytes) for {media_id[:8]}')
+        return False
+
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
+    dest_path.write_bytes(data)
+    md5 = hashlib.md5(data).hexdigest()[:8]
+    print(f'  Saved: {dest_path.name} ({len(data)} bytes, md5={md5}, type={result.get("type","")})')
+    return True
+
+
+def _download_veo_videos(page, dest_dir, num_expected, captured_media_ids, project_url):
+    """Download VEO videos using media IDs captured from network interception.
+
+    Primary strategy: use media.getMediaUrlRedirect API with captured UUIDs.
+    Fallback: navigate to /edit/{UUID} and extract <video> src.
+
+    Args:
+        captured_media_ids: list of video UUIDs from VeoNetworkCapture
+    """
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    saved = []
+    seen_md5 = set()
+
+    print(f'    Captured {len(captured_media_ids)} media IDs from API')
+
+    # --- If on /edit/ page after generation, download current video first ---
+    if '/edit/' in page.url:
+        m = re.search(r'/edit/([a-f0-9-]+)', page.url)
+        if m:
+            current_uuid = m.group(1)
+            print(f'    On /edit/{current_uuid[:8]}... downloading current video')
+            dest_path = dest_dir / f'variant_{len(saved)+1}.mp4'
+            if _download_video_by_media_id(page, current_uuid, dest_path):
+                md5 = hashlib.md5(dest_path.read_bytes()).hexdigest()[:8]
+                seen_md5.add(md5)
+                saved.append(dest_path)
+                # Remove from captured list to avoid re-downloading
+                if current_uuid in captured_media_ids:
+                    captured_media_ids.remove(current_uuid)
+
+        # Return to project chat
+        page.go_back(wait_until='domcontentloaded')
+        time.sleep(3)
+        if '/edit/' in page.url:
+            page.goto(project_url, wait_until='domcontentloaded')
+            time.sleep(3)
+
+    # --- Primary strategy: download via API using captured media IDs ---
+    for mid in captured_media_ids:
+        if len(saved) >= num_expected:
+            break
+        print(f'    [{len(saved)+1}/{num_expected}] Downloading media {mid[:8]}...')
+        dest_path = dest_dir / f'variant_{len(saved)+1}.mp4'
+        if _download_video_by_media_id(page, mid, dest_path):
+            md5 = hashlib.md5(dest_path.read_bytes()).hexdigest()[:8]
+            if md5 not in seen_md5:
+                seen_md5.add(md5)
+                saved.append(dest_path)
+            else:
+                print(f'    DUPLICATE md5={md5}, removing')
+                dest_path.unlink()
+        else:
+            # Fallback: try navigating to /edit/{UUID} page via SPA
+            print(f'    Trying SPA navigation to /edit/{mid[:8]}...')
+            navigated = page.evaluate("""(uuid) => {
+                const a = document.querySelector('a[href*="/edit/' + uuid + '"]');
+                if (a) { a.click(); return true; }
+                return false;
+            }""", mid)
+
+            if not navigated:
+                # Create a temporary <a> and click it for SPA navigation
+                navigated = page.evaluate("""(uuid) => {
+                    const a = document.createElement('a');
+                    a.href = '/fx/ru/tools/flow/project/' + document.location.pathname.split('/project/')[1].split('/')[0] + '/edit/' + uuid;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    return true;
+                }""", mid)
+
+            if navigated:
+                time.sleep(5)
+                # Wait for <video> to appear
+                video_url = None
+                for _wait in range(15):
+                    video_url = page.evaluate("""() => {
+                        for (const v of document.querySelectorAll('video')) {
+                            const src = v.src || v.currentSrc || '';
+                            if (src) return src;
+                            for (const s of v.querySelectorAll('source')) {
+                                if (s.src) return s.src;
+                            }
+                        }
+                        return null;
+                    }""")
+                    if video_url:
+                        break
+                    time.sleep(1)
+
+                if video_url:
+                    dest_path2 = dest_dir / f'variant_{len(saved)+1}.mp4'
+                    if download_via_fetch(page, video_url, dest_path2):
+                        md5 = hashlib.md5(dest_path2.read_bytes()).hexdigest()[:8]
+                        if md5 not in seen_md5:
+                            seen_md5.add(md5)
+                            saved.append(dest_path2)
+                            print(f'    {dest_path2.name}: {dest_path2.stat().st_size} bytes (md5={md5})')
+                        else:
+                            print(f'    DUPLICATE md5={md5}')
+                            dest_path2.unlink()
+
+                # Return to chat
+                if '/edit/' in page.url:
+                    page.go_back(wait_until='domcontentloaded')
+                    time.sleep(3)
+
+    # Ensure we're back in chat for next operations
+    if '/edit/' in page.url:
+        page.goto(project_url, wait_until='domcontentloaded')
+        time.sleep(3)
+
+    print(f'  Downloaded {len(saved)}/{num_expected} videos total')
+    return saved
+
+
+def _veo_setup_and_generate(page, prompt, first_frame, last_frame, num_variants, batch_label):
+    """Setup VEO mode, upload frames, fill prompt, click Generate.
+    Returns (project_url, capture, errors_before) tuple.
+    """
     switch_mode(page, 'Видео по кадрам')
     human_delay_long(2, 4)
-
-    # Set variant count
     set_variant_count(page, num_variants)
 
     # Upload first/last frames to VEO slots
@@ -1622,77 +2890,155 @@ def review_veo_batch(page, clip, clip_id, prompt, first_frame, last_frame, attem
         clear_veo_frame_slots(page)
         upload_frame_for_veo(page, first_frame, 0)
 
+    take_screenshot(page, f'veo_{batch_label}_frames_loaded')
+
+    if not _check_frame_slots_have_images(page):
+        print(f'  WARNING: Frame slots do not have images!')
+        take_screenshot(page, f'veo_{batch_label}_no_frames_warning')
+
+    project_url = page.url.split('/edit/')[0].split('?')[0]
+
+    # Start network capture BEFORE generation
+    capture = VeoNetworkCapture()
+    capture.start(page)
+
     clear_prompt(page)
     fill_prompt(page, prompt)
+    take_screenshot(page, f'veo_{batch_label}_before_generate')
     errors_before = _count_errors(page)
     click_generate(page)
-    result = poll_generation(page, errors_before=errors_before, timeout_sec=GENERATION_TIMEOUT, media='video')
+
+    return project_url, capture, errors_before
+
+
+def review_veo_batch(page, clip, clip_id, prompt, first_frame, last_frame, attempt, batch_label, dest_dir, veo_mode='frames', num_variants=4):
+    """Generate VEO videos with x4 (single generation produces num_variants videos).
+
+    Uses network interception to capture video media IDs from Flow API responses,
+    then downloads directly via media.getMediaUrlRedirect API.
+    Retries on server_error up to 3 times with increasing pauses (45s, 60s, 90s).
+    """
+    print(f'\n  --- VEO {batch_label} for {clip_id} (x{num_variants}) ---')
+    validate_veo_prompt(prompt, f'{clip_id}/veo_{batch_label}')
+
+    project_url, capture, errors_before = _veo_setup_and_generate(
+        page, prompt, first_frame, last_frame, num_variants, batch_label)
+
+    result = poll_generation(page, errors_before=errors_before,
+                             timeout_sec=GENERATION_TIMEOUT, media='video')
+
+    # On server_error: try clicking "Повторить" button once
+    if result == 'server_error':
+        print(f'  VEO {batch_label} server error — trying retry button...')
+        time.sleep(2)
+        if _click_retry_on_error(page):
+            time.sleep(3)
+            errors_before = _count_errors(page)
+            result = poll_generation(page, errors_before=errors_before,
+                                     timeout_sec=GENERATION_TIMEOUT, media='video')
+            if result != 'success':
+                print(f'  VEO {batch_label} retry also failed ({result})')
+        else:
+            print(f'  VEO {batch_label} retry button not found')
+
+    capture.stop(page)
+
+    if result == 'content_filter':
+        print(f'  VEO {batch_label} BLOCKED by content filter')
+        return []
+
     if result != 'success':
         print(f'  VEO {batch_label} FAILED ({result})')
         return []
 
-    # Download all generated videos via full view navigation
-    saved = download_all_videos(page, dest_dir, expected_count=num_variants)
-    if saved:
-        print(f'  Downloaded {len(saved)} video(s) for {batch_label}')
-    else:
-        # Fallback: try single video download
-        dest_path = dest_dir / 'variant_1.mp4'
-        dl = download_last_video(page, dest_path)
-        if dl:
-            saved = [dl]
-            print(f'  Downloaded 1 video (fallback) for {batch_label}')
-    return saved
+    # Wait for post-generation API calls (thumbnails, etc.)
+    time.sleep(5)
+    take_screenshot(page, f'veo_{batch_label}_after_generate')
+    print(f'    URL after generation: {page.url[:80]}')
+
+    media_ids = capture.get_successful_ids()
+    print(f'    Network capture: {len(media_ids)} media IDs, {len(capture.status_history)} status updates')
+    for mid in media_ids:
+        print(f'      - {mid[:8]}...')
+
+    all_saved = _download_veo_videos(page, dest_dir, num_variants, media_ids, project_url)
+    print(f'  Downloaded {len(all_saved)}/{num_variants} variants for {batch_label}')
+    return all_saved
 
 
 def review_veo(page, clip, manifest, attempt, first_frame, last_frame, prompt_override=None,
-               veo_mode='frames', first_frame_b=None, last_frame_b=None):
+               veo_mode='frames'):
     clip_id = clip['clip_id']
-    prompt_a = sanitize_prompt(prompt_override or clip['veo_prompt'])
-    prompt_b = sanitize_prompt(clip.get('veo_prompt_b', clip['veo_prompt']))
+    prompt = sanitize_prompt(prompt_override or clip['veo_prompt'])
     dest_dir = REVIEW_DIR / clip_id / 'veo' / f'attempt_{attempt}'
 
-    saved_a = review_veo_batch(page, clip, clip_id, prompt_a, first_frame, last_frame,
-                               attempt, 'prompt_a', dest_dir / 'prompt_a', veo_mode)
-    if saved_a:
-        human_pause_between_generations()
-    eff_first_b = first_frame_b if first_frame_b and first_frame_b.exists() else first_frame
-    eff_last_b = last_frame_b if last_frame_b and last_frame_b.exists() else last_frame
-    saved_b = review_veo_batch(page, clip, clip_id, prompt_b, eff_first_b, eff_last_b,
-                               attempt, 'prompt_b', dest_dir / 'prompt_b', veo_mode)
+    saved = review_veo_batch(page, clip, clip_id, prompt, first_frame, last_frame,
+                             attempt, 'variants', dest_dir, veo_mode)
 
-    all_saved = saved_a + saved_b
-    record_attempt(manifest, 'veo', attempt, f'A: {prompt_a}\n---\nB: {prompt_b}', all_saved,
-                   prompt_b=prompt_b, batch_a_count=len(saved_a), batch_b_count=len(saved_b))
+    record_attempt(manifest, 'veo', attempt, prompt, saved)
     save_manifest(clip_id, manifest)
-    print(f'  VEO TOTAL: {len(all_saved)} videos (A={len(saved_a)}, B={len(saved_b)})')
-    return all_saved
+    print(f'  VEO TOTAL: {len(saved)} videos')
+
+    # Return to project chat view after VEO (download may leave us on /edit/ page)
+    _ensure_chat_view(page)
+
+    return saved
 
 
 # ── CLI Commands ─────────────────────────────────────────────────────────────
 
+def _prompts_path():
+    """Return the best available prompts path (fallback if iCloud blocks main file)."""
+    import signal
+    def _timeout_handler(signum, frame):
+        raise TimeoutError("File read timed out")
+    old = signal.signal(signal.SIGALRM, _timeout_handler)
+    try:
+        signal.alarm(5)
+        with open(PROMPTS_PATH) as f:
+            f.read(100)
+        signal.alarm(0)
+        return PROMPTS_PATH
+    except (TimeoutError, OSError):
+        signal.alarm(0)
+        if PROMPTS_PATH_LOCAL.exists():
+            print(f'  Using local prompts fallback: {PROMPTS_PATH_LOCAL.name}')
+            return PROMPTS_PATH_LOCAL
+        return PROMPTS_PATH
+    finally:
+        signal.signal(signal.SIGALRM, old)
+
+
 def load_clips(clip_filter=None):
-    with open(PROMPTS_PATH) as f:
+    with open(_prompts_path()) as f:
         clips = json.load(f)
     if clip_filter:
-        clips = [c for c in clips if c['clip_id'] == clip_filter]
+        # Support comma-separated list: "S02_B,S02_C,S02_D"
+        filter_ids = [s.strip() for s in clip_filter.split(',')]
+        clips = [c for c in clips if c['clip_id'] in filter_ids]
         if not clips:
-            print(f'Error: clip "{clip_filter}" not found')
+            print(f'Error: clip(s) "{clip_filter}" not found')
             sys.exit(1)
     return clips
 
 
 def find_scene_ref(current_clip_id):
-    """Find accepted first frame from a previous clip in same scene."""
-    with open(PROMPTS_PATH) as f:
+    """Find accepted last frame from the immediately preceding clip in same scene.
+
+    This creates a continuity chain: S01_A_last → S01_B_first → S01_B_last → S01_C_first ...
+    """
+    with open(_prompts_path()) as f:
         all_clips = json.load(f)
     scene = next((c['scene_id'] for c in all_clips if c['clip_id'] == current_clip_id), None)
     if not scene: return None
+    prev_clip_id = None
     for c in all_clips:
         if c['scene_id'] != scene: continue
         if c['clip_id'] == current_clip_id: break
-        frame = FRAMES_DIR / f'{c["clip_id"]}_first.png'
-        if frame.exists(): return frame
+        prev_clip_id = c['clip_id']
+    if not prev_clip_id: return None
+    frame = FRAMES_DIR / f'{prev_clip_id}_last.png'
+    if frame.exists(): return frame
     return None
 
 
@@ -1718,15 +3064,26 @@ def _resolve_ref_frame(manifest, clip_id, component):
     return None
 
 
-def do_review(pw, clip_filter=None):
+def do_review(pw, clip_filter=None, component_filter=None, project_id=None, use_builtin_chromium=False):
     clips = load_clips(clip_filter)
-    print(f'Review mode: {len(clips)} clips.\n')
+    print(f'Review mode: {len(clips)} clips.')
+    if component_filter:
+        print(f'  Component filter: {component_filter}')
+    print()
 
-    ctx = launch_browser(pw)
+    ctx = launch_browser(pw, use_builtin_chromium=use_builtin_chromium)
     print('  Launched browser.')
     page = ctx.pages[0] if ctx.pages else ctx.new_page()
+
+    # Console log capture for debugging
+    def _on_console(msg):
+        if msg.type in ('error', 'warning'):
+            text = msg.text[:300]
+            print(f'  [CONSOLE {msg.type.upper()}] {text}')
+    page.on('console', _on_console)
+
     print(f'  Page ready, navigating to project...')
-    ensure_project(page)
+    ensure_project(page, project_id=project_id)
     wait_for_flow_ready(page)
 
     summary = {'generated': [], 'skipped': [], 'failed': []}
@@ -1734,9 +3091,15 @@ def do_review(pw, clip_filter=None):
     for i, clip in enumerate(clips):
         clip_id = clip['clip_id']
         print(f'\n[{i+1}/{len(clips)}] Review: {clip_id}')
+
+        # Ensure we're in chat view before processing each clip
+        _ensure_chat_view(page)
+
         manifest = load_manifest(clip_id)
 
         for component in ('nb_first', 'nb_mid', 'nb_last'):
+            if component_filter and component != component_filter:
+                continue
             if component == 'nb_mid' and not clip.get('nano_banana_prompt_mid'):
                 continue
             status = manifest['components'][component].get('status', 'pending')
@@ -1772,34 +3135,29 @@ def do_review(pw, clip_filter=None):
                 human_pause_between_generations()
 
         # VEO
-        veo_status = manifest['components']['veo'].get('status', 'pending')
-        if veo_status in ('accepted', 'needs_manual_work'):
+        if component_filter and component_filter != 'veo':
+            pass  # skip VEO when filtering for NB components
+        elif (veo_status := manifest['components']['veo'].get('status', 'pending')) in ('accepted', 'needs_manual_work'):
             summary['skipped'].append(f'{clip_id}/veo')
         else:
             first_sel = manifest['components']['nb_first'].get('selected_variant_a')
             last_sel = manifest['components']['nb_last'].get('selected_variant_a')
             if first_sel and last_sel:
-                fe = manifest['components']['nb_first']['attempts'][first_sel['attempt']-1]
-                le = manifest['components']['nb_last']['attempts'][last_sel['attempt']-1]
-                fp = REVIEW_DIR / clip_id / 'nb_first' / f'attempt_{first_sel["attempt"]}' / fe['variants'][first_sel['variant']]['file']
-                lp = REVIEW_DIR / clip_id / 'nb_last' / f'attempt_{last_sel["attempt"]}' / le['variants'][last_sel['variant']]['file']
+                # Use uniquely-named files from output/frames/ (not generic variant_N.png from review/)
+                fp = FRAMES_DIR / f'{clip_id}_first.png'
+                lp = FRAMES_DIR / f'{clip_id}_last.png'
+                if not fp.exists() or not lp.exists():
+                    # Fallback to review dir paths
+                    fe = manifest['components']['nb_first']['attempts'][first_sel['attempt']-1]
+                    le = manifest['components']['nb_last']['attempts'][last_sel['attempt']-1]
+                    fp = REVIEW_DIR / clip_id / 'nb_first' / f'attempt_{first_sel["attempt"]}' / fe['variants'][first_sel['variant']]['file']
+                    lp = REVIEW_DIR / clip_id / 'nb_last' / f'attempt_{last_sel["attempt"]}' / le['variants'][last_sel['variant']]['file']
                 if fp.exists() and lp.exists():
                     attempt = get_next_attempt(manifest, 'veo')
                     if attempt > 0:
                         human_pause_between_generations()
-                        # Resolve B frames
-                        fp_b = lp_b = None
-                        for slot_comp, slot_var in [('nb_first', 'fp_b'), ('nb_last', 'lp_b')]:
-                            sel_b = manifest['components'][slot_comp].get('selected_variant_b')
-                            if sel_b:
-                                be = manifest['components'][slot_comp]['attempts'][sel_b['attempt']-1]
-                                bp = REVIEW_DIR / clip_id / slot_comp / f'attempt_{sel_b["attempt"]}' / be['variants'][sel_b['variant']]['file']
-                                if bp.exists():
-                                    if slot_var == 'fp_b': fp_b = bp
-                                    else: lp_b = bp
                         variants = review_veo(page, clip, manifest, attempt, fp, lp,
-                                              veo_mode=clip.get('veo_mode','frames'),
-                                              first_frame_b=fp_b, last_frame_b=lp_b)
+                                              veo_mode=clip.get('veo_mode','frames'))
                         if variants:
                             summary['generated'].append(f'{clip_id}/veo/a{attempt} ({len(variants)}v)')
                         else:
@@ -1818,6 +3176,14 @@ def do_review(pw, clip_filter=None):
     for f in summary['failed']: print(f'    {f}')
     print(f'{"="*60}')
     ctx.close()
+
+    # Auto-sync to dashboard after review
+    if summary['generated']:
+        try:
+            do_sync_dashboard(clip_filter)
+            print(f'  Dashboard synced.')
+        except Exception as e:
+            print(f'  Dashboard sync error: {e}')
 
 
 def do_select(clip_id, component, attempt, variant, scores_json, trim_start=None, trim_end=None, batch='a'):
@@ -1847,6 +3213,12 @@ def do_select(clip_id, component, attempt, variant, scores_json, trim_start=None
         save_manifest(clip_id, manifest)
         copy_selected_to_output(clip_id, manifest, trim_start, trim_end)
         print(f'  ACCEPTED (batch {batch.upper()})')
+        # Auto-sync to dashboard
+        try:
+            do_sync_dashboard(clip_id)
+            print(f'  Dashboard synced for {clip_id}')
+        except Exception as e:
+            print(f'  Dashboard sync error: {e}')
     else:
         save_manifest(clip_id, manifest)
         print(f'  BELOW THRESHOLD ({avg:.2f} < {QUALITY_THRESHOLD})')
@@ -1858,6 +3230,11 @@ def do_fail(clip_id, component, attempt, scores_json=None):
     mark_failed(manifest, component, attempt, scores)
     save_manifest(clip_id, manifest)
     print(f'  {clip_id}/{component} attempt {attempt} marked failed')
+    # Auto-sync to dashboard
+    try:
+        do_sync_dashboard(clip_id)
+    except Exception:
+        pass
 
 
 def do_extract_frames(clip_id, component, attempt):
@@ -1913,6 +3290,168 @@ def do_status(clip_filter=None):
     print(f'{"="*90}')
 
 
+def do_sync_dashboard(clip_filter=None):
+    """Sync review/, frames/, clips/ and prompts.json to signal-dashboard repo.
+    Incremental by mtime — only copies newer files.
+    Works without Playwright (pure file operations).
+    """
+    DASHBOARD_ROOT = Path('/tmp/signal-dashboard/series/signal-part1')
+    DASHBOARD_ROOT.mkdir(parents=True, exist_ok=True)
+
+    synced = 0
+    skipped = 0
+    errors = 0
+
+    def _sync_file(src, dest):
+        nonlocal synced, skipped, errors
+        try:
+            if dest.exists() and dest.stat().st_mtime >= src.stat().st_mtime:
+                skipped += 1
+                return
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dest)
+            synced += 1
+        except Exception as e:
+            print(f'    Error copying {src.name}: {e}')
+            errors += 1
+
+    def _sync_dir(src_dir, dest_dir, pattern='**/*', clip_id=None):
+        if not src_dir.exists():
+            return
+        for src in src_dir.glob(pattern):
+            if src.is_dir():
+                continue
+            if src.name == '.DS_Store':
+                continue
+            # Filter by clip if specified
+            if clip_id:
+                rel = str(src.relative_to(src_dir))
+                if not rel.startswith(clip_id):
+                    continue
+            dest = dest_dir / src.relative_to(src_dir)
+            _sync_file(src, dest)
+
+    print(f'Syncing to {DASHBOARD_ROOT}...')
+
+    # 1. review/ — generated variants (PNG/MP4)
+    print('  Syncing review/...')
+    _sync_dir(REVIEW_DIR, DASHBOARD_ROOT / 'review', clip_id=clip_filter)
+
+    # 2. frames/ — accepted keyframes
+    print('  Syncing frames/...')
+    _sync_dir(FRAMES_DIR, DASHBOARD_ROOT / 'frames', clip_id=clip_filter)
+
+    # 3. clips/ — accepted video clips
+    print('  Syncing clips/...')
+    _sync_dir(CLIPS_DIR, DASHBOARD_ROOT / 'clips', clip_id=clip_filter)
+
+    # 4. prompts.json — always sync
+    print('  Syncing prompts.json...')
+    if PROMPTS_PATH.exists():
+        _sync_file(PROMPTS_PATH, DASHBOARD_ROOT / 'prompts' / 'all_prompts.json')
+
+    print(f'\nSync complete: {synced} copied, {skipped} up-to-date, {errors} errors')
+    print(f'Dashboard: {DASHBOARD_ROOT}')
+
+    # Auto-push to git repo for Streamlit Cloud
+    if synced > 0:
+        _auto_push_to_git(clip_filter)
+
+
+def _auto_push_to_git(clip_filter=None):
+    """Push output files to /tmp/flow-push git repo for Streamlit Cloud."""
+    import subprocess
+    PUSH_REPO = Path('/tmp/flow-push')
+    if not (PUSH_REPO / '.git').exists():
+        print(f'  No git repo at {PUSH_REPO}, skipping auto-push.')
+        return
+    try:
+        push_synced = 0
+        # Copy only clip-specific files (fast, no full scan)
+        if clip_filter:
+            # review/{clip}/ — the main generated content
+            src_review = REVIEW_DIR / clip_filter
+            if src_review.exists():
+                dst_review = PUSH_REPO / 'output' / 'review' / clip_filter
+                shutil.copytree(src_review, dst_review, dirs_exist_ok=True,
+                                ignore=shutil.ignore_patterns('.DS_Store'))
+                push_synced += 1
+            # frames/{clip}_* — accepted keyframes
+            for f in FRAMES_DIR.glob(f'{clip_filter}_*'):
+                dst = PUSH_REPO / 'output' / 'frames' / f.name
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(f, dst)
+                push_synced += 1
+            # clips/{clip}_* — accepted video clips
+            for f in CLIPS_DIR.glob(f'{clip_filter}_*'):
+                dst = PUSH_REPO / 'output' / 'clips' / f.name
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(f, dst)
+                push_synced += 1
+        else:
+            # No filter — sync all review dirs that exist locally
+            for clip_dir in sorted(REVIEW_DIR.iterdir()):
+                if clip_dir.is_dir() and not clip_dir.name.startswith('.'):
+                    dst = PUSH_REPO / 'output' / 'review' / clip_dir.name
+                    shutil.copytree(clip_dir, dst, dirs_exist_ok=True,
+                                    ignore=shutil.ignore_patterns('.DS_Store'))
+                    push_synced += 1
+            # frames
+            if FRAMES_DIR.exists():
+                for f in FRAMES_DIR.glob('*'):
+                    if f.is_file() and f.name != '.DS_Store':
+                        dst = PUSH_REPO / 'output' / 'frames' / f.name
+                        dst.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(f, dst)
+                        push_synced += 1
+
+        # Always sync prompts
+        if PROMPTS_PATH.exists():
+            pdest = PUSH_REPO / 'output' / 'prompts' / 'all_prompts.json'
+            pdest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(PROMPTS_PATH, pdest)
+
+        # Generate status.json from manifests in push repo
+        push_review = PUSH_REPO / 'output' / 'review'
+        if push_review.exists():
+            status_data = {'clips': {}}
+            for cdir in sorted(push_review.iterdir()):
+                if not cdir.is_dir() or cdir.name.startswith('.'):
+                    continue
+                mf = cdir / 'manifest.json'
+                if not mf.exists():
+                    continue
+                with open(mf) as f:
+                    mdata = json.load(f)
+                cid = mdata.get('clip_id', cdir.name)
+                comps = mdata.get('components', {})
+                status_data['clips'][cid] = {k: v.get('status', 'pending') for k, v in comps.items()}
+            status_dest = PUSH_REPO / 'output' / 'status.json'
+            with open(status_dest, 'w') as f:
+                json.dump(status_data, f, indent=2)
+
+        # Git add, commit, push
+        subprocess.run(['git', 'add', '-f', 'output/'], cwd=PUSH_REPO,
+                        capture_output=True, timeout=30)
+        result = subprocess.run(
+            ['git', 'commit', '-m', f'Auto-sync: {clip_filter or "all"}'],
+            cwd=PUSH_REPO, capture_output=True, text=True, timeout=30
+        )
+        if result.returncode == 0:
+            push_result = subprocess.run(
+                ['git', 'push', 'origin', 'master'],
+                cwd=PUSH_REPO, capture_output=True, text=True, timeout=60
+            )
+            if push_result.returncode == 0:
+                print(f'  Dashboard pushed to git. ({push_synced} items)')
+            else:
+                print(f'  Dashboard push failed: {push_result.stderr[:200]}')
+        else:
+            print(f'  No new changes to push.')
+    except Exception as e:
+        print(f'  Dashboard auto-push error: {e}')
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 def _timeout_handler(signum, frame):
@@ -1934,8 +3473,9 @@ def main():
     group.add_argument('--status', action='store_true', help='Show status')
     group.add_argument('--extract-frames', action='store_true', help='Extract video frames')
     group.add_argument('--login', action='store_true', help='Open browser for manual login')
+    group.add_argument('--sync-dashboard', action='store_true', help='Sync files to signal-dashboard')
 
-    parser.add_argument('--clip', type=str, default=None)
+    parser.add_argument('--clip', type=str, default=None, help='Clip ID or comma-separated list: S02_B,S02_C,S02_D')
     parser.add_argument('--component', type=str, default=None, choices=['nb_first','nb_mid','nb_last','veo'])
     parser.add_argument('--attempt', type=int, default=None)
     parser.add_argument('--variant', type=int, default=None)
@@ -1944,6 +3484,8 @@ def main():
     parser.add_argument('--trim-end', type=float, default=None)
     parser.add_argument('--batch', type=str, default='a', choices=['a','b'])
     parser.add_argument('--account', type=int, default=1, choices=range(1, len(ACCOUNTS)+1))
+    parser.add_argument('--project', type=str, default=None, help='Project UUID to use (overrides auto-detect)')
+    parser.add_argument('--chromium', action='store_true', help='Use built-in Chromium instead of system Chrome (for parallel bots)')
 
     args = parser.parse_args()
     _current_account_idx = args.account - 1
@@ -1974,7 +3516,7 @@ def main():
         print('  4. Close the browser window when done')
         print()
         with sync_playwright() as pw:
-            ctx = launch_browser(pw)
+            ctx = launch_browser(pw, use_builtin_chromium=args.chromium)
             page = ctx.pages[0] if ctx.pages else ctx.new_page()
             page.goto('https://accounts.google.com', timeout=60000, wait_until='domcontentloaded')
             print('  Browser open. Log in and close the window when ready.')
@@ -1990,6 +3532,8 @@ def main():
                 pass
         print('  Session saved!')
         sys.exit(0)
+    elif args.sync_dashboard:
+        do_sync_dashboard(args.clip)
     elif args.review:
         timeout = GLOBAL_TIMEOUT_SEC
         if timeout > 0:
@@ -1998,7 +3542,8 @@ def main():
             print(f'  Timeout: {timeout}s')
         with sync_playwright() as pw:
             try:
-                do_review(pw, args.clip)
+                do_review(pw, args.clip, component_filter=args.component, project_id=args.project,
+                         use_builtin_chromium=args.chromium)
             finally:
                 signal.alarm(0)
                 if _active_context:

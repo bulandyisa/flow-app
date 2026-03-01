@@ -103,11 +103,80 @@
           "prompt_b": "First, the exact character from Image 1, preserving identical facial features and proportions, studies an atlas while walking through a tree-lined park path, head down, navigating. Then, the exact character from Image 2, preserving identical facial features, scans the tree trunks, searching for something. Then, the exact character from Image 3, preserving identical facial features, looks up at the canopy with wonder. A sunlit park with ancient trees, soft grass. Medium shot, slight high angle. Warm afternoon light, leaf shadows dancing. No text, no watermarks. 3D Pixar-style animation, family-friendly, cinematic.",
           "batch_a_count": 3,
           "batch_b_count": 15
+        },
+        {
+          "attempt": 2,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, walks along a park path between mature trees, holding an open atlas, checking coordinates. Then, the exact character from Image 2, preserving identical facial features, walks alongside, looking around at the surroundings. Then, the exact character from Image 3, preserving identical facial features, follows behind, curious and alert. Use Image 4 as the exact background location. Medium-wide shot, eye-level. Bright daylight filtering through leaves, green and warm tones. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": {
+                "char_face": 8,
+                "char_outfit": 8,
+                "char_count": 10,
+                "anatomy_hands": 9,
+                "anatomy_body": 9,
+                "anatomy_face": 9,
+                "scale": 9,
+                "physics": 9,
+                "spatial": 9,
+                "scenario_action": 9,
+                "scenario_emotion": 8,
+                "scenario_objects": 9,
+                "loc_match": 10,
+                "lighting": 9,
+                "artifacts": 9,
+                "style_3d": 10,
+                "composition": 9
+              },
+              "avg": 9.0
+            },
+            {
+              "file": "variant_3.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_4.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
         }
       ],
-      "selected_variant_a": null,
+      "selected_variant_a": {
+        "attempt": 2,
+        "variant": 1,
+        "avg": 9.0,
+        "scores": {
+          "char_face": 8,
+          "char_outfit": 8,
+          "char_count": 10,
+          "anatomy_hands": 9,
+          "anatomy_body": 9,
+          "anatomy_face": 9,
+          "scale": 9,
+          "physics": 9,
+          "spatial": 9,
+          "scenario_action": 9,
+          "scenario_emotion": 8,
+          "scenario_objects": 9,
+          "loc_match": 10,
+          "lighting": 9,
+          "artifacts": 9,
+          "style_3d": 10,
+          "composition": 9
+        }
+      },
       "selected_variant_b": null,
-      "status": "pending"
+      "status": "accepted"
     },
     "nb_mid": {
       "attempts": [],
@@ -116,13 +185,101 @@
       "status": "pending"
     },
     "nb_last": {
-      "attempts": [],
-      "selected_variant_a": null,
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, stops on the path, looking at a wide tree trunk ahead, expression shifting to concern — a large dog is tied to the base near a visible hollow in the trunk. Then, the exact character from Image 2, preserving identical facial features, stops beside, frowning at the obstacle. Then, the exact character from Image 3, preserving identical facial features, peers from behind, eyes wide at the dog. Use Image 4 as the exact background location. Medium shot, eye-level. Bright daylight, warm natural tones. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 5.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": {
+                "char_face": 8,
+                "char_outfit": 9,
+                "char_count": 10,
+                "anatomy_hands": 9,
+                "anatomy_body": 9,
+                "anatomy_face": 9,
+                "scale": 9,
+                "physics": 9,
+                "spatial": 9,
+                "scenario_action": 9,
+                "scenario_emotion": 8,
+                "scenario_objects": 9,
+                "loc_match": 9,
+                "lighting": 9,
+                "artifacts": 9,
+                "style_3d": 10,
+                "composition": 9
+              },
+              "avg": 9.0
+            },
+            {
+              "file": "variant_3.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_4.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": 1,
+          "best_avg": 9.0
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 1,
+        "variant": 1
+      },
       "selected_variant_b": null,
-      "status": "pending"
+      "status": "accepted"
     },
     "veo": {
-      "attempts": [],
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "Tracking shot following three characters through a park. They stop before a large tree — a dog tied to the trunk blocks their goal. They exchange concerned glances. Audio: birds singing, leaves rustling, distant dog barking, footsteps on grass. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        },
+        {
+          "attempt": 2,
+          "prompt": "Tracking shot following three characters through a park. They stop before a large tree — a dog tied to the trunk blocks their goal. They exchange concerned glances. Audio: birds singing, leaves rustling, distant dog barking, footsteps on grass. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        },
+        {
+          "attempt": 3,
+          "prompt": "Tracking shot following three characters through a park. They stop before a large tree — a dog tied to the trunk blocks their goal. They exchange concerned glances. Audio: birds singing, leaves rustling, distant dog barking, footsteps on grass. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [
+            {
+              "file": "variant_1.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.mp4",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
       "selected_variant_a": null,
       "selected_variant_b": null,
       "status": "pending"
