@@ -126,6 +126,13 @@
           "variants": [],
           "best_variant": null,
           "best_avg": null
+        },
+        {
+          "attempt": 4,
+          "prompt": "Static medium shot. The character writes rapidly in a notebook, pauses, crosses it out. Writes again. Crosses out again. Drops the pen. Head sinks toward the desk. Defeated sigh. Audio: pen scratching paper, frustrated sigh, pen dropped on wood. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
         }
       ],
       "selected_variant_a": null,
