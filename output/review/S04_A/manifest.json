@@ -115,6 +115,88 @@
             },
             {
               "file": "variant_2.png",
+              "scores": {
+                "char_face": 8,
+                "char_outfit": 8,
+                "char_count": 10,
+                "anatomy_hands": 9,
+                "anatomy_body": 9,
+                "anatomy_face": 9,
+                "scale": 9,
+                "physics": 9,
+                "spatial": 9,
+                "scenario_action": 9,
+                "scenario_emotion": 8,
+                "scenario_objects": 9,
+                "loc_match": 10,
+                "lighting": 9,
+                "artifacts": 9,
+                "style_3d": 10,
+                "composition": 9
+              },
+              "avg": 9.0
+            },
+            {
+              "file": "variant_3.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_4.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 2,
+        "variant": 1,
+        "avg": 9.0,
+        "scores": {
+          "char_face": 8,
+          "char_outfit": 8,
+          "char_count": 10,
+          "anatomy_hands": 9,
+          "anatomy_body": 9,
+          "anatomy_face": 9,
+          "scale": 9,
+          "physics": 9,
+          "spatial": 9,
+          "scenario_action": 9,
+          "scenario_emotion": 8,
+          "scenario_objects": 9,
+          "loc_match": 10,
+          "lighting": 9,
+          "artifacts": 9,
+          "style_3d": 10,
+          "composition": 9
+        }
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "nb_mid": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_last": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, stops on the path, looking at a wide tree trunk ahead, expression shifting to concern — a large dog is tied to the base near a visible hollow in the trunk. Then, the exact character from Image 2, preserving identical facial features, stops beside, frowning at the obstacle. Then, the exact character from Image 3, preserving identical facial features, peers from behind, eyes wide at the dog. Use Image 4 as the exact background location. Medium shot, eye-level. Bright daylight, warm natural tones. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 5.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
               "scores": null,
               "avg": null
             },
@@ -133,18 +215,6 @@
           "best_avg": null
         }
       ],
-      "selected_variant_a": null,
-      "selected_variant_b": null,
-      "status": "pending"
-    },
-    "nb_mid": {
-      "attempts": [],
-      "selected_variant_a": null,
-      "selected_variant_b": null,
-      "status": "pending"
-    },
-    "nb_last": {
-      "attempts": [],
       "selected_variant_a": null,
       "selected_variant_b": null,
       "status": "pending"
