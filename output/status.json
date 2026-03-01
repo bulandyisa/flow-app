@@ -53,6 +53,12 @@
       "nb_mid": "pending",
       "nb_last": "accepted",
       "veo": "pending"
+    },
+    "S04_B": {
+      "nb_first": "pending",
+      "nb_mid": "pending",
+      "nb_last": "pending",
+      "veo": "pending"
     }
   }
 }
