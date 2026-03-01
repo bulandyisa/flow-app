@@ -12,6 +12,12 @@
       "nb_last": "accepted",
       "veo": "pending"
     },
+    "S01_C": {
+      "nb_first": "pending",
+      "nb_mid": "pending",
+      "nb_last": "pending",
+      "veo": "pending"
+    },
     "S02_A": {
       "nb_first": "accepted",
       "nb_mid": "pending",
