@@ -38,6 +38,13 @@ SCENE_LABELS = {
     "S03": "Сцена 3 — Дом Амина, вечер",
     "S04": "Сцена 4 — Гараж, 3 дня назад",
     "S05": "Сцена 5 — Гараж, вечер",
+    "S06": "Сцена 6 — Пустырь, тайная вылазка",
+    "S07": "Сцена 7 — Заброшенный завод",
+    "S08": "Сцена 8 — Ночная улица",
+    "S09": "Сцена 9 — Подвал",
+    "S10": "Сцена 10 — Башня",
+    "S11": "Сцена 11 — Развязка",
+    "S12": "Сцена 12 — Финал",
 }
 
 CHAR_DISPLAY = {
@@ -486,8 +493,8 @@ def render_veo_variants(clip_id: str):
     if not all_groups:
         return
 
-    # Show videos grouped as Pair A, Pair B, etc.
-    pair_labels = ["Пара A", "Пара B", "Пара C", "Пара D"]
+    # Show videos grouped by prompt batch
+    pair_labels = ["Промпт A", "Промпт B", "Промпт C", "Промпт D"]
     for idx, videos in enumerate(all_groups):
         label = pair_labels[idx] if idx < len(pair_labels) else f"Группа {idx + 1}"
         st.markdown(f'<div class="prompt-label">{label} ({len(videos)} видео)</div>',
