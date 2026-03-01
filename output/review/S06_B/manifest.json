@@ -9,6 +9,29 @@
           "variants": [],
           "best_variant": null,
           "best_avg": null
+        },
+        {
+          "attempt": 2,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, stands before a boarded-up building, examining a shiny new padlock on a rusty door, expression suspicious and analytical. Then, the exact character from Image 2, preserving identical facial features, inspects the boarded windows, hands testing the boards. Then, the exact character from Image 3, preserving identical facial features, crouches beside the wall, tugging at a rusty ventilation grate that wobbles. Use Image 4 as the exact background location. Medium-wide shot, eye-level. Afternoon light, rundown building exterior. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 5 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
         }
       ],
       "selected_variant_a": null,
