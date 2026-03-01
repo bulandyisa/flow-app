@@ -3359,91 +3359,40 @@ def do_sync_dashboard(clip_filter=None):
 
 
 def _auto_push_to_git(clip_filter=None):
-    """Push output files to /tmp/flow-push git repo for Streamlit Cloud."""
+    """Auto-commit and push generated files from the main project repo."""
     import subprocess
-    PUSH_REPO = Path('/tmp/flow-push')
-    if not (PUSH_REPO / '.git').exists():
-        print(f'  No git repo at {PUSH_REPO}, skipping auto-push.')
+    PROJECT_ROOT = Path(__file__).parent.parent
+    if not (PROJECT_ROOT / '.git').exists():
+        print(f'  No git repo at {PROJECT_ROOT}, skipping auto-push.')
         return
     try:
-        push_synced = 0
-        # Copy only clip-specific files (fast, no full scan)
-        if clip_filter:
-            # review/{clip}/ — the main generated content
-            src_review = REVIEW_DIR / clip_filter
-            if src_review.exists():
-                dst_review = PUSH_REPO / 'output' / 'review' / clip_filter
-                shutil.copytree(src_review, dst_review, dirs_exist_ok=True,
-                                ignore=shutil.ignore_patterns('.DS_Store'))
-                push_synced += 1
-            # frames/{clip}_* — accepted keyframes
-            for f in FRAMES_DIR.glob(f'{clip_filter}_*'):
-                dst = PUSH_REPO / 'output' / 'frames' / f.name
-                dst.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(f, dst)
-                push_synced += 1
-            # clips/{clip}_* — accepted video clips
-            for f in CLIPS_DIR.glob(f'{clip_filter}_*'):
-                dst = PUSH_REPO / 'output' / 'clips' / f.name
-                dst.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(f, dst)
-                push_synced += 1
-        else:
-            # No filter — sync all review dirs that exist locally
-            for clip_dir in sorted(REVIEW_DIR.iterdir()):
-                if clip_dir.is_dir() and not clip_dir.name.startswith('.'):
-                    dst = PUSH_REPO / 'output' / 'review' / clip_dir.name
-                    shutil.copytree(clip_dir, dst, dirs_exist_ok=True,
-                                    ignore=shutil.ignore_patterns('.DS_Store'))
-                    push_synced += 1
-            # frames
-            if FRAMES_DIR.exists():
-                for f in FRAMES_DIR.glob('*'):
-                    if f.is_file() and f.name != '.DS_Store':
-                        dst = PUSH_REPO / 'output' / 'frames' / f.name
-                        dst.parent.mkdir(parents=True, exist_ok=True)
-                        shutil.copy2(f, dst)
-                        push_synced += 1
+        # Add generated output files
+        add_paths = ['output/review/', 'output/frames/', 'output/clips/',
+                     'output/prompts/', 'output/status.json']
+        for p in add_paths:
+            full = PROJECT_ROOT / p
+            if full.exists():
+                subprocess.run(['git', 'add', p], cwd=PROJECT_ROOT,
+                               capture_output=True, timeout=30)
 
-        # Always sync prompts
-        if PROMPTS_PATH.exists():
-            pdest = PUSH_REPO / 'output' / 'prompts' / 'all_prompts.json'
-            pdest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(PROMPTS_PATH, pdest)
-
-        # Generate status.json from manifests in push repo
-        push_review = PUSH_REPO / 'output' / 'review'
-        if push_review.exists():
-            status_data = {'clips': {}}
-            for cdir in sorted(push_review.iterdir()):
-                if not cdir.is_dir() or cdir.name.startswith('.'):
-                    continue
-                mf = cdir / 'manifest.json'
-                if not mf.exists():
-                    continue
-                with open(mf) as f:
-                    mdata = json.load(f)
-                cid = mdata.get('clip_id', cdir.name)
-                comps = mdata.get('components', {})
-                status_data['clips'][cid] = {k: v.get('status', 'pending') for k, v in comps.items()}
-            status_dest = PUSH_REPO / 'output' / 'status.json'
-            with open(status_dest, 'w') as f:
-                json.dump(status_data, f, indent=2)
-
-        # Git add, commit, push
-        subprocess.run(['git', 'add', '-f', 'output/'], cwd=PUSH_REPO,
-                        capture_output=True, timeout=30)
+        # Commit
+        msg = f'Auto-sync: {clip_filter or "all"}'
         result = subprocess.run(
-            ['git', 'commit', '-m', f'Auto-sync: {clip_filter or "all"}'],
-            cwd=PUSH_REPO, capture_output=True, text=True, timeout=30
+            ['git', 'commit', '-m', msg],
+            cwd=PROJECT_ROOT, capture_output=True, text=True, timeout=30
         )
         if result.returncode == 0:
+            # Push (with pull --rebase to handle concurrent pushes)
+            subprocess.run(
+                ['git', 'pull', '--rebase', 'origin', 'master'],
+                cwd=PROJECT_ROOT, capture_output=True, text=True, timeout=60
+            )
             push_result = subprocess.run(
                 ['git', 'push', 'origin', 'master'],
-                cwd=PUSH_REPO, capture_output=True, text=True, timeout=60
+                cwd=PROJECT_ROOT, capture_output=True, text=True, timeout=120
             )
             if push_result.returncode == 0:
-                print(f'  Dashboard pushed to git. ({push_synced} items)')
+                print(f'  Dashboard pushed to git.')
             else:
                 print(f'  Dashboard push failed: {push_result.stderr[:200]}')
         else:
