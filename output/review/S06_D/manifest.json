@@ -115,7 +115,15 @@
       "status": "accepted"
     },
     "veo": {
-      "attempts": [],
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "Static medium shot. One character emerges from a wall opening, dusty, hands over a note while speaking urgently. Another takes the note, reads it. Expression darkens — this task is the hardest yet. Audio: breathless excited voice, paper rustling, a low worried sigh. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
       "selected_variant_a": null,
       "selected_variant_b": null,
       "status": "pending"
