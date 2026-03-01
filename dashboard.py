@@ -433,9 +433,9 @@ def render_nb_review_variants(clip_id: str, component: str = "nb_first"):
                 )
                 st.markdown(f'<div class="prompt-label">{label} ({len(imgs)} фото)</div>',
                             unsafe_allow_html=True)
-                cols = st.columns(min(len(imgs), 4))
+                cols = st.columns(4)
                 for i, ipath in enumerate(imgs):
-                    with cols[i % len(cols)]:
+                    with cols[i % 4]:
                         st.image(str(ipath), use_container_width=True)
                         st.caption(ipath.name)
 
@@ -460,45 +460,34 @@ def render_veo_variants(clip_id: str):
     if all_videos_count == 0:
         return
 
-    st.markdown(f"**VEO варианты** ({all_videos_count} видео)")
-
+    # Collect all videos from all attempts into groups (Pair A, Pair B, etc.)
+    all_groups = []
     for attempt_dir in attempt_dirs:
-        attempt_num = attempt_dir.name.replace("attempt_", "")
-
-        # Collect videos from prompt_a and prompt_b subdirectories
-        batches = []
         for batch_name in ["prompt_a", "prompt_b"]:
             batch_dir = attempt_dir / batch_name
             if batch_dir.exists():
                 videos = sorted(batch_dir.glob("*.mp4"))
                 if videos:
-                    batches.append((batch_name, videos))
-
+                    all_groups.append(videos)
         # Also check for flat structure (videos directly in attempt dir)
         flat_videos = sorted(attempt_dir.glob("*.mp4"))
-        if flat_videos and not batches:
-            batches.append(("variants", flat_videos))
+        if flat_videos:
+            all_groups.append(flat_videos)
 
-        if not batches:
-            continue
+    if not all_groups:
+        return
 
-        total_videos = sum(len(vids) for _, vids in batches)
-        with st.expander(f"Попытка {attempt_num} — {total_videos} видео", expanded=(len(attempt_dirs) == 1)):
-            for batch_name, videos in batches:
-                label = "Промпт A" if batch_name == "prompt_a" else (
-                    "Промпт B" if batch_name == "prompt_b" else "Варианты"
-                )
-                st.markdown(f'<div class="prompt-label">{label} ({len(videos)} видео)</div>',
-                            unsafe_allow_html=True)
-                cols = st.columns(min(len(videos), 4))
-                for i, vpath in enumerate(videos):
-                    with cols[i % len(cols)]:
-                        st.video(str(vpath))
-                        # Show first extracted frame as thumbnail caption
-                        frames_dir = vpath.parent / "frames" / vpath.stem
-                        if not frames_dir.exists():
-                            frames_dir = vpath.parent / vpath.stem
-                        st.caption(vpath.name)
+    # Show videos grouped as Pair A, Pair B, etc.
+    pair_labels = ["Пара A", "Пара B", "Пара C", "Пара D"]
+    for idx, videos in enumerate(all_groups):
+        label = pair_labels[idx] if idx < len(pair_labels) else f"Группа {idx + 1}"
+        st.markdown(f'<div class="prompt-label">{label} ({len(videos)} видео)</div>',
+                    unsafe_allow_html=True)
+        cols = st.columns(4)
+        for i, vpath in enumerate(videos):
+            with cols[i % 4]:
+                st.video(str(vpath))
+                st.caption(vpath.name)
 
 
 def render_clip_card(clip: dict, status: str, status_label: str, status_class: str):
