@@ -115,7 +115,15 @@
       "status": "accepted"
     },
     "veo": {
-      "attempts": [],
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "Static medium shot. One character tosses bread to a dog near a tree. The dog turns away to eat. Meanwhile, another character darts to the tree, reaches into a hollow, and pulls out a small package. Quick, precise. Audio: bread landing on grass, dog chewing, rustling of leaves, swift footsteps. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
       "selected_variant_a": null,
       "selected_variant_b": null,
       "status": "pending"
