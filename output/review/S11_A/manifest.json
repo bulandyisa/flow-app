@@ -1,0 +1,43 @@
+{
+  "clip_id": "S11_A",
+  "components": {
+    "nb_first": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "The exact character from Image 1, preserving identical facial features and proportions, stands before a bookshelf, carefully placing a glass lens in a copper frame onto a specific empty spot on the shelf, expression quiet and knowing, the gesture deliberate and precise. Use Image 3 as the exact background location. Close-up, eye-level, focused on the hands and the shelf. Warm evening lamp light, the lens glinting softly. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_mid": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_last": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "veo": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    }
+  }
+}
