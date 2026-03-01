@@ -116,7 +116,36 @@
       "status": "pending"
     },
     "nb_last": {
-      "attempts": [],
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 2, preserving identical facial features and proportions, looks directly at Image 1 character with confident resolve, chin raised, eyes bright and alive, mouth set in determination. Then, the exact character from Image 1, preserving identical facial features, meets the gaze with a slow smile of agreement, nodding subtly. Use Image 3 as the exact background location. Medium shot, eye-level. Warm golden garage light, sense of a pact being made. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 4.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_4.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
       "selected_variant_a": null,
       "selected_variant_b": null,
       "status": "pending"
