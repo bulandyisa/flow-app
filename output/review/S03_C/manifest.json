@@ -54,7 +54,26 @@
       "status": "pending"
     },
     "nb_last": {
-      "attempts": [],
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 2, preserving identical facial features and proportions, crouches beside the open metal box, carefully removing a small note taped inside the lid, expression focused and quick, one hand steadying the lid silently. Then, the exact character from Image 3, preserving identical facial features, crouches beside Image 2, keeping watch, body tense, glancing back over shoulder. Use Image 4 as the exact background location. Close-up, low angle. Bright daylight from above, shadows inside the box. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 5.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
       "selected_variant_a": null,
       "selected_variant_b": null,
       "status": "pending"
