@@ -56,6 +56,13 @@
           "variants": [],
           "best_variant": null,
           "best_avg": null
+        },
+        {
+          "attempt": 2,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, holds an open atlas beside the note, comparing numbers on the paper with the map, expression of focused analysis. Then, the exact character from Image 2, preserving identical facial features, peers over the shoulder, following the finger on the map. Then, the exact character from Image 3, preserving identical facial features, stands on tiptoes trying to see, expression eager. Use Image 4 as the exact background location. Medium close-up, slightly high angle. Warm afternoon light, the paper and atlas illuminated. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 5.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
         }
       ],
       "selected_variant_a": null,
