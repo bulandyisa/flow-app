@@ -241,7 +241,15 @@
       "status": "accepted"
     },
     "veo": {
-      "attempts": [],
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "Tracking shot following three characters through a park. They stop before a large tree — a dog tied to the trunk blocks their goal. They exchange concerned glances. Audio: birds singing, leaves rustling, distant dog barking, footsteps on grass. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
       "selected_variant_a": null,
       "selected_variant_b": null,
       "status": "pending"
