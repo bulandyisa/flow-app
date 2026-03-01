@@ -100,7 +100,15 @@
       "status": "accepted"
     },
     "veo": {
-      "attempts": [],
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "Slow push in on two characters standing in a lamp-lit office. One asks: \"Why?\" The other answers gently: \"You said life has no real adventures.\" A beat. The questioner's eyes widen with memory. Silence. Then both smile. Audio: quiet voice, profound answer, silence, soft warm music hint. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
       "selected_variant_a": null,
       "selected_variant_b": null,
       "status": "pending"
