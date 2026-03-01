@@ -122,7 +122,15 @@
       "status": "accepted"
     },
     "veo": {
-      "attempts": [],
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "Static medium shot. Three characters examine a boarded-up building. One crouches by a vent grate, pulls it loose. Accepts a flashlight. Takes a breath. Squeezes into the dark opening, disappearing from view. Audio: rusty metal scraping, deep breath, clothes scraping against concrete. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
       "selected_variant_a": null,
       "selected_variant_b": null,
       "status": "pending"
