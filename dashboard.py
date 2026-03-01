@@ -814,6 +814,130 @@ def page_references():
             st.warning("Папка локаций не найдена.")
 
 
+def page_keyframe_pairs():
+    """Overview of all clips with first+last keyframe pairs."""
+    st.header("Пары кадров")
+
+    clips = load_clips()
+    status_data = load_status()
+
+    # Stats
+    total = len(clips)
+    pairs_done = 0
+    pairs_partial = 0
+    for c in clips:
+        cid = c["clip_id"]
+        has_first = (FRAMES_DIR / f"{cid}_first.png").exists()
+        has_last = (FRAMES_DIR / f"{cid}_last.png").exists()
+        if has_first and has_last:
+            pairs_done += 1
+        elif has_first or has_last:
+            pairs_partial += 1
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(f"""<div class="stat-card">
+            <div class="number">{pairs_done}/{total}</div>
+            <div class="label">Пары готовы</div>
+        </div>""", unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"""<div class="stat-card">
+            <div class="number">{pairs_partial}</div>
+            <div class="label">Частично</div>
+        </div>""", unsafe_allow_html=True)
+    with col3:
+        st.markdown(f"""<div class="stat-card">
+            <div class="number">{total - pairs_done - pairs_partial}</div>
+            <div class="label">Не начато</div>
+        </div>""", unsafe_allow_html=True)
+
+    st.markdown("")
+
+    current_scene = None
+    for clip in clips:
+        # Scene divider
+        if clip["scene_id"] != current_scene:
+            current_scene = clip["scene_id"]
+            color = SCENE_COLORS.get(current_scene, "#888")
+            label = SCENE_LABELS.get(current_scene, current_scene)
+            st.markdown(
+                f'<h4 style="border-bottom:2px solid {color};padding-bottom:4px;'
+                f'margin-top:20px;">{label}</h4>',
+                unsafe_allow_html=True,
+            )
+
+        clip_id = clip["clip_id"]
+        first_frame = FRAMES_DIR / f"{clip_id}_first.png"
+        last_frame = FRAMES_DIR / f"{clip_id}_last.png"
+        has_first = first_frame.exists()
+        has_last = last_frame.exists()
+
+        # Determine pair status
+        clip_comps = status_data.get("clips", {}).get(clip_id, {})
+        first_accepted = clip_comps.get("nb_first") == "accepted"
+        last_accepted = clip_comps.get("nb_last") == "accepted"
+
+        if (has_first or first_accepted) and (has_last or last_accepted):
+            pair_status = "Готово"
+            pair_color = "#1B5E20"
+            pair_icon = "🟢"
+        elif has_first or has_last or first_accepted or last_accepted:
+            pair_status = "Частично"
+            pair_color = "#E65100"
+            pair_icon = "🟡"
+        else:
+            pair_status = "Не начато"
+            pair_color = "#B71C1C"
+            pair_icon = "🔴"
+
+        # Row: clip_id | first | last | status
+        cols = st.columns([1.5, 3, 3, 2])
+        with cols[0]:
+            st.markdown(f"**{clip_id}**")
+            desc = clip.get("scene_description_ru", "")
+            if desc:
+                st.caption(desc[:50])
+        with cols[1]:
+            if has_first:
+                st.image(str(first_frame), use_container_width=True, caption="First")
+            elif first_accepted:
+                st.markdown(
+                    '<div style="background:#1B3A1B;border:1px solid #2E7D32;border-radius:6px;'
+                    'padding:20px;text-align:center;color:#A5D6A7;font-size:0.85em;">'
+                    '✅ Принят</div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    '<div style="background:#1A1D26;border:1px dashed #333;border-radius:6px;'
+                    'padding:20px;text-align:center;color:#555;font-size:0.85em;">—</div>',
+                    unsafe_allow_html=True,
+                )
+        with cols[2]:
+            if has_last:
+                st.image(str(last_frame), use_container_width=True, caption="Last")
+            elif last_accepted:
+                st.markdown(
+                    '<div style="background:#1B3A1B;border:1px solid #2E7D32;border-radius:6px;'
+                    'padding:20px;text-align:center;color:#A5D6A7;font-size:0.85em;">'
+                    '✅ Принят</div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    '<div style="background:#1A1D26;border:1px dashed #333;border-radius:6px;'
+                    'padding:20px;text-align:center;color:#555;font-size:0.85em;">—</div>',
+                    unsafe_allow_html=True,
+                )
+        with cols[3]:
+            st.markdown(
+                f'<div style="background:{pair_color};color:#fff;padding:4px 10px;'
+                f'border-radius:12px;text-align:center;font-size:0.85em;margin-top:8px;">'
+                f'{pair_icon} {pair_status}</div>',
+                unsafe_allow_html=True,
+            )
+
+
 def page_timeline():
     """Visual timeline of all clips."""
     st.header("Таймлайн")
@@ -890,12 +1014,14 @@ def main():
     # --- Navigation ---
     page = st.sidebar.radio(
         "Навигация",
-        ["Клипы", "Таймлайн", "Сценарий", "Референсы"],
+        ["Пары кадров", "Клипы", "Таймлайн", "Сценарий", "Референсы"],
         label_visibility="collapsed",
     )
 
     # --- Page routing ---
-    if page == "Клипы":
+    if page == "Пары кадров":
+        page_keyframe_pairs()
+    elif page == "Клипы":
         st.title("Клипы")
         page_clips()
     elif page == "Таймлайн":
