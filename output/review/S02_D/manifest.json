@@ -1,0 +1,51 @@
+{
+  "clip_id": "S02_D",
+  "components": {
+    "nb_first": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, sits at the workbench holding the atlas, looking across at Image 2 character with a new intensity in the eyes, determination forming. Then, the exact character from Image 2, preserving identical facial features, sits nearby, eyebrows raised in a questioning look, waiting for a decision. Use Image 3 as the exact background location. Medium shot, eye-level. Warm garage light, late afternoon mood. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 4 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "variants": [
+            {
+              "file": "prompt_a/variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_a/variant_2.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null,
+          "prompt_b": "First, the exact character from Image 1, preserving identical facial features and proportions, grips the edge of the atlas, gaze sharp and alive, something alive stirring in the eyes for the first time. Then, the exact character from Image 2, preserving identical facial features, tilts head, expression curious and expectant. Use Image 3 as the exact background location. Medium close-up, slight low angle. Late afternoon light filtering through garage, warm and purposeful. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 4 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "batch_a_count": 2,
+          "batch_b_count": 0
+        }
+      ],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_mid": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_last": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "veo": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    }
+  }
+}
