@@ -134,7 +134,21 @@
       "status": "accepted"
     },
     "veo": {
-      "attempts": [],
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "Static medium shot. One character says something — the other snaps back, voice raised, hand slamming the desk. Silence. Then the outburst fades — shoulders drop, eyes lower. Says: \"Sorry. I just... can't.\" The other listens silently, nods. Audio: raised voice, palm hitting wood, heavy silence, soft murmured apology. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [
+            {
+              "file": "variant_1.mp4",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
       "selected_variant_a": null,
       "selected_variant_b": null,
       "status": "pending"
