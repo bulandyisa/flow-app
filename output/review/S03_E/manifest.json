@@ -1,0 +1,37 @@
+{
+  "clip_id": "S03_E",
+  "components": {
+    "nb_first": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "A dark, indistinct silhouette stands behind the corner of a building, partially hidden, watching a group of figures walking away in the distance. The silhouette is backlit, features completely obscured in shadow. Use Image 1 as the exact background location. Wide shot, slightly low angle. Late afternoon light, long dramatic shadows, the silhouette framed against bright background. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic, mysterious atmosphere.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_mid": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_last": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "veo": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    }
+  }
+}
