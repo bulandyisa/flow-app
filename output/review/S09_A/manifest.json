@@ -1,0 +1,43 @@
+{
+  "clip_id": "S09_A",
+  "components": {
+    "nb_first": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, sits across a desk, holding open a notebook with hand-drawn sketches facing outward, expression serious and earnest, presenting evidence. Then, the exact character from Image 2, preserving identical facial features, sits behind the desk, examining the drawings with focused attention, expression calm and analytical. Use Image 3 as the exact background location. Medium shot, eye-level across the desk. Warm lamp light, bookshelves in background, serious meeting atmosphere. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_mid": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_last": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "veo": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    }
+  }
+}
