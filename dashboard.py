@@ -922,8 +922,25 @@ def page_keyframe_pairs():
                             unsafe_allow_html=True)
 
 
+def _find_veo_videos(clip_id):
+    """Find all VEO mp4 files for a clip, newest attempt first."""
+    veo_dir = REVIEW_DIR / clip_id / "veo"
+    if not veo_dir.exists():
+        return []
+    videos = []
+    # Find the latest attempt
+    attempts = sorted(veo_dir.glob("attempt_*"), reverse=True)
+    if not attempts:
+        return []
+    latest = attempts[0]
+    # Two formats: with prompt_a/prompt_b subdirs or flat
+    for mp4 in sorted(latest.rglob("*.mp4")):
+        videos.append(mp4)
+    return videos
+
+
 def page_timeline():
-    """Visual timeline of all clips."""
+    """Visual timeline with VEO videos."""
     st.header("Таймлайн")
 
     clips = load_clips()
@@ -942,35 +959,35 @@ def page_timeline():
         clip_id = clip["clip_id"]
         status = get_status(clip_id)
         _, status_icon = STATUS_MAP[status]
-        dur = clip.get("veo_duration") or 0
-        chars = ", ".join(CHAR_DISPLAY.get(c, c) for c in clip.get("characters", []))
 
-        # Timeline row
-        cols = st.columns([1, 3, 1, 1])
+        # Header row
+        cols = st.columns([1.5, 5, 0.5])
         with cols[0]:
             st.markdown(f"**{status_icon} {clip_id}**")
         with cols[1]:
             st.markdown(clip["scene_description_ru"])
-        with cols[2]:
-            st.markdown(f"{chars}")
-        with cols[3]:
-            st.markdown(f"{dur}с")
 
-        # Show frames inline if they exist
-        first_frame = FRAMES_DIR / f"{clip_id}_first.png"
-        if not first_frame.exists():
-            first_frame = FRAMES_DIR / clip_id / "first.png"
-        last_frame = FRAMES_DIR / f"{clip_id}_last.png"
-        if not last_frame.exists():
-            last_frame = FRAMES_DIR / clip_id / "last.png"
-        if first_frame.exists() or last_frame.exists():
-            thumb_cols = st.columns([1, 2, 2, 1])
-            with thumb_cols[1]:
-                if first_frame.exists():
-                    st.image(str(first_frame), width=200, caption="First")
-            with thumb_cols[2]:
-                if last_frame.exists():
-                    st.image(str(last_frame), width=200, caption="Last")
+        # VEO videos in a row
+        videos = _find_veo_videos(clip_id)
+        if videos:
+            vid_cols = st.columns(len(videos))
+            for i, vpath in enumerate(videos):
+                with vid_cols[i]:
+                    st.video(str(vpath))
+        else:
+            # Fallback: show keyframes if no videos
+            first_frame = FRAMES_DIR / f"{clip_id}_first.png"
+            last_frame = FRAMES_DIR / f"{clip_id}_last.png"
+            if first_frame.exists() or last_frame.exists():
+                thumb_cols = st.columns(2)
+                with thumb_cols[0]:
+                    if first_frame.exists():
+                        st.image(str(first_frame), caption="First")
+                with thumb_cols[1]:
+                    if last_frame.exists():
+                        st.image(str(last_frame), caption="Last")
+
+        st.divider()
 
 
 # ---------------------------------------------------------------------------
