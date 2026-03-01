@@ -1,6 +1,7 @@
 """
 СИГНАЛ — Production Dashboard
 Streamlit-дашборд для анимационного проекта
+v2.1 — compact thumbnails, video section fix
 """
 
 import json
