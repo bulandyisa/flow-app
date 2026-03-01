@@ -56,14 +56,14 @@ CHAR_DISPLAY = {
 # Helpers
 # ---------------------------------------------------------------------------
 
-@st.cache_data
+@st.cache_data(ttl=60)
 def load_clips() -> list[dict]:
     """Load clip data from all_prompts.json."""
     with open(PROMPTS_FILE, encoding="utf-8") as f:
         return json.load(f)
 
 
-@st.cache_data
+@st.cache_data(ttl=60)
 def load_status() -> dict:
     """Load clip statuses from status.json (for Streamlit Cloud compatibility)."""
     if STATUS_FILE.exists():
