@@ -105,7 +105,15 @@
       "status": "accepted"
     },
     "veo": {
-      "attempts": [],
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "Slow dolly out. In bed, the character whispers one last thing, yawns, rolls onto one side. Eyes close. Breathing slows. Sleep takes over. The image gradually fades to black. Audio: final whispered words trailing off, deep sleepy sigh, gentle breathing, silence, fade to nothing. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
       "selected_variant_a": null,
       "selected_variant_b": null,
       "status": "pending"
