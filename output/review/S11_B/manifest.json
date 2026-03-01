@@ -59,7 +59,21 @@
       "status": "pending"
     },
     "nb_last": {
-      "attempts": [],
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, looks at Image 2 character with deep gratitude and new understanding, eyes glistening with emotion, a mature quiet smile forming, words unnecessary. Then, the exact character from Image 2, preserving identical facial features, smiles warmly back, expression of unconditional love and quiet satisfaction, the adventure successful. Use Image 3 as the exact background location. Medium close-up, eye-level. Warm golden lamp glow, bookshelves softly blurred behind, the most intimate and tender moment in the story. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 4.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
       "selected_variant_a": null,
       "selected_variant_b": null,
       "status": "pending"
