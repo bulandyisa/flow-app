@@ -130,7 +130,15 @@
       "status": "accepted"
     },
     "veo": {
-      "attempts": [],
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "Static medium shot from above. A character lies in bed, staring at the ceiling. Lips move — whispering theories. Gestures with one hand in the dark. Nods to self. Turns to one side. Keeps whispering with increasing conviction. Audio: soft whispering about spies and codes, blanket rustling, gentle night ambiance. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
       "selected_variant_a": null,
       "selected_variant_b": null,
       "status": "pending"
