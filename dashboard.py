@@ -88,23 +88,31 @@ def load_status() -> dict:
 
 
 def get_status(clip_id: str) -> str:
-    """Determine clip status from status.json, with local file fallback."""
+    """Determine clip status from status.json component statuses."""
     status_data = load_status()
     clip_status = status_data.get("clips", {}).get(clip_id)
     if clip_status:
-        return clip_status["status"]
+        # clip_status is {nb_first: "accepted", nb_last: "pending", veo: "pending", ...}
+        if isinstance(clip_status, dict) and "status" in clip_status:
+            return clip_status["status"]
+        # Derive overall status from component statuses
+        comps = clip_status if isinstance(clip_status, dict) else {}
+        vals = [v for v in comps.values() if isinstance(v, str)]
+        accepted = sum(1 for v in vals if v == "accepted")
+        if accepted >= 3:  # nb_first + nb_last + veo
+            return "done"
+        elif accepted >= 1:
+            return "partial"
+        return "todo"
 
-    # Fallback: check local files (works only when running locally)
+    # Fallback: check local files
     has_first = (FRAMES_DIR / f"{clip_id}_first.png").exists() or (FRAMES_DIR / clip_id / "first.png").exists()
     has_last = (FRAMES_DIR / f"{clip_id}_last.png").exists() or (FRAMES_DIR / clip_id / "last.png").exists()
     has_clip = (CLIPS_DIR / f"{clip_id}_clip.mp4").exists()
-    has_veo_review = (REVIEW_DIR / clip_id / "veo").exists() and any((REVIEW_DIR / clip_id / "veo").glob("attempt_*/*.mp4")) if (REVIEW_DIR / clip_id / "veo").exists() else False
-    if not has_veo_review and (REVIEW_DIR / clip_id / "veo").exists():
-        has_veo_review = any((REVIEW_DIR / clip_id / "veo").glob("attempt_*/*/*.mp4"))
 
     if has_first and has_last and has_clip:
         return "done"
-    elif has_first or has_last or has_clip or has_veo_review:
+    elif has_first or has_last or has_clip:
         return "partial"
     return "todo"
 
@@ -653,40 +661,42 @@ def render_clip_card(clip: dict, status: str, status_label: str, status_class: s
                     unsafe_allow_html=True,
                 )
 
-    # --- Row 5: Video (accepted + VEO variants) ---
+    # --- Row 5: Video (accepted clip + VEO review variants) ---
     st.markdown("**Видео**")
     clip_video = CLIPS_DIR / f"{clip_id}_clip.mp4"
-    if clip_video.exists():
+    has_accepted_video = clip_video.exists()
+    if has_accepted_video:
         st.video(str(clip_video))
         download_button_for_file(clip_video, "Скачать видео", f"dl_video_{clip_id}")
 
-    # VEO review variants (always show if available)
-    render_veo_variants(clip_id)
+    # Check for VEO review variants
+    veo_review_dir = REVIEW_DIR / clip_id / "veo"
+    has_veo_variants = False
+    if veo_review_dir.exists():
+        for ad in veo_review_dir.glob("attempt_*"):
+            if list(ad.glob("*.mp4")) or list(ad.glob("*/*.mp4")):
+                has_veo_variants = True
+                break
 
-    # If no accepted video and no VEO variants, show placeholder
-    if not clip_video.exists():
-        veo_review_dir = REVIEW_DIR / clip_id / "veo"
-        has_veo_variants = False
-        if veo_review_dir.exists():
-            for ad in veo_review_dir.glob("attempt_*"):
-                if list(ad.glob("*.mp4")) or list(ad.glob("*/*.mp4")):
-                    has_veo_variants = True
-                    break
-        if not has_veo_variants:
-            veo_st = comp_status.get("veo", "pending")
-            if veo_st == "accepted":
-                st.markdown(
-                    '<div style="background:#1B3A1B;border:1px solid #2E7D32;border-radius:8px;'
-                    'padding:40px;text-align:center;color:#A5D6A7;">'
-                    '✅ Видео — принято (файл доступен локально)</div>',
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.markdown(
-                    '<div style="background:#1A1D26;border:1px dashed #333;border-radius:8px;'
-                    'padding:40px;text-align:center;color:#555;">Видео — не сгенерировано</div>',
-                    unsafe_allow_html=True,
-                )
+    if has_veo_variants:
+        if not has_accepted_video:
+            st.markdown("*VEO варианты для ревью:*")
+        render_veo_variants(clip_id)
+    elif not has_accepted_video:
+        veo_st = comp_status.get("veo", "pending")
+        if veo_st == "accepted":
+            st.markdown(
+                '<div style="background:#1B3A1B;border:1px solid #2E7D32;border-radius:8px;'
+                'padding:40px;text-align:center;color:#A5D6A7;">'
+                '✅ Видео — принято</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                '<div style="background:#1A1D26;border:1px dashed #333;border-radius:8px;'
+                'padding:40px;text-align:center;color:#555;">Видео — не сгенерировано</div>',
+                unsafe_allow_html=True,
+            )
 
     # --- Row 6: NB Review Variants ---
     for comp in ['nb_first', 'nb_mid', 'nb_last']:
@@ -932,8 +942,8 @@ def page_timeline():
         clip_id = clip["clip_id"]
         status = get_status(clip_id)
         _, status_icon = STATUS_MAP[status]
-        dur = clip.get("veo_duration", 0)
-        chars = ", ".join(CHAR_DISPLAY.get(c, c) for c in clip["characters"])
+        dur = clip.get("veo_duration") or 0
+        chars = ", ".join(CHAR_DISPLAY.get(c, c) for c in clip.get("characters", []))
 
         # Timeline row
         cols = st.columns([1, 3, 1, 1])
