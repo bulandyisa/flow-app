@@ -16,6 +16,13 @@
           "variants": [],
           "best_variant": null,
           "best_avg": null
+        },
+        {
+          "attempt": 3,
+          "prompt": "The exact character from Image 1, preserving identical facial features and proportions, lies in bed, blanket pulled up to the chin, staring up at the ceiling, expression dreamy and excited, lips moving in a whispered monologue, eyes wide and awake in the darkness. Use Image 2 as the exact background location. Medium shot, slightly high angle looking down at the bed. Very dim blue moonlight through a window, cozy bedroom darkness. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
         }
       ],
       "selected_variant_a": null,
