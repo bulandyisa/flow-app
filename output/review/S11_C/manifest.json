@@ -120,7 +120,15 @@
       "status": "accepted"
     },
     "veo": {
-      "attempts": [],
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "Slow dolly in. Alone in a lamp-lit office. The character reaches to the shelf, picks up the lens. Turns it in the fingers — prismatic light dances across the room. Smiles. Places it back. Leans back. Pure contentment. Audio: quiet room, glass turning in fingers, soft warm music, satisfied sigh. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
       "selected_variant_a": null,
       "selected_variant_b": null,
       "status": "pending"
