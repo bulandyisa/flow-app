@@ -70,8 +70,26 @@
           "variants": [
             {
               "file": "variant_1.png",
-              "scores": null,
-              "avg": null
+              "scores": {
+                "char_face": 8,
+                "char_outfit": 9,
+                "char_count": 10,
+                "anatomy_hands": 9,
+                "anatomy_body": 9,
+                "anatomy_face": 9,
+                "scale": 9,
+                "physics": 9,
+                "spatial": 9,
+                "scenario_action": 10,
+                "scenario_emotion": 9,
+                "scenario_objects": 10,
+                "loc_match": 9,
+                "lighting": 9,
+                "artifacts": 9,
+                "style_3d": 10,
+                "composition": 9
+              },
+              "avg": 9.176470588235293
             },
             {
               "file": "variant_2.png",
@@ -89,13 +107,16 @@
               "avg": null
             }
           ],
-          "best_variant": null,
-          "best_avg": null
+          "best_variant": 0,
+          "best_avg": 9.176470588235293
         }
       ],
-      "selected_variant_a": null,
+      "selected_variant_a": {
+        "attempt": 3,
+        "variant": 0
+      },
       "selected_variant_b": null,
-      "status": "pending"
+      "status": "accepted"
     },
     "veo": {
       "attempts": [],
