@@ -647,40 +647,42 @@ def render_clip_card(clip: dict, status: str, status_label: str, status_class: s
                     unsafe_allow_html=True,
                 )
 
-    # --- Row 5: Video (accepted + VEO variants) ---
+    # --- Row 5: Video (accepted clip + VEO review variants) ---
     st.markdown("**Видео**")
     clip_video = CLIPS_DIR / f"{clip_id}_clip.mp4"
-    if clip_video.exists():
+    has_accepted_video = clip_video.exists()
+    if has_accepted_video:
         st.video(str(clip_video))
         download_button_for_file(clip_video, "Скачать видео", f"dl_video_{clip_id}")
 
-    # VEO review variants (always show if available)
-    render_veo_variants(clip_id)
+    # Check for VEO review variants
+    veo_review_dir = REVIEW_DIR / clip_id / "veo"
+    has_veo_variants = False
+    if veo_review_dir.exists():
+        for ad in veo_review_dir.glob("attempt_*"):
+            if list(ad.glob("*.mp4")) or list(ad.glob("*/*.mp4")):
+                has_veo_variants = True
+                break
 
-    # If no accepted video and no VEO variants, show placeholder
-    if not clip_video.exists():
-        veo_review_dir = REVIEW_DIR / clip_id / "veo"
-        has_veo_variants = False
-        if veo_review_dir.exists():
-            for ad in veo_review_dir.glob("attempt_*"):
-                if list(ad.glob("*.mp4")) or list(ad.glob("*/*.mp4")):
-                    has_veo_variants = True
-                    break
-        if not has_veo_variants:
-            veo_st = comp_status.get("veo", "pending")
-            if veo_st == "accepted":
-                st.markdown(
-                    '<div style="background:#1B3A1B;border:1px solid #2E7D32;border-radius:8px;'
-                    'padding:40px;text-align:center;color:#A5D6A7;">'
-                    '✅ Видео — принято (файл доступен локально)</div>',
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.markdown(
-                    '<div style="background:#1A1D26;border:1px dashed #333;border-radius:8px;'
-                    'padding:40px;text-align:center;color:#555;">Видео — не сгенерировано</div>',
-                    unsafe_allow_html=True,
-                )
+    if has_veo_variants:
+        if not has_accepted_video:
+            st.markdown("*VEO варианты для ревью:*")
+        render_veo_variants(clip_id)
+    elif not has_accepted_video:
+        veo_st = comp_status.get("veo", "pending")
+        if veo_st == "accepted":
+            st.markdown(
+                '<div style="background:#1B3A1B;border:1px solid #2E7D32;border-radius:8px;'
+                'padding:40px;text-align:center;color:#A5D6A7;">'
+                '✅ Видео — принято</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                '<div style="background:#1A1D26;border:1px dashed #333;border-radius:8px;'
+                'padding:40px;text-align:center;color:#555;">Видео — не сгенерировано</div>',
+                unsafe_allow_html=True,
+            )
 
     # --- Row 6: NB Review Variants ---
     for comp in ['nb_first', 'nb_mid', 'nb_last']:
