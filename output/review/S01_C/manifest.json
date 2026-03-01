@@ -64,7 +64,15 @@
       "status": "pending"
     },
     "nb_last": {
-      "attempts": [],
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, sits at the dinner table, gaze now lifted and fixed on Image 2 character, lingering a moment longer than usual, expression thoughtful and quietly determined. Then, the exact character from Image 2, preserving identical facial features, sits at the table unaware, still looking toward the window. Then, the exact character from Image 3, preserving identical facial features, continues talking at the table. Then, the exact character from Image 4, preserving identical facial features, clears a plate. Then, the exact character from Image 5, preserving identical facial features, listens to Image 3. Use Image 6 as the exact background location. Medium-wide shot, eye-level. Same warm dinner lighting, a faint glint of intent in Image 1's eyes. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 7.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
       "selected_variant_a": null,
       "selected_variant_b": null,
       "status": "pending"
