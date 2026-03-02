@@ -148,6 +148,24 @@
           "variants": [],
           "best_variant": null,
           "best_avg": null
+        },
+        {
+          "attempt": 4,
+          "prompt": "Static medium shot. The character eats quietly, then slowly raises eyes to look across the table. Gaze lingers for a long moment — thoughtful, deliberate. Then returns to eating as if nothing happened. Audio: soft clinking of utensils, quiet family chatter in background. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [
+            {
+              "file": "variant_1.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.mp4",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
         }
       ],
       "selected_variant_a": null,

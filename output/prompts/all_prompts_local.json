@@ -1,0 +1,800 @@
+[
+  {
+    "clip_id": "S01_A",
+    "scene_id": "S01",
+    "scene_description_ru": "Кухня, вечер. Ужин. Тако рассказывает историю про прыжок, размахивая руками. Мама: «И порвал штаны».",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_tako_full.jpeg",
+      "персонажи_hq/char_mama_full.jpeg",
+      "локации_hq/loc_kitchen_wide_from_table.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 1, preserving identical facial features and proportions, sits at the dinner table, gesturing enthusiastically with both hands raised, mouth open mid-story, eyes bright with excitement. Then, the exact character from Image 2, preserving identical facial features, sits across the table, watching with patient amusement. Use Image 3 as the exact background location. Medium shot, eye-level. Warm evening indoor lighting from overhead fixture, soft ambient glow. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 1, preserving identical facial features and proportions, leans forward at the dinner table, arms spread wide in an animated gesture, expression of dramatic storytelling. Then, the exact character from Image 2, preserving identical facial features, sits nearby, tilting head slightly, a gentle half-smile forming. Use Image 3 as the exact background location. Medium-wide shot, slight high angle. Warm tungsten dinner light, cozy atmosphere. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "First, the exact character from Image 2, preserving identical facial features and proportions, sits at the dinner table, eyebrows raised, expression of exasperated amusement, one hand resting on the table. Then, the exact character from Image 1, preserving identical facial features, sits across, looking slightly sheepish, hands lowered to the table, caught mid-excuse. Use Image 3 as the exact background location. Medium shot, eye-level. Warm evening indoor lighting, soft golden tones. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "First, the exact character from Image 2, preserving identical facial features and proportions, sits at the table with a knowing smile, chin resting on one hand, looking across with fond exasperation. Then, the exact character from Image 1, preserving identical facial features, shrugs with palms up, mouth quirked in a defensive grin. Use Image 3 as the exact background location. Medium shot, slightly lower angle. Warm kitchen glow, soft shadows. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium shot. The character at the table gestures animatedly, waving both hands while telling a story, then pauses as the other character responds with a calm remark. Subtle shift from excitement to sheepish expression. Audio: dinner table ambiance, soft clink of dishes, muffled conversation. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Locked-off medium-wide shot. One character leans forward enthusiastically, arms spread wide in dramatic storytelling, then freezes as the other delivers a dry comment. Brief silence, then a sheepish shrug. Audio: warm kitchen sounds, clatter of spoons, a gentle laugh. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S01_B",
+    "scene_id": "S01",
+    "scene_description_ru": "Амин откидывается, говорит «Скучно». Рассуждает об отсутствии приключений. Смотрит в окно.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "локации_hq/loc_kitchen_table_closeup.jpg"
+    ],
+    "nano_banana_prompt_first": "The exact character from Image 1, preserving identical facial features and proportions, leans back in a chair at the dinner table, arms crossed, expression of deep boredom and restlessness, gaze drifting away from the food. Use Image 2 as the exact background location. Medium close-up, eye-level. Warm evening light, slightly dimmer mood. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "The exact character from Image 1, preserving identical facial features and proportions, leans back in the chair at the table, arms crossed loosely, letting out a sigh, expression of quiet dissatisfaction. Use Image 2 as the exact background location. Close-up, slightly from the side. Soft warm overhead light, subdued tones. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "The exact character from Image 1, preserving identical facial features and proportions, turns toward a window, gazing out with a wistful, contemplative expression, one hand resting on the table edge. Longing visible in the eyes. Use Image 2 as the exact background location. Medium close-up, profile view. Warm indoor light mixing with cool blue twilight from the window. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The exact character from Image 1, preserving identical facial features and proportions, stares through the window, face half-lit by evening sky, expression pensive and yearning, fingers tapping the table absently. Use Image 2 as the exact background location. Close-up, three-quarter profile. Warm amber indoor light contrasted with cool dusk from window. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Slow dolly in. The character leans back from the table, sighs, then turns to gaze out the window with a wistful expression. Stillness settles. Audio: quiet kitchen ambiance fading, soft sigh. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Static close-up. The character pushes food around the plate, expression shifting from boredom to quiet longing, then slowly turns toward the window. Eyes reflect the fading daylight. Audio: fork scraping plate softly, distant evening sounds. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S01_C",
+    "scene_id": "S01",
+    "scene_description_ru": "Папа ест молча, но его взгляд задерживается на Амине чуть дольше обычного. Никто не замечает. Решение зреет.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_papa_full.jpeg",
+      "персонажи_hq/char_amin_full.jpeg",
+      "локации_hq/loc_kitchen_wide_from_door.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 1, preserving identical facial features and proportions, sits at the dinner table, eating calmly, eyes lowered to the plate, expression neutral and quiet. Then, the exact character from Image 2, preserving identical facial features, sits further at the table, looking away toward a window. Use Image 3 as the exact background location. Medium shot, eye-level. Warm dinner lighting, gentle overhead glow. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 1, preserving identical facial features and proportions, sits at the table holding a spoon, head slightly bowed, focused on the meal. Then, the exact character from Image 2, preserving identical facial features, sits across, turned slightly away, expression distant. Use Image 3 as the exact background location. Medium-wide shot, slightly low angle. Warm golden dinner light, intimate atmosphere. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "First, the exact character from Image 1, preserving identical facial features and proportions, sits at the dinner table, gaze now lifted and fixed forward, gaze lingering a moment longer than usual, expression thoughtful and quietly determined. Then, the exact character from Image 2, preserving identical facial features, sits at the table unaware, still looking toward the window. Use Image 3 as the exact background location. Medium shot, eye-level. Same warm dinner lighting, a faint glint of intent in the eyes. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "First, the exact character from Image 1, preserving identical facial features and proportions, sits at the table with utensil resting on the plate, chin slightly raised, eyes locked forward with quiet resolve, mouth set in a barely perceptible smile. Then, the exact character from Image 2, preserving identical facial features, remains turned away, unaware. Use Image 3 as the exact background location. Medium close-up on Image 1 character, shallow depth. Warm amber light, subtle dramatic emphasis. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium shot. The character eats quietly, then slowly raises eyes to look across the table. Gaze lingers for a long moment — thoughtful, deliberate. Then returns to eating as if nothing happened. Audio: soft clinking of utensils, quiet family chatter in background. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Slow push in. The character pauses mid-bite, lifts gaze, and locks eyes on someone across the table. A subtle shift in expression — resolve forming. Holds the look for a beat, then casually resumes eating. Audio: muffled dinner conversation, a distant clock ticking. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S02_A",
+    "scene_id": "S02",
+    "scene_description_ru": "Гараж. Амин и Карим за верстаком, финальные штрихи радиоприёмника. Карим паяет, Амин подключает. Включают — шум, треск, обрывки.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_karim_full.jpeg",
+      "локации_hq/loc_garazh_workbench.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 1, preserving identical facial features and proportions, sits at the workbench, carefully connecting a wire to a small handmade radio receiver, expression of focused concentration. Then, the exact character from Image 2, preserving identical facial features, sits beside at the workbench, holding a soldering iron over a circuit board, equally focused. Use Image 3 as the exact background location. Medium shot, eye-level. Warm garage light from a single bulb, workbench illuminated. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 2, preserving identical facial features and proportions, leans over the workbench soldering a connection on a small radio device, smoke rising from the iron tip, face lit by the glow. Then, the exact character from Image 1, preserving identical facial features, watches closely, holding a component ready to attach. Use Image 3 as the exact background location. Close-up on the workbench, slightly high angle. Warm directional light from overhead, soft shadows. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "First, the exact character from Image 1, preserving identical facial features and proportions, reaches toward a power switch on the radio receiver, finger hovering, expression of expectation. Then, the exact character from Image 2, preserving identical facial features, leans in close, watching the radio intently, anticipation visible in the eyes. A small indicator light glows on the device. Use Image 3 as the exact background location. Medium close-up, eye-level. Warm garage light, the radio's indicator casting a faint glow on faces. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "First, the exact character from Image 1, preserving identical facial features and proportions, flips a switch on the handmade radio, eyes fixed on the device, breath held. Then, the exact character from Image 2, preserving identical facial features, leans closer with wide eyes, hands gripping the workbench edge. A tiny LED blinks on the radio. Use Image 3 as the exact background location. Medium shot, slight low angle. Warm overhead garage light, subtle lens flare from the indicator. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium shot. Two characters at the workbench make final adjustments to a small radio, then one reaches for the power switch. The indicator light blinks on. Both lean in to listen. Audio: soldering hiss, click of a switch, radio static crackling to life. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Slow dolly in toward the workbench. Hands work on a radio receiver — soldering, connecting. One character flips the switch. Static bursts from the speaker, then fragments of music and voices emerge. Both freeze, listening. Audio: electrical hum, switch click, rising radio static with distant voice fragments. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S02_B",
+    "scene_id": "S02",
+    "scene_description_ru": "На одной частоте — загадочный сигнал: ритмичные короткие-длинные сигналы, потом механический голос с цифрами. Все замирают. Тишина в гараже.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_karim_full.jpeg",
+      "персонажи_hq/char_tako_full.jpeg",
+      "локации_hq/loc_garazh_inside.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 1, preserving identical facial features and proportions, sits at the workbench, hand frozen on the radio dial, eyes wide, mouth slightly open, stunned by what comes from the speaker. Then, the exact character from Image 2, preserving identical facial features, sits beside, leaning forward with intense focus, not breathing. Then, the exact character from Image 3, preserving identical facial features, stands motionless in the background holding a stick, frozen mid-motion. Use Image 4 as the exact background location. Medium-wide shot, eye-level. Dim garage light, the radio as focal point. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 1, preserving identical facial features and proportions, grips the radio dial with one hand, face frozen in concentration, eyes locked on the radio speaker. Then, the exact character from Image 2, preserving identical facial features, leans in with parted lips, captivated. Then, the exact character from Image 3, preserving identical facial features, stands behind, object dangling forgotten from one hand, staring. Use Image 4 as the exact background location. Medium shot, slight low angle. Moody garage lighting, dramatic shadow from single overhead source. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "First, the exact character from Image 1, preserving identical facial features and proportions, sits perfectly still at the workbench, hand on the radio, eyes narrowed in thought, the signal has ended. Absolute stillness. Then, the exact character from Image 2, preserving identical facial features, sits beside with mouth open, about to speak. Then, the exact character from Image 3, preserving identical facial features, stands in the background, eyes wide, whispering. Use Image 4 as the exact background location. Medium shot, eye-level. Same dim garage light, tension in the air. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "First, the exact character from Image 1, preserving identical facial features and proportions, stares at the silent radio, jaw set, processing what was heard. Then, the exact character from Image 2, preserving identical facial features, turns toward Image 1 character with a questioning look. Then, the exact character from Image 3, preserving identical facial features, clutches the stick to chest, expression of thrilled disbelief. Use Image 4 as the exact background location. Medium shot, slight high angle. Dim warm garage light, dust particles visible in the air. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Slow push in. All three characters freeze as a rhythmic coded signal emerges from the radio — short, long, short, long — followed by a monotone voice reading numbers. Nobody moves. The signal repeats, then silence. Audio: rhythmic beeping pattern, mechanical monotone voice saying numbers, then abrupt silence. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Static medium-wide shot. The radio crackles, then a clear coded signal cuts through — beeps in a deliberate pattern, followed by a flat mechanical voice reciting numbers. All three characters are frozen. One whispers. Audio: sharp rhythmic beeping, robotic voice with numbers, stunned silence. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S02_C",
+    "scene_id": "S02",
+    "scene_description_ru": "Амин записывает цифры по памяти. Берёт атлас, сопоставляет. Палец останавливается на точке: «Рядом со школой». Первый проблеск жизни в глазах.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "локации_hq/loc_garazh_desk_closeup.jpg"
+    ],
+    "nano_banana_prompt_first": "The exact character from Image 1, preserving identical facial features and proportions, writes rapidly on a piece of paper at the workbench, pen gripped tightly, brow furrowed in concentration, recalling numbers from memory. Use Image 2 as the exact background location. Close-up, slightly high angle on the writing hand and face. Warm garage light focused on the paper, soft shadows. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "The exact character from Image 1, preserving identical facial features and proportions, hunches over the workbench, scribbling two rows of numbers on a scrap of paper, expression of intense recall, eyes half-closed. Use Image 2 as the exact background location. Close-up, eye-level. Warm directional light from a desk lamp, pen casting a narrow shadow. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "The exact character from Image 1, preserving identical facial features and proportions, holds an open atlas on the workbench, one finger pressing on a point on the map, eyes wide with realization, a spark of excitement breaking through the usual calm expression. Use Image 2 as the exact background location. Medium close-up, eye-level. Warm garage light, the atlas pages illuminated. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The exact character from Image 1, preserving identical facial features and proportions, leans over an open paper atlas, finger tracing a path to a specific point, lips parting in surprise, eyes alive with sudden purpose. Use Image 2 as the exact background location. Close-up from slightly above, focus on face and atlas. Warm overhead light, the map detail visible. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Slow dolly in. The character writes numbers quickly on paper, then grabs an old atlas. Flips pages. Finger traces the map and stops on a point. Eyes widen — realization. Audio: pen scratching paper, pages rustling, a soft gasp. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Static close-up. Hands scribble numbers on paper, then reach for a worn atlas. Pages turn. A finger lands on a map point. The character lifts their head, eyes bright with discovery. Audio: rapid pen strokes, book pages flipping, quiet intake of breath. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S02_D",
+    "scene_id": "S02",
+    "scene_description_ru": "Амин смотрит на Карима. Впервые в глазах — что-то живое. «Завтра. После школы.» Решение принято.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_karim_full.jpeg",
+      "локации_hq/loc_garazh_inside.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 1, preserving identical facial features and proportions, sits at the workbench holding the atlas, looking across at Image 2 character with a new intensity in the eyes, determination forming. Then, the exact character from Image 2, preserving identical facial features, sits nearby, eyebrows raised in a questioning look, waiting for a decision. Use Image 3 as the exact background location. Medium shot, eye-level. Warm garage light, late afternoon mood. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 1, preserving identical facial features and proportions, grips the edge of the atlas, gaze sharp and alive, something alive stirring in the eyes for the first time. Then, the exact character from Image 2, preserving identical facial features, tilts head, expression curious and expectant. Use Image 3 as the exact background location. Medium close-up, slight low angle. Late afternoon light filtering through garage, warm and purposeful. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "First, the exact character from Image 1, preserving identical facial features and proportions, looks directly at Image 2 character with confident resolve, chin raised, eyes bright and alive, mouth set in determination. Then, the exact character from Image 2, preserving identical facial features, meets the gaze with a slow smile of agreement, nodding subtly. Use Image 3 as the exact background location. Medium shot, eye-level. Warm golden garage light, sense of a pact being made. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "First, the exact character from Image 1, preserving identical facial features and proportions, sets the atlas down firmly, looks up with quiet resolve, eyes alive for the first time, expression of clear decision. Then, the exact character from Image 2, preserving identical facial features, grins back, energy matching, ready. Use Image 3 as the exact background location. Medium shot, slight low angle for heroic feel. Warm backlight from garage window, intentional and cinematic. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium shot. One character looks at the other across the workbench, eyes newly alive with purpose. Says: \"Tomorrow. After school.\" The other nods, a slow grin spreading. Audio: quiet garage hum, a decisive voice, soft agreement. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Slow push in on two characters. One closes the atlas, looks up with fierce determination. Says: \"Tomorrow.\" The other meets the gaze, nods firmly. A shared moment of resolve. Audio: atlas closing, steady breathing, quiet but firm voice. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S03_A",
+    "scene_id": "S03",
+    "scene_description_ru": "После уроков, у магазина. Рами стоит мрачный — велик украли. Тако: «Мы найдём!» Амин: «Мы не полиция.»",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_tako_full.jpeg",
+      "персонажи_hq/char_rami_full.jpeg",
+      "локации_hq/loc_shop_front.jpeg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 2, preserving identical facial features and proportions, stands near a pole on the sidewalk, shoulders slumped, expression dejected and upset, looking down. Then, the exact character from Image 1, preserving identical facial features, approaches with a concerned, sympathetic look. Use Image 3 as the exact background location. Medium shot, eye-level. Bright afternoon daylight, harsh midday shadows on the pavement. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 2, preserving identical facial features and proportions, leans against a pole, arms crossed defensively, face clouded with frustration and helplessness. Then, the exact character from Image 1, preserving identical facial features, stands nearby with wide empathetic eyes, leaning in to listen. Use Image 3 as the exact background location. Medium-wide shot, eye-level. Crisp afternoon sunlight, long shadows. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "First, the exact character from Image 1, preserving identical facial features and proportions, points a finger forward emphatically, expression of fierce determination and promise, mouth open mid-vow. Then, the exact character from Image 2, preserving identical facial features, looks up with a glimmer of hope, still distressed but slightly comforted. Use Image 3 as the exact background location. Medium close-up, eye-level. Bright afternoon daylight, warm tones. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "First, the exact character from Image 1, preserving identical facial features and proportions, clenches a fist at chest level, expression resolute and passionate, making a solemn promise. Then, the exact character from Image 2, preserving identical facial features, watches with a fragile half-smile, still upset but touched by the earnestness. Use Image 3 as the exact background location. Medium shot, slight low angle. Afternoon sun behind them, warm backlight halo. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium shot. One character stands dejected by a pole, explaining what happened. The other listens, then says: \"We'll find it. I promise.\" Expression shifts from sympathy to determination. Audio: street ambiance, distant traffic, earnest young voice. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Tracking shot, slow pan. One character approaches another who looks upset by a pole. Listens, then grabs shoulder reassuringly and speaks with conviction. Audio: afternoon street sounds, footsteps approaching, passionate declaration. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S03_B",
+    "scene_id": "S03",
+    "scene_description_ru": "Подходят к трансформаторному ящику у забора школы. Тако волнуется про ловушки и пауков. Охранник далеко у входа.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_karim_full.jpeg",
+      "персонажи_hq/char_tako_full.jpeg",
+      "локации_hq/loc_school_front_gates.jpeg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 1, preserving identical facial features and proportions, walks purposefully toward a rusted metal box near a fence, atlas tucked under one arm, expression determined. Then, the exact character from Image 2, preserving identical facial features, walks alongside, scanning the surroundings carefully. Then, the exact character from Image 3, preserving identical facial features, trails behind, glancing around nervously, arms held close. Use Image 4 as the exact background location. Medium-wide shot, eye-level. Bright afternoon sunlight, school in the background. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 1, preserving identical facial features and proportions, approaches a weathered metal utility box beside a fence, focused and intent. Then, the exact character from Image 2, preserving identical facial features, follows close, alert and watchful. Then, the exact character from Image 3, preserving identical facial features, hesitates a few steps behind, biting a lip, looking spooked. Use Image 4 as the exact background location. Medium shot, slight high angle. Clear afternoon light with hard shadows from the fence. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "First, the exact character from Image 1, preserving identical facial features and proportions, grips the lid of a rusted metal box, about to pull it open, glancing back over one shoulder. Then, the exact character from Image 2, preserving identical facial features, stands watch, eyes darting toward the school entrance. Then, the exact character from Image 3, preserving identical facial features, cringes back, hands up defensively, expression of dread. Use Image 4 as the exact background location. Medium shot, eye-level. Bright daylight, tension in the pose. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "First, the exact character from Image 1, preserving identical facial features and proportions, has both hands on the rusted lid, muscles tensed to lift, looking cautiously back. Then, the exact character from Image 2, preserving identical facial features, peers toward the school, body tense. Then, the exact character from Image 3, preserving identical facial features, covers eyes with both hands, peeking through fingers. Use Image 4 as the exact background location. Medium close-up, eye-level. Harsh afternoon sun, dramatic shadows from the fence. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Tracking shot following three characters as they approach a rusted metal box near a school fence. One grips the lid. Metal screeches as it opens. A distant shout — all heads snap up. Audio: footsteps on gravel, loud metal screech, distant angry shout. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Slow dolly in. Three characters huddle around a metal box. One pulls the lid — a grinding screech of rusty metal fills the air. In the distance, a figure turns toward the noise. Frozen moment. Audio: tense breathing, harsh metal screech, distant yell approaching. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S03_C",
+    "scene_id": "S03",
+    "scene_description_ru": "Тако отвлекает охранника потоком вопросов. Амин и Карим крадутся к ящику, забирают записку.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_tako_full.jpeg",
+      "персонажи_hq/char_amin_full.jpeg",
+      "локации_hq/loc_school_entrance.jpeg"
+    ],
+    "nano_banana_prompt_first": "The exact character from Image 1, preserving identical facial features and proportions, stands boldly in front of an adult, gesturing with both hands enthusiastically, mouth open mid-question, expression of exaggerated innocent curiosity. The adult figure faces Image 1 character, turned away from the background. Use Image 3 as the exact background location. Medium shot, eye-level. Bright afternoon light, open school area. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "The exact character from Image 1, preserving identical facial features and proportions, talks animatedly to an adult figure, hands waving, head tilted, radiating enthusiastic curiosity, asking rapid-fire questions. The adult is turned away from the surroundings, focused on the conversation. Use Image 3 as the exact background location. Medium-wide shot, slight low angle from behind Image 1 character. Bright daylight, casual school grounds atmosphere. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "The exact character from Image 2, preserving identical facial features and proportions, crouches beside the open metal box, carefully removing a small note taped inside the lid, expression focused and quick, one hand steadying the lid silently. Use Image 3 as the exact background location. Close-up, low angle. Bright daylight from above, shadows inside the box. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The exact character from Image 2, preserving identical facial features and proportions, reaches into an open metal utility box, fingers peeling a note from the inner wall, eyes alert and quick, body low and tense. Use Image 3 as the exact background location. Close-up, slightly from the side. Harsh daylight, deep shadow inside the box. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium-wide shot. One character talks excitedly to a guard, gesturing wildly, keeping full attention. Meanwhile, two figures creep silently to the metal box in the background, open it quietly, grab a note, and slip away. Audio: enthusiastic chatter, distant laughter, soft metallic click. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Slow pan from left to right. One character distracts a guard with animated questions — hands flying, head bobbing. The camera pans to reveal two others sneaking to the box, carefully opening it, grabbing something, and ducking away. Audio: rapid-fire young voice asking questions, quiet footsteps, soft lid opening. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S03_D",
+    "scene_id": "S03",
+    "scene_description_ru": "За углом. «Сработало.» «Конечно — никто не устоит перед научным любопытством.» Амин разворачивает записку — цифры и рисунок.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_karim_full.jpeg",
+      "персонажи_hq/char_tako_full.jpeg",
+      "локации_hq/loc_school_front_trees.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 3, preserving identical facial features and proportions, stands proudly with arms crossed, chin raised, expression of smug satisfaction and triumph. Then, the exact character from Image 2, preserving identical facial features, stands beside, shaking head in amused disbelief, a half-smile. Then, the exact character from Image 1, preserving identical facial features, unfolds a small piece of paper, studying it intently. Use Image 4 as the exact background location. Medium shot, eye-level, behind a building corner. Dappled afternoon light through trees. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 3, preserving identical facial features and proportions, beams with pride, one hand on hip, the other gesturing dramatically at self, basking in the success. Then, the exact character from Image 2, preserving identical facial features, rolls eyes with a grin. Then, the exact character from Image 1, preserving identical facial features, holds a note up, examining it closely. Use Image 4 as the exact background location. Medium-wide shot, eye-level. Soft afternoon light filtering through foliage, relaxed mood. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "First, the exact character from Image 1, preserving identical facial features and proportions, holds an open atlas beside the note, comparing numbers on the paper with the map, expression of focused analysis. Then, the exact character from Image 2, preserving identical facial features, peers over the shoulder, following the finger on the map. Then, the exact character from Image 3, preserving identical facial features, stands on tiptoes trying to see, expression eager. Use Image 4 as the exact background location. Medium close-up, slightly high angle. Warm afternoon light, the paper and atlas illuminated. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "First, the exact character from Image 1, preserving identical facial features and proportions, traces a finger across the atlas page, matching coordinates from the note, eyes narrowing with focus. Then, the exact character from Image 2, preserving identical facial features, points at a spot on the map, nodding. Then, the exact character from Image 3, preserving identical facial features, bounces slightly with excitement, trying to peek at the atlas. Use Image 4 as the exact background location. Close-up on the atlas and faces, eye-level. Soft tree-filtered daylight. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium shot. Three characters huddle behind a corner. One unfolds a note, studies it, then opens an atlas. Fingers trace the map. They exchange glances — the next destination found. Audio: paper rustling, pages turning, quiet excited whispers. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Slow dolly in on three characters behind a building. One proudly crosses arms while the others examine a note. An atlas opens, a finger lands on a map point. Nods of agreement. Audio: breeze through trees, paper unfolding, low conspiratorial voices. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S03_E",
+    "scene_id": "S03",
+    "scene_description_ru": "Кадр наблюдателя: из-за угла кто-то смотрит, как ребята уходят. Силуэт — тёмный, неразличимый. Отступает в тень.",
+    "nano_banana_ingredients": [
+      "локации_hq/loc_school_front_trees.jpg"
+    ],
+    "nano_banana_prompt_first": "A dark, indistinct silhouette stands behind the corner of a building, partially hidden, watching a group of figures walking away in the distance. The silhouette is backlit, features completely obscured in shadow. Use Image 1 as the exact background location. Wide shot, slightly low angle. Late afternoon light, long dramatic shadows, the silhouette framed against bright background. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic, mysterious atmosphere.",
+    "nano_banana_prompt_first_b": "A mysterious dark figure stands motionless behind a building corner, barely visible in deep shadow, observing distant figures departing along a path. Only the outline is visible — no features, no details. Use Image 1 as the exact background location. Wide establishing shot, eye-level. Harsh afternoon backlight creating a strong silhouette effect, long shadows stretching across the ground. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic, suspenseful tone.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "An empty corner of a building. Deep shadows where a figure stood moments ago — now vacant. The shadow remains but the watcher is gone. Quiet, unsettling stillness. Use Image 1 as the exact background location. Wide shot, same angle as before. Late afternoon light, the shadows longer now, empty space where the silhouette was. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic, lingering tension.",
+    "nano_banana_prompt_last_b": "A deserted building corner, deep in shadow. No figure visible — only the trace of someone having been there. The path ahead is empty. Eerie calm. Use Image 1 as the exact background location. Wide shot, eye-level. Fading afternoon light, the corner swallowed in shadow, a sense of someone watching now gone. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic, atmospheric unease.",
+    "veo_prompt": "Static wide shot. A dark silhouette stands behind a building corner, watching. Holds perfectly still for a beat. Then slowly steps backward into the shadow, disappearing. The corner is empty. Audio: distant footsteps fading away, wind rustling leaves, silence. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Locked-off wide shot. A shadowy figure observes from behind a corner. Motionless. Then, in a single smooth motion, retreats into the darkness. Gone. Only shadow remains. Audio: faint distant voices fading, a single bird call, unsettling quiet. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S04_A",
+    "scene_id": "S04",
+    "scene_description_ru": "Парк. Ребята идут между деревьями, сверяются с атласом. Видят дерево с дуплом — но к стволу привязана собака.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_karim_full.jpeg",
+      "персонажи_hq/char_tako_full.jpeg",
+      "локации_hq/loc_park_trees.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 1, preserving identical facial features and proportions, walks along a park path between mature trees, holding an open atlas, checking coordinates. Then, the exact character from Image 2, preserving identical facial features, walks alongside, looking around at the surroundings. Then, the exact character from Image 3, preserving identical facial features, follows behind, curious and alert. Use Image 4 as the exact background location. Medium-wide shot, eye-level. Bright daylight filtering through leaves, green and warm tones. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 1, preserving identical facial features and proportions, studies an atlas while walking through a tree-lined park path, head down, navigating. Then, the exact character from Image 2, preserving identical facial features, scans the tree trunks, searching for something. Then, the exact character from Image 3, preserving identical facial features, looks up at the canopy with wonder. Use Image 4 as the exact background location. Medium shot, slight high angle. Warm afternoon light, leaf shadows dancing. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "First, the exact character from Image 1, preserving identical facial features and proportions, stops on the path, looking at a wide tree trunk ahead, expression shifting to concern — a large dog is tied to the base near a visible hollow in the trunk. Then, the exact character from Image 2, preserving identical facial features, stops beside, frowning at the obstacle. Then, the exact character from Image 3, preserving identical facial features, peers from behind, eyes wide at the dog. Use Image 4 as the exact background location. Medium shot, eye-level. Bright daylight, warm natural tones. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "First, the exact character from Image 1, preserving identical facial features and proportions, stands before a wide tree trunk, atlas lowered, studying a hollow in the bark, expression calculating — a large restless dog blocks the approach. Then, the exact character from Image 2, preserving identical facial features, crosses arms, assessing the situation. Then, the exact character from Image 3, preserving identical facial features, crouches slightly, watching the dog with intense fascination. Sunlit park clearing, the tree dominating the frame. Use Image 4 as the exact background location. Medium-wide shot, eye-level. Golden afternoon light, deep tree shadows. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Tracking shot following three characters through a park. They stop before a large tree — a dog tied to the trunk blocks their goal. They exchange concerned glances. Audio: birds singing, leaves rustling, distant dog barking, footsteps on grass. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Slow dolly toward a large tree in a park. Three characters approach, then halt. A dog tied to the trunk snarls. They step back, huddling to plan. Audio: cheerful park ambiance turning tense, dog growling softly, whispered discussion. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S04_B",
+    "scene_id": "S04",
+    "scene_description_ru": "Тако достаёт из кармана лепёшку, кормит собаку. Собака отворачивается. Амин быстро лезет в дупло, достаёт свёрток.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_tako_full.jpeg",
+      "персонажи_hq/char_amin_full.jpeg",
+      "локации_hq/loc_park_trees.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 1, preserving identical facial features and proportions, crouches on the grass near a large dog, holding out a piece of flatbread with one hand, expression gentle and coaxing, free hand raised in a calming gesture. The dog sniffs the offering, curious. Use Image 3 as the exact background location. Medium shot, low angle. Warm daylight, soft focus on the background. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 1, preserving identical facial features and proportions, sits cross-legged on the ground at a safe distance from a large dog, tossing a small piece of bread gently to the side, expression of careful concentration and natural confidence with animals. Use Image 3 as the exact background location. Medium shot, eye-level from the ground. Golden afternoon light, grass details visible. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "The exact character from Image 2, preserving identical facial features and proportions, reaches into a hollow in a wide tree trunk, pulling out a small wrapped package, expression of focused urgency, glancing sideways to check the coast is clear. Use Image 3 as the exact background location. Close-up, eye-level. Warm daylight, bark texture visible, the package partially visible in hand. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The exact character from Image 2, preserving identical facial features and proportions, withdraws a hand from a tree hollow clutching a small wrapped bundle, eyes sharp and quick, body tense and ready to move. The dog chews something in the background, oblivious. Sunlit park near the tree. Use Image 3 as the exact background location. Medium close-up, slight low angle. Bright natural light, urgency in the posture. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium shot. One character tosses bread to a dog near a tree. The dog turns away to eat. Meanwhile, another character darts to the tree, reaches into a hollow, and pulls out a small package. Quick, precise. Audio: bread landing on grass, dog chewing, rustling of leaves, swift footsteps. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Slow pan from the dog eating to the tree. One character feeds the dog, luring it away. Another slips around the trunk, reaches into the hollow, and extracts a wrapped bundle. Triumphant glance back. Audio: soft encouraging voice to the dog, bark scraping, package sliding out. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S04_C",
+    "scene_id": "S04",
+    "scene_description_ru": "Разворачивают свёрток: записка + фрагмент фотографии. Задача — квадратное уравнение. Тако: «Монетка». Амин решает — мост за посёлком.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_karim_full.jpeg",
+      "персонажи_hq/char_tako_full.jpeg",
+      "локации_hq/loc_park_trees.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 1, preserving identical facial features and proportions, holds an unwrapped note and a small photo fragment, studying the paper intently, brow creased in thought. Then, the exact character from Image 2, preserving identical facial features, leans over to read the note, expression puzzled. Then, the exact character from Image 3, preserving identical facial features, stands behind, hand in pocket, fidgeting with something, looking impatient. Use Image 4 as the exact background location. Medium shot, eye-level. Bright daylight, warm tones. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 1, preserving identical facial features and proportions, unfolds a note carefully, examining numbers and a small equation, expression of analytical concentration. Then, the exact character from Image 2, preserving identical facial features, peers at a small fragment of a photograph, turning it in different directions. Then, the exact character from Image 3, preserving identical facial features, bounces on heels, holding up a coin between two fingers, grinning mischievously. Use Image 4 as the exact background location. Medium shot, slight high angle. Warm diffused sunlight through canopy. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "First, the exact character from Image 1, preserving identical facial features and proportions, writes calculations in a small notebook, pen moving rapidly, then looks up with clarity and confidence — the answer found. Then, the exact character from Image 2, preserving identical facial features, looks at the notebook, nodding with understanding. Then, the exact character from Image 3, preserving identical facial features, shrugs with palms up, a half-smile, as if to say the coin would have been faster. Use Image 4 as the exact background location. Medium shot, eye-level. Warm afternoon light. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "First, the exact character from Image 1, preserving identical facial features and proportions, taps the notebook with the pen decisively, expression of quiet triumph, solution found. Then, the exact character from Image 2, preserving identical facial features, smiles approvingly, pointing at the answer. Then, the exact character from Image 3, preserving identical facial features, leans toward Image 2, whispering conspiratorially, thumb jerking toward the notebook, amused. Use Image 4 as the exact background location. Medium close-up, eye-level. Gentle golden light. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium shot. One character studies a note, writes calculations. Works through the equation, pen scratching paper. Looks up — solved. The others react — one nods, one shrugs playfully. Audio: pen on paper, birdsong, quiet park ambiance, soft triumphant exhale. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Slow dolly in. Three characters examine a note under trees. One calculates intensely in a notebook. Pause. Then — realization. Eyes light up. The answer is clear. Audio: pencil scratching, leaves in the wind, a whispered \"got it\". Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S05_A",
+    "scene_id": "S05",
+    "scene_description_ru": "Мост через ручей. Под мостом — рыбаки с удочками, прямо у балки с запиской. Ждут полчаса. Тако не выдерживает.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_karim_full.jpeg",
+      "персонажи_hq/char_tako_full.jpeg",
+      "локации_hq/loc_bridge_stream.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 1, preserving identical facial features and proportions, stands at the edge of a weathered stone bridge over a small stream, looking down at two fishermen sitting below, expression frustrated and calculating. Then, the exact character from Image 2, preserving identical facial features, leans on the bridge railing, waiting patiently, arms crossed. Then, the exact character from Image 3, preserving identical facial features, sits on the ground nearby, chin on knees, expression of extreme impatience. Use Image 4 as the exact background location. Medium-wide shot, eye-level. Bright afternoon sunlight, natural outdoor tones. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 1, preserving identical facial features and proportions, peers over a bridge railing at the water below, noting something attached to a beam underneath, thinking. Then, the exact character from Image 2, preserving identical facial features, stands beside, arms folded, watching the scene below patiently. Then, the exact character from Image 3, preserving identical facial features, sprawls on the bridge, bored senseless, staring at the sky. Use Image 4 as the exact background location. Medium shot, slight high angle. Warm afternoon sun, reflections in the water. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "The exact character from Image 3, preserving identical facial features and proportions, springs to feet on the bridge with sudden determination, expression of a plan forming, eyes bright with mischief, about to march toward the fishermen below. Use Image 4 as the exact background location. Medium shot, slight low angle. Bright afternoon light, dynamic energy in the pose. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The exact character from Image 3, preserving identical facial features and proportions, stands up abruptly on the bridge, brushing off clothes, chin raised with confidence, a scheming grin forming, ready to put a plan into action. Use Image 4 as the exact background location. Medium close-up, low angle looking up. Bright daylight, backlit with a halo of sun. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static wide shot of a bridge. Three characters wait above while two fishermen sit below. Time passes — fidgeting, sighing. Finally, one character jumps up with sudden resolve. Audio: water burbling, distant birds, bored sighing, then sudden footsteps. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Locked-off medium shot on the bridge. Three characters wait impatiently. One sits, then lies down, then sits again. Finally springs up, eyes gleaming with a plan. Audio: trickling stream, birdsong, exasperated groan, then determined footsteps. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S05_B",
+    "scene_id": "S05",
+    "scene_description_ru": "Тако отправляет рыбаков к плотине враньём про рыбу. «Вот такую вытащил!» — руки всё шире. Рыбаки уходят.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_tako_full.jpeg",
+      "локации_hq/loc_bridge_stream.jpg"
+    ],
+    "nano_banana_prompt_first": "The exact character from Image 1, preserving identical facial features and proportions, stands near a stream bank, arms spread wide apart in an exaggerated fish-size gesture, expression of dramatic conviction, eyebrows raised, telling an exaggerated tale to two seated fishermen. A rural stream near a bridge, grassy bank. Use Image 2 as the exact background location. Medium shot, eye-level. Bright afternoon sunlight, open outdoor setting. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "The exact character from Image 1, preserving identical facial features and proportions, leans toward two seated figures by a stream, hands spreading wider and wider to show the size of an imaginary catch, face absolutely serious and convincing, eyes wide for emphasis. Use Image 2 as the exact background location. Medium-wide shot, slight low angle. Golden afternoon light, warm natural tones. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "The exact character from Image 1, preserving identical facial features and proportions, waves goodbye to two figures walking away along the stream with fishing rods over their shoulders, expression of smug satisfaction, hands on hips, barely containing a grin. Use Image 2 as the exact background location. Medium shot, eye-level. Warm afternoon light, the departing fishermen in the middle distance. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The exact character from Image 1, preserving identical facial features and proportions, watches two figures walking away with fishing gear, trying to suppress a triumphant smile, arms crossed with casual pride. Stream bank, weathered bridge in background. Use Image 2 as the exact background location. Medium close-up, eye-level. Soft golden hour light, satisfied expression highlighted. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium shot. The character approaches two fishermen by a stream. Talks excitedly about a big catch at another spot — hands spreading wider and wider. The fishermen look at each other, then pack up and leave. A satisfied smirk. Audio: enthusiastic storytelling voice, fishing rods clinking, footsteps departing. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Tracking shot. The character kneels by fishermen, gesturing wildly — arms spreading to impossible widths describing a fish. The fishermen exchange looks, start packing. The character watches them leave, barely hiding a grin. Audio: animated voice, water gurgling, rods being gathered, fading footsteps. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S05_C",
+    "scene_id": "S05",
+    "scene_description_ru": "Амин спускается под мост, снимает записку с балки. Новый фрагмент фотографии. Задача — физика, преломление света. Координаты ведут к подвалу магазина.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "локации_hq/loc_bridge_stream.jpg"
+    ],
+    "nano_banana_prompt_first": "The exact character from Image 1, preserving identical facial features and proportions, climbs down beneath a weathered stone bridge, reaching up to detach a small note taped to a wooden beam, expression focused and careful, one hand gripping the beam for balance. Use Image 2 as the exact background location. Medium shot, low angle looking up. Soft filtered light coming through the bridge structure, cool shadows. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "The exact character from Image 1, preserving identical facial features and proportions, stretches up under a bridge to peel a note from a beam, fingertips carefully working the tape loose, body balanced on uneven rocks by the stream. Use Image 2 as the exact background location. Close-up, low angle. Dim natural light, water reflections casting patterns. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "The exact character from Image 1, preserving identical facial features and proportions, stands on the bridge holding a new note and a small photo fragment, studying a physics equation on the paper, expression of serious concentration, brow furrowed. Use Image 2 as the exact background location. Medium close-up, eye-level. Bright afternoon light, the paper lit clearly. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The exact character from Image 1, preserving identical facial features and proportions, holds two items — a note with equations and a torn photo fragment — comparing them, expression deeply analytical, lips pressed together in concentration. Use Image 2 as the exact background location. Close-up, slightly from the side. Warm golden light, serious scholarly mood. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Slow dolly out. Under a bridge — a figure reaches up and carefully removes a note from a beam. Climbs back up to the bridge. Studies the paper in daylight, brow creasing. Audio: water trickling, paper peeling from tape, footsteps on stone. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Static medium shot. The character descends under the bridge, finds a note on a beam, removes it. Returns to the surface, unfolds the paper. Reads. Expression shifts from curiosity to deep concentration. Audio: stream gurgling, tape peeling, paper unfolding. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S06_A",
+    "scene_id": "S06",
+    "scene_description_ru": "Школа, перемена. Хасан: ещё велик украли, уже третий! Тако бежит к Амину — «Ещё велосипеды!»",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_tako_full.jpeg",
+      "персонажи_hq/char_hasan_full.jpeg",
+      "локации_hq/loc_school_wide_yard.jpeg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 2, preserving identical facial features and proportions, runs across a school yard, expression urgent and breathless, one hand waving to get attention. Then, the exact character from Image 1, preserving identical facial features, turns to face the approaching figure, expression alert and concerned. Use Image 3 as the exact background location. Medium-wide shot, eye-level. Bright morning light, busy school yard atmosphere. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 2, preserving identical facial features and proportions, grabs Image 1 character by the arm in the school yard, panting, eyes wide with alarming news, speaking rapidly. Then, the exact character from Image 1, preserving identical facial features, listens with growing shock, mouth opening. Use Image 3 as the exact background location. Medium shot, eye-level. Morning sunlight, dynamic school yard setting. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "The exact character from Image 1, preserving identical facial features and proportions, runs across the school yard with urgency, expression alarmed and determined, heading toward someone in the distance, mouth open calling out. Use Image 3 as the exact background location. Medium shot, slight low angle, dynamic running pose. Bright morning light, motion blur suggestion. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The exact character from Image 1, preserving identical facial features and proportions, sprints across the school yard, one arm pumping, the other pointing ahead, face flushed with urgency and righteous anger about stolen bikes. Use Image 3 as the exact background location. Medium-wide shot, tracking angle. Bright morning light, energetic school environment. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Tracking shot across a school yard. One character runs up to another, breathless, delivering urgent news. Shock. Then the listener spins and sprints across the yard toward someone else. Audio: school yard chatter, running footsteps, panting, urgent voice calling out. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Static wide shot of a school yard. One character rushes to another, grabs arm, speaks rapidly. The listener's eyes go wide. Then bolts away across the yard, shouting. Audio: lively school ambiance, rapid footsteps, breathless urgent words. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S06_B",
+    "scene_id": "S06",
+    "scene_description_ru": "Заброшенный магазин. Новый блестящий замок на старой двери. Тако находит вентиляцию. «Я единственный, кто пролезет.» Получает фонарик, лезет внутрь.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_karim_full.jpeg",
+      "персонажи_hq/char_tako_full.jpeg",
+      "локации_hq/loc_shop_back.jpeg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 1, preserving identical facial features and proportions, stands before a boarded-up building, examining a shiny new padlock on a rusty door, expression suspicious and analytical. Then, the exact character from Image 2, preserving identical facial features, inspects the boarded windows, hands testing the boards. Then, the exact character from Image 3, preserving identical facial features, crouches beside the wall, tugging at a rusty ventilation grate that wobbles. Use Image 4 as the exact background location. Medium-wide shot, eye-level. Afternoon light, rundown building exterior. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 3, preserving identical facial features and proportions, grips a loose ventilation grate near the ground of an abandoned building, pulling it aside, expression of brave determination mixed with nervousness. Then, the exact character from Image 1, preserving identical facial features, holds out a flashlight toward Image 3 character, expression stern and protective. Then, the exact character from Image 2, preserving identical facial features, stands watch, arms crossed, looking up and down the alley. Use Image 4 as the exact background location. Medium shot, slightly low angle. Afternoon light, gritty urban-edge setting. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "The exact character from Image 3, preserving identical facial features and proportions, squeezes through a narrow ventilation opening in the wall of an abandoned building, flashlight gripped in one hand, body halfway through, expression tense but resolved. Outside, afternoon light illuminates half the body still visible outside. Use Image 4 as the exact background location. Medium close-up, low angle. Half in shadow, half in daylight, dramatic contrast. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The exact character from Image 3, preserving identical facial features and proportions, disappears into a dark ventilation shaft in a building wall, only feet and lower legs still visible, flashlight beam cutting through the darkness ahead. The opening is narrow and grimy. Use Image 4 as the exact background location. Close-up, eye-level. Strong contrast between bright exterior and dark interior, flashlight beam piercing the dust. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium shot. Three characters examine a boarded-up building. One crouches by a vent grate, pulls it loose. Accepts a flashlight. Takes a breath. Squeezes into the dark opening, disappearing from view. Audio: rusty metal scraping, deep breath, clothes scraping against concrete. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Slow dolly in. By an abandoned building, one character receives a flashlight, kneels by a vent opening. A moment of courage. Then crawls inside headfirst, flashlight beam bouncing in the dark. The opening swallows the figure. Audio: determined breathing, grate clanking, echoing scrapes inside the shaft. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S06_C",
+    "scene_id": "S06",
+    "scene_description_ru": "Тако ползёт по вентиляции, выбирается в подвал. Пыль, темнота. Находит записку. Потом — свежие коробки с велозапчастями. Замирает. Запоминает. Лезет назад.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_tako_full.jpeg",
+      "локации_hq/loc_basement_dark.jpg"
+    ],
+    "nano_banana_prompt_first": "The exact character from Image 1, preserving identical facial features and proportions, crouches in a dark dusty basement, flashlight beam sweeping across weathered brick walls, expression of nervous determination, body tense and alert, whispering to self for courage. Use Image 2 as the exact background location. Medium shot, low angle. Single flashlight source creating dramatic shadows, dust motes floating. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "The exact character from Image 1, preserving identical facial features and proportions, stands in a dark basement, flashlight casting a cone of light on the wall, one hand reaching into a crack between bricks to pull out a folded note, expression of triumphant focus. Use Image 2 as the exact background location. Close-up, eye-level. Flashlight illumination only, atmospheric shadows, spelunking mood. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "The exact character from Image 1, preserving identical facial features and proportions, stares at an open cardboard box in the basement, flashlight revealing bicycle parts inside — handlebars, pedals, chains — expression shifting from curiosity to stunned realization, eyes wide, mouth forming a silent understanding. Use Image 2 as the exact background location. Close-up on face and the box, eye-level. Single flashlight source, dramatic discovery lighting. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The exact character from Image 1, preserving identical facial features and proportions, slowly closes the lid of a cardboard box in a dark basement, expression serious and thoughtful, processing what was just seen — bike parts in a hidden location — backing away carefully. Use Image 2 as the exact background location. Medium close-up, slight high angle. Dim flashlight glow, shadow-heavy, tense atmosphere. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Slow push in. A figure crawls through a vent shaft, flashlight bouncing. Emerges into a dark basement. Finds a note in a wall crack. Then the flashlight beam hits cardboard boxes — opens one — bicycle parts. Freezes. Audio: echoing crawling sounds, dusty silence, box lid opening, sharp intake of breath. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Static low-angle shot in a dark basement. A flashlight beam sweeps across walls. Finds a note between bricks. Then swings to a corner — fresh clean boxes. Opens one. Bicycle handlebars and chains inside. The flashlight trembles. Audio: hollow basement echo, paper rustling, cardboard opening, stunned silence. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S06_D",
+    "scene_id": "S06",
+    "scene_description_ru": "Тако выбирается. «Там коробки с велозапчастями. И замок на двери новый.» Амин хмурится, разворачивает записку — самая сложная задача.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_karim_full.jpeg",
+      "персонажи_hq/char_tako_full.jpeg",
+      "локации_hq/loc_shop_side.jpeg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 3, preserving identical facial features and proportions, climbs out of a wall opening, dusty and disheveled, holding up a note triumphantly, expression of excited urgency mixed with lingering fear. Then, the exact character from Image 1, preserving identical facial features, reaches down to help, expression attentive and serious. Then, the exact character from Image 2, preserving identical facial features, stands nearby on lookout, concerned. Use Image 4 as the exact background location. Medium shot, low angle. Afternoon light, gritty backdrop. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 3, preserving identical facial features and proportions, stands outside a building wall, clothes dusty, flashlight dangling from one hand, the other hand holding a note, speaking rapidly with wide eyes about what was discovered inside. Then, the exact character from Image 1, preserving identical facial features, listens intently, brow furrowing. Then, the exact character from Image 2, preserving identical facial features, exchanges a worried look with Image 1 character. Use Image 4 as the exact background location. Medium shot, eye-level. Afternoon light, tense atmosphere. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "The exact character from Image 1, preserving identical facial features and proportions, holds the unfolded note, reading a complex equation, expression deeply troubled and concentrated, brow heavily creased, the difficulty of the task visible in the tightness of the jaw. Use Image 4 as the exact background location. Close-up, eye-level. Late afternoon light catching the paper, serious scholarly mood. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The exact character from Image 1, preserving identical facial features and proportions, stares at the note with narrowed eyes, expression of intense mental effort and growing frustration, realizing the complexity of the final task. One hand runs through hair. Use Image 4 as the exact background location. Close-up, slight low angle. Warm late afternoon light, dramatic emphasis on the troubled expression. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium shot. One character emerges from a wall opening, dusty, hands over a note while speaking urgently. Another takes the note, reads it. Expression darkens — this task is the hardest yet. Audio: breathless excited voice, paper rustling, a low worried sigh. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Slow push in. A dusty character gestures urgently while explaining a discovery. The listener unfolds a note, studies it. Face falls — the equation is formidable. Stares at the paper, jaw tightening. Audio: animated whispering, paper unfolding, troubled exhale. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S06_E",
+    "scene_id": "S06",
+    "scene_description_ru": "Ночь. Фигура идёт по пустой улице быстрым шагом. Останавливается. Оглядывается. Продолжает. Растворяется в темноте. Чёрный экран.",
+    "nano_banana_ingredients": [
+      "локации_hq/loc_night_street.jpg"
+    ],
+    "nano_banana_prompt_first": "A solitary dark silhouette walks briskly down an empty street at night, seen from behind, moving with purpose. Streetlights cast long pools of amber light on the pavement. The figure is indistinct — only an outline against the dim glow. Use Image 1 as the exact background location. Wide shot, low angle. Night lighting — sparse amber streetlamps, deep shadows, film noir atmosphere. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic, mysterious.",
+    "nano_banana_prompt_first_b": "A dark figure strides along a deserted nighttime street, dark indistinct outline visible against faint streetlight. Moving with intent, alone. The street stretches empty in both directions. Use Image 1 as the exact background location. Wide establishing shot, eye-level. Minimal amber lighting, deep contrast, urban night atmosphere. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic, suspenseful.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "An empty nighttime street. No figure visible. Only the lingering amber glow of a streetlamp on wet pavement. Darkness at the end of the road. Complete stillness. Use Image 1 as the exact background location. Wide shot, same angle. Minimal street lighting, the void where the figure vanished, black edges of frame. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The last streetlamp flickers faintly. Where the figure walked moments ago — nothing. The road disappears into total darkness. Silence and void. Use Image 1 as the exact background location. Wide shot, low angle. Dying amber light, darkness consuming the frame. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static wide shot. Night. A dark figure walks briskly down an empty street. Stops. Turns head slowly — scanning. Holds for a beat. Resumes walking. Disappears into the darkness at the end of the street. Fade to black. Audio: footsteps echoing, silence, footsteps resuming, then fading to nothing. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Locked-off wide shot. An empty nighttime street. A silhouette enters frame, walking fast. Pauses under a streetlamp. Looks back carefully. Then continues into the dark, growing smaller until gone. Black. Audio: deliberate footsteps on pavement, wind, brief silence, fading footsteps. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S07_A",
+    "scene_id": "S07",
+    "scene_description_ru": "Гараж. Амин мучается с задачей — считает, зачёркивает. Карим: «Получается?» Амин: «Нет.» Вечер — дома, за столом. Тупик. Следующий день — снова гараж.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_karim_full.jpeg",
+      "локации_hq/loc_garazh_workbench.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 1, preserving identical facial features and proportions, sits hunched over the workbench covered with scattered notes and a notebook, pen in hand, expression of deep frustration, brow creased, crossing out a line of calculations. Then, the exact character from Image 2, preserving identical facial features, stands nearby watching, expression of quiet concern. Use Image 3 as the exact background location. Medium shot, eye-level. Warm garage light, papers strewn across the surface. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 1, preserving identical facial features and proportions, leans over a cluttered workbench, notebook open, pen scratching through a line of numbers, jaw clenched with mental strain. Then, the exact character from Image 2, preserving identical facial features, sits beside, arms on the bench, watching with empathetic worry. Use Image 3 as the exact background location. Close-up, slightly high angle on the bench and faces. Warm overhead light, the mess of papers visible. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "The exact character from Image 1, preserving identical facial features and proportions, sits at the workbench, head bowed, pen resting on the notebook, expression defeated and exhausted, dark circles of tiredness suggested in the face, notes covered in crossed-out calculations. Use Image 3 as the exact background location. Close-up, eye-level. Dim late-day garage light, somber mood, the weight of failure in the posture. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The exact character from Image 1, preserving identical facial features and proportions, drops the pen on the notebook, pushes back from the workbench slightly, eyes closed, pinching the bridge of the nose, drained by hours of fruitless calculation. Use Image 3 as the exact background location. Medium close-up, eye-level. Fading garage light, heavy shadows, atmosphere of intellectual defeat. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium shot. The character writes rapidly in a notebook, pauses, crosses it out. Writes again. Crosses out again. Drops the pen. Head sinks toward the desk. Defeated sigh. Audio: pen scratching paper, frustrated sigh, pen dropped on wood. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Slow dolly in. At a workbench covered in notes, the character calculates, hesitates, scratches out the answer. Tries again. Fails again. Hands press flat on the desk. Eyes close. Audio: pencil on paper, erasing sounds, heavy exhale, silence. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S07_B",
+    "scene_id": "S07",
+    "scene_description_ru": "Карим предлагает варианты — Амин отвечает резко, громче чем нужно: «Я всё пробовал!» Тишина. «Извини. Я просто не могу.»",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_karim_full.jpeg",
+      "локации_hq/loc_garazh_inside.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 1, preserving identical facial features and proportions, turns sharply toward Image 2 character at the workbench, expression of flaring frustration, mouth open mid-outburst, hands gripping the bench edge. Then, the exact character from Image 2, preserving identical facial features, recoils slightly, expression startled and hurt, falling silent. Use Image 3 as the exact background location. Medium shot, eye-level. Garage light, tense confrontational atmosphere. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 1, preserving identical facial features and proportions, slams a palm on the workbench, face twisted with frustration and exhaustion, voice raised at Image 2 character. Then, the exact character from Image 2, preserving identical facial features, sits back, hands raised slightly in a calming gesture, expression wounded but understanding. Use Image 3 as the exact background location. Medium close-up, eye-level. Harsh garage lighting, dramatic emotional moment. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "First, the exact character from Image 1, preserving identical facial features and proportions, sits at the workbench, shoulders slumped, looking down, expression shifting from anger to guilt and quiet sadness, mumbling an apology. Then, the exact character from Image 2, preserving identical facial features, sits beside, expression softened with forgiveness, a gentle nod. Use Image 3 as the exact background location. Medium shot, eye-level. Softer garage light, the tension dissolving into quiet vulnerability. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "First, the exact character from Image 1, preserving identical facial features and proportions, lowers head, elbows on the bench, expression of deep regret and vulnerability, whispering an apology without looking up. Then, the exact character from Image 2, preserving identical facial features, places a hand briefly on Image 1 character's shoulder, a wordless gesture of support. Use Image 3 as the exact background location. Close-up, slightly low angle. Warm dim light, intimate emotional moment, gentle shadows. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium shot. One character says something — the other snaps back, voice raised, hand slamming the desk. Silence. Then the outburst fades — shoulders drop, eyes lower. Says: \"Sorry. I just... can't.\" The other listens silently, nods. Audio: raised voice, palm hitting wood, heavy silence, soft murmured apology. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Slow push in. Two characters at a workbench. One speaks, trying to help. The other erupts — frustration boiling over. Immediate regret. Voice drops to a whisper. The first one reaches out, offering silent comfort. Audio: suggestion leading to outburst, silence, whispered apology, quiet acceptance. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S07_C",
+    "scene_id": "S07",
+    "scene_description_ru": "Тако из угла: «А зачем ты считаешь расстояние? А если это высота?» Амин замирает. Пересчитывает. «Водонапорная башня!» Эврика.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_tako_full.jpeg",
+      "локации_hq/loc_garazh_inside.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 2, preserving identical facial features and proportions, sits casually in a corner of the garage, tilting head with innocent curiosity, asking a simple question, expression of naive but genuine insight. Then, the exact character from Image 1, preserving identical facial features, turns from the workbench toward Image 2 character, frozen mid-motion, eyes widening with the beginning of a breakthrough. Use Image 3 as the exact background location. Medium shot, eye-level. Warm garage light, a spark of possibility in the air. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 2, preserving identical facial features and proportions, speaks from a corner, one finger raised as if making a casual point, head tilted, expression of thoughtful simplicity. Then, the exact character from Image 1, preserving identical facial features, stares at Image 2 character, pen suspended over the notebook, mouth opening, mind racing. Use Image 3 as the exact background location. Medium-wide shot, eye-level. Moody garage light, the moment before a revelation. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "The exact character from Image 1, preserving identical facial features and proportions, stands at the workbench, pen in hand, staring at the recalculated solution in the notebook, expression of stunned triumph and awe, eyes blazing with the thrill of discovery, the answer finally clear. Use Image 3 as the exact background location. Close-up, slight low angle for heroic emphasis. Warm garage light, almost golden, the eureka moment radiating from the face. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The exact character from Image 1, preserving identical facial features and proportions, holds the notebook up, eyes locked on the final calculation, expression transforming from disbelief to elation to fierce determination, the puzzle solved at last. The pen drops forgotten from the other hand. Use Image 3 as the exact background location. Medium close-up, eye-level. Warm bright garage light, victorious atmosphere, cathartic release of tension. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Slow push in. From the corner, one character speaks casually. The other freezes. Looks down at the notebook. Grabs the pen. Recalculates frantically. Eyes go wide. Stands up. Says: \"The water tower!\" Eureka. Audio: quiet question, stunned silence, rapid pen scratching, then an excited exclamation. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Static medium shot. A casual remark from the corner. The character at the desk freezes, stares, then suddenly seizes the pen. Writes furiously. Numbers align. Realization floods the face. Leaps up, triumphant. Audio: innocent voice asking a question, scratching pen, gasp, joyful shout. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S08_A",
+    "scene_id": "S08",
+    "scene_description_ru": "Пустырь. Ребята идут к башне мимо склада. Фургон. Двое взрослых. Назир. Шаки. Ворота открываются — внутри краденые велосипеды.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_karim_full.jpeg",
+      "персонажи_hq/char_tako_full.jpeg",
+      "локации_hq/loc_wasteland_warehouse.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 1, preserving identical facial features and proportions, crouches behind a low wall on a wasteland, peering cautiously at a warehouse building ahead, whispering to stop, expression tense and alert. Then, the exact character from Image 2, preserving identical facial features, crouches beside, eyes scanning the scene. Then, the exact character from Image 3, preserving identical facial features, presses against the wall, peeking over with wide frightened eyes. Use Image 4 as the exact background location. Medium-wide shot, eye-level from behind the wall. Harsh late afternoon light, industrial outskirts atmosphere. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 1, preserving identical facial features and proportions, holds up a hand for silence, pressing against a crumbling wall, eyes locked on movement near a warehouse — a van backing up to open gates. Then, the exact character from Image 2, preserving identical facial features, peers from behind cover, expression alarmed. Then, the exact character from Image 3, preserving identical facial features, huddles low, clutching mouth to stay quiet. Use Image 4 as the exact background location. Medium shot, low angle from hiding position. Late afternoon sun, long shadows, suspenseful lighting. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "First, the exact character from Image 3, preserving identical facial features and proportions, stares in horror through a gap in the wall at the open warehouse — rows of repainted bicycles visible inside, expression of shocked recognition, mouth forming a silent gasp. Then, the exact character from Image 1, preserving identical facial features, pulls out a notebook, hand trembling slightly, beginning to sketch what they see. Wasteland, warehouse with open gates revealing bicycles inside. Use Image 4 as the exact background location. Medium close-up, eye-level. Harsh directional light, the bicycles visible through the gap, tense atmosphere. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "First, the exact character from Image 3, preserving identical facial features and proportions, grips the edge of the wall, eyes locked on a repainted bicycle with a partially removed sticker, expression of stunned realization — this is personal. Then, the exact character from Image 1, preserving identical facial features, sketches rapidly in a notebook, hands shaking, documenting the scene with methodical urgency. Use Image 4 as the exact background location. Close-up, eye-level. Afternoon backlight, stark contrast between shadow and revelation. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium shot from behind cover. Three characters peer at a warehouse. Gates open — repainted bicycles visible inside. A van loads up. One character's eyes go wide in recognition. Another begins sketching in a notebook, hand shaking. Audio: distant van engine, metal gate clanking, panicked whisper. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Slow pan from the characters behind a wall to reveal the warehouse scene. Gates open. Stolen bicycles inside. A van loading. One character gasps silently. Another pulls out a notebook and draws rapidly. Audio: van engine rumbling, voices in the distance, pen scratching paper urgently. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S08_B",
+    "scene_id": "S08",
+    "scene_description_ru": "Шаки поворачивает голову, щурится в их сторону: «Там кто-то.» Секунда тишины. Амин: «Бежим!»",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_karim_full.jpeg",
+      "персонажи_hq/char_tako_full.jpeg",
+      "локации_hq/loc_wasteland_open.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 1, preserving identical facial features and proportions, freezes behind the wall, eyes locked on a figure in the distance who has turned toward them, expression shifting from focused to alarmed, body rigid. Then, the exact character from Image 2, preserving identical facial features, tenses beside, recognizing the danger. Then, the exact character from Image 3, preserving identical facial features, shrinks down, terror on the face. Use Image 4 as the exact background location. Medium shot, eye-level. Late afternoon sun, the moment before flight, adrenaline in the postures. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 1, preserving identical facial features and proportions, goes rigid, hand still clutching the notebook, staring at someone who has noticed them, split-second decision visible in the eyes. Then, the exact character from Image 2, preserving identical facial features, reaches for Image 1 character's arm, ready to pull and run. Then, the exact character from Image 3, preserving identical facial features, already turning to flee, face white with panic. Use Image 4 as the exact background location. Medium close-up, eye-level. Harsh light, freeze-frame tension. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "First, the exact character from Image 1, preserving identical facial features and proportions, sprints across open wasteland ground, notebook clutched to chest, looking back over one shoulder, expression of determined escape. Then, the exact character from Image 2, preserving identical facial features, runs alongside, fast and focused. Then, the exact character from Image 3, preserving identical facial features, runs behind, arms pumping, pure flight instinct. Use Image 4 as the exact background location. Wide shot, dynamic running composition. Harsh backlight, long running shadows, pursuit energy. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "First, the exact character from Image 1, preserving identical facial features and proportions, races through a gap between structures, notebook pressed against the body, jaw clenched, glancing back. Then, the exact character from Image 2, preserving identical facial features, ducks around a corner alongside. Then, the exact character from Image 3, preserving identical facial features, scrambles behind, stumbling slightly but keeping pace. Use Image 4 as the exact background location. Medium shot, tracking angle. Late afternoon light, motion and urgency. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium shot. Three characters hide behind a wall. A distant figure turns toward them. Freeze. One character whispers urgently: \"Run!\" All three burst into a sprint across open ground. Audio: tense silence, distant shout, then pounding footsteps on dirt. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Handheld tracking shot. Spotted. A beat of terror. Then — explosion into motion. Three characters sprint across wasteland, ducking between structures, running flat out. Audio: sharp whispered command, feet pounding dirt, heavy breathing, distant pursuit. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S08_C",
+    "scene_id": "S08",
+    "scene_description_ru": "Разделяются. Тако ныряет за мусорные баки. Шаги ближе. Зажимает рот. Шаки пробегает мимо. Тишина. Тако сидит, сердце колотится. Выбирается. Бежит к дому.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_tako_full.jpeg",
+      "локации_hq/loc_alley_dumpsters.jpg"
+    ],
+    "nano_banana_prompt_first": "The exact character from Image 1, preserving identical facial features and proportions, presses flat against a wall behind dumpsters in a narrow alley, one hand clamped tightly over own mouth, eyes squeezed shut, body rigid with fear, not breathing. Use Image 2 as the exact background location. Close-up, low angle from ground level. Dim fading daylight, deep shadows, the character nearly invisible in the dark gap. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic, suspenseful.",
+    "nano_banana_prompt_first_b": "The exact character from Image 1, preserving identical facial features and proportions, crouches in a tight space between dumpsters, back pressed against cold metal, hand over mouth, eyes wide open and terrified, listening to approaching footsteps, absolutely motionless. Use Image 2 as the exact background location. Close-up, eye-level from hiding position. Very dim light, mostly shadow, the fear palpable. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic, tense.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "The exact character from Image 1, preserving identical facial features and proportions, emerges cautiously from behind the dumpsters, looking both ways down the empty alley, face flushed, expression of relief mixed with lingering terror, body still trembling, taking the first full breath. Use Image 2 as the exact background location. Medium shot, eye-level. Dim dusk light, the danger passed, exhale of survival. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The exact character from Image 1, preserving identical facial features and proportions, peeks out from behind a dumpster, scanning the empty alley, expression of cautious relief, hand still on chest feeling a racing heartbeat, slowly standing up on shaky legs. Use Image 2 as the exact background location. Medium close-up, low angle. Fading warm light, quiet aftermath of terror. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static close-up. The character hides behind dumpsters, hand over mouth. Footsteps approach — closer, closer. Pass by. Fade away. Silence. Eyes open. A shaky exhale. Slowly peeks out. Empty. Audio: pounding heartbeat, approaching footsteps, footsteps passing and fading, trembling exhale. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Locked-off close-up in shadow. The character presses against metal, frozen. Heavy footsteps grow louder. A shadow sweeps past the hiding spot. The footsteps recede. Long silence. The character takes a desperate gasping breath. Audio: heartbeat thudding, boots on concrete, shadow swoosh, fading steps, ragged exhale. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S09_A",
+    "scene_id": "S09",
+    "scene_description_ru": "Кабинет папы. Амин показывает зарисовки склада, рассказывает про велосипеды. Папа: «Вы не вмешивались?» Амин: «Нет. Убежали.» Папа: «Правильно.»",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_papa_full.jpeg",
+      "локации_hq/loc_kabinet_desk_wide.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 1, preserving identical facial features and proportions, sits across a desk, holding open a notebook with hand-drawn sketches facing outward, expression serious and earnest, presenting evidence. Then, the exact character from Image 2, preserving identical facial features, sits behind the desk, examining the drawings with focused attention, expression calm and analytical. Use Image 3 as the exact background location. Medium shot, eye-level across the desk. Warm lamp light, bookshelves in background, serious meeting atmosphere. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 1, preserving identical facial features and proportions, leans forward in a chair, notebook flat on the desk between them, pointing at a sketch, speaking with controlled urgency. Then, the exact character from Image 2, preserving identical facial features, studies the notebook intently, chin resting on steepled fingers, listening carefully without interrupting. Use Image 3 as the exact background location. Medium close-up, eye-level. Warm desk lamp glow, intimate office atmosphere, gravity of the moment. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "First, the exact character from Image 2, preserving identical facial features and proportions, sits behind the desk, expression of quiet pride and relief mixed with concern, a barely perceptible nod of approval, hands flat on the desk. Then, the exact character from Image 1, preserving identical facial features, sits across, expression relieved and honest, having told everything truthfully. Use Image 3 as the exact background location. Medium shot, eye-level. Warm lamp light, a moment of trust between two family members, dignified atmosphere. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "First, the exact character from Image 2, preserving identical facial features and proportions, looks at the sketches one final time, then raises eyes to Image 1 character with an expression of solemn approval, mouth forming a quiet reassurance. Then, the exact character from Image 1, preserving identical facial features, meets the gaze, posture relaxing with the weight of responsibility shared. Use Image 3 as the exact background location. Medium close-up, eye-level. Warm golden lamp light, book-lined walls, quiet authority. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium shot across a desk. One character presents a notebook with sketches. The other studies them carefully. A question asked. An honest answer. A nod of approval. Audio: quiet office ambiance, calm voices, paper rustling, approving hum. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Slow push in on two characters across a desk. A notebook of sketches is laid out. One explains, pointing at drawings. The other listens, then asks a direct question. The answer comes — honest and brave. A subtle nod. Audio: desk lamp buzzing softly, earnest voice, questioning tone, quiet affirmation. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S09_B",
+    "scene_id": "S09",
+    "scene_description_ru": "Амин у двери. «А завтра — башня.» «Какая башня?» «Водонапорная. Последняя точка.» Папа кивает.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_papa_full.jpeg",
+      "локации_hq/loc_kabinet_full.jpg"
+    ],
+    "nano_banana_prompt_first": "The exact character from Image 1, preserving identical facial features and proportions, stands at a doorway, one hand on the door frame, turning back to speak, expression confident and purposeful, eyes bright with anticipation. Use Image 3 as the exact background location. Medium shot, slight low angle from inside the room. Warm lamp light on the face, doorway framing the figure. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "The exact character from Image 1, preserving identical facial features and proportions, pauses at the doorway, half-turned, looking back over one shoulder with a confident half-smile, about to say something important. Use Image 3 as the exact background location. Medium close-up, eye-level from inside the office. Warm golden lamp light catching the profile, anticipation in the posture. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "First, the exact character from Image 2, preserving identical facial features and proportions, sits behind the desk, watching Image 1 character leave, expression of quiet pride and a barely visible nod, a father watching growth unfold. Then, the exact character from Image 1, preserving identical facial features, is visible at the door, already half-gone, one hand raised in a small wave. Use Image 3 as the exact background location. Medium-wide shot, eye-level. Warm lamp light, the doorway as a visual divide, bittersweet tender moment. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The exact character from Image 2, preserving identical facial features and proportions, sits alone at the desk, the door now ajar, watching the departing figure with a subtle proud smile, one hand resting on the notebook of sketches. Use Image 3 as the exact background location. Medium shot, eye-level. Warm lamp light, book-lined office, quiet fatherly pride in the expression. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium shot. The character at the door turns back. Says: \"Tomorrow — the tower.\" The character behind the desk looks up. \"What tower?\" \"The water tower. Last point.\" A quiet nod. The door closes gently. Audio: calm voice, questioning reply, door clicking shut softly. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Slow dolly out. At the doorway, a brief exchange — the tower, the last point. A look passes between them. Understanding. A nod. The figure at the door exits. The character behind the desk watches the closed door. Audio: quiet voices, door closing, lingering silence. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S10_A",
+    "scene_id": "S10",
+    "scene_description_ru": "Утро. Ребята идут к холму за районом. Впереди — водонапорная башня. Тако: «Она выглядит так, будто там живёт злодей.»",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_karim_full.jpeg",
+      "персонажи_hq/char_tako_full.jpeg",
+      "локации_hq/loc_tower_approach.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 1, preserving identical facial features and proportions, walks along a dirt road heading toward a brick water tower on a hill, atlas in hand, expression focused and determined. Then, the exact character from Image 2, preserving identical facial features, walks alongside, steady and calm. Then, the exact character from Image 3, preserving identical facial features, trails behind, head tilted back, staring up at the tower with a mix of awe and apprehension. A dirt road leading uphill toward an a brick water tower against morning sky. Use Image 4 as the exact background location. Medium-wide shot, eye-level. Bright morning sunlight, clear sky, the tower silhouetted ahead. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 1, preserving identical facial features and proportions, leads the way up a hill path toward a water tower rising high, pace steady, eyes on the destination. Then, the exact character from Image 2, preserving identical facial features, matches stride, scanning the surroundings. Then, the exact character from Image 3, preserving identical facial features, walks reluctantly, making exaggerated nervous gestures at the tower. Hill path, morning, brick water tower rising against the sky. Use Image 4 as the exact background location. Wide establishing shot, slight low angle emphasizing tower height. Fresh morning light, long shadows on the path. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "First, the exact character from Image 3, preserving identical facial features and proportions, stands at the base of the water tower, neck craned all the way back looking up, expression of comedic dread mixed with reluctant bravery. Then, the exact character from Image 1, preserving identical facial features, stands beside, looking at the rusty ladder, assessing it practically. Then, the exact character from Image 2, preserving identical facial features, examines the lower section where rungs are missing. Base of a brick water tower, rusty metal ladder with missing lower rungs. Use Image 4 as the exact background location. Medium shot, dramatic low angle looking up the tower. Morning light, the tower looming above. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "First, the exact character from Image 1, preserving identical facial features and proportions, stands before the water tower base, looking at wooden crates and boards scattered nearby, expression calculating — formulating a plan to reach the ladder. Then, the exact character from Image 2, preserving identical facial features, follows the gaze, nodding in understanding. Then, the exact character from Image 3, preserving identical facial features, looks up at the missing ladder rungs with theatrical despair. Brick water tower base, debris and crates nearby. Use Image 4 as the exact background location. Medium-wide shot, low angle. Morning sun, dramatic tower silhouette. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Tracking shot following three characters up a hill toward a tall water tower. They arrive at the base. Look up — the lower ladder rungs are missing. One character stares up with dread, another starts examining nearby crates. Audio: footsteps on dirt, morning birds, creaking old metal, nervous mumbling. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Slow dolly in toward a tall water tower as three characters approach. They stop at the base, necks craning upward. The rusty ladder — broken at the bottom. Exchange glances. One starts gathering wooden crates from nearby. Audio: hiking footsteps, wind around the tower, distant birds, determined voice saying \"stack these\". Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S10_B",
+    "scene_id": "S10",
+    "scene_description_ru": "Складывают ящики, делают подставку. Лезут по ржавой лестнице. Тако не достаёт — Карим свешивается, протягивает руку, втаскивает.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_karim_full.jpeg",
+      "персонажи_hq/char_tako_full.jpeg",
+      "локации_hq/loc_tower_ladder.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 2, preserving identical facial features and proportions, stands on a stack of wooden crates propped against a tower wall, stretching upward desperately toward a metal ladder rung just out of reach, expression of straining effort. Then, the exact character from Image 1, preserving identical facial features, leans down from the ladder above, one hand gripping a rung, the other extended downward to help. Brick water tower wall, rusty ladder, stacked crates below. Use Image 3 as the exact background location. Medium shot, vertical composition looking up. Morning light, dramatic effort and teamwork. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 1, preserving identical facial features and proportions, hangs from the rusty ladder, reaching down with one arm extended to its full length, face straining with effort. Then, the exact character from Image 2, preserving identical facial features, stretches up from a crate, fingertips barely touching the offered hand, expression of desperate concentration. Tower wall, ladder, crates. Use Image 3 as the exact background location. Close-up, low angle looking up. Morning sunlight hitting the wall, dynamic helping moment. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "The exact character from Image 2, preserving identical facial features and proportions, clings to the rusty ladder halfway up the water tower, one hand gripping a rung, the other clutching the rail, eyes determinedly forward, mouth muttering self-encouragement. Rusty metal ladder on the side of a brick tower, sky visible. Use Image 3 as the exact background location. Medium shot, looking slightly up the ladder. Bright morning sky as background, rust texture on the metal, determined climbing pose. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The exact character from Image 2, preserving identical facial features and proportions, climbs the rusty ladder pressed close to the rungs, face set in grim determination, knuckles white on the rails, clearly uncomfortable with the height but refusing to stop. Brick tower, rusty ladder, open sky. Use Image 3 as the exact background location. Close-up from the side, vertigo-inducing angle. Bright sky, wind ruffling clothes, bravery in adversity. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static low-angle shot looking up the tower. One character on the crates reaches up. Another leans down from the ladder, grabs the hand, pulls hard. Success — both on the ladder now. The rescued one clings tight, then slowly begins climbing. Audio: grunting effort, crate creaking, hand slapping metal, relieved gasp, rusty rungs clanking. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Slow tilt up following a character being pulled onto a rusty ladder. Hands clasp. A heave upward. Feet find the first rung. Then — climbing, slowly, one rung at a time, muttering encouragement to self. Audio: straining effort sounds, metal groaning, breathless self-talk, wind at height. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S10_C",
+    "scene_id": "S10",
+    "scene_description_ru": "Наверху — вид на весь район. Коробка у стены. Амин открывает — блокнот с задачами и стеклянная линза в медной оправе. Берёт линзу. Свет преломляется. Что-то меняется в лице. Молча убирает в карман.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "локации_hq/loc_tower_top_view.jpg"
+    ],
+    "nano_banana_prompt_first": "The exact character from Image 1, preserving identical facial features and proportions, kneels on a concrete platform at the top of a water tower, opening a cardboard box, expression shifting from anticipation to wonder as the contents are revealed. A panoramic view of a neighborhood — rooftops, trees, a minaret — stretches behind. Top of a water tower, railing visible, wide sky, town panorama. Use Image 2 as the exact background location. Medium shot, eye-level. Bright morning sunlight, vast open sky, the moment of discovery. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "The exact character from Image 1, preserving identical facial features and proportions, crouches beside an open cardboard box on the tower platform, hands lifting a thick notebook from inside, then pausing upon seeing something else — a glass lens catching the light. Town panorama below, open sky above. Use Image 2 as the exact background location. Close-up, slightly high angle. Morning sunlight streaming across the platform, warm golden tones, discovery moment. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "The exact character from Image 1, preserving identical facial features and proportions, holds a glass lens in a copper frame up toward the light, rainbow prisms dancing across the concrete, expression transforming — eyes widening briefly, then settling into deep, quiet understanding. Something profound recognized. Lips press together gently. Very calm. Top of a tower, bright sky, rainbow light refractions on the surface. Use Image 2 as the exact background location. Close-up on face and the lens, eye-level. Bright morning light refracting through the glass, prismatic colors on the face, moment of revelation. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The exact character from Image 1, preserving identical facial features and proportions, turns a glass lens slowly in the fingers, prismatic light scattering across the platform, expression of quiet epiphany — recognition, understanding, and something deep and personal settling into place. The other hand carefully moves toward a pocket. Tower top, bright sky, scattered rainbow reflections. Use Image 2 as the exact background location. Close-up, slightly from below. Morning sun streaming through the lens, prismatic beauty, emotional stillness. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Slow dolly in. On the tower platform, a box is opened. Hands lift out a notebook, then a glass lens in a copper frame. The lens catches sunlight — rainbow prisms dance. The face changes — recognition, then deep quiet understanding. The lens is carefully placed into a pocket. Audio: wind at height, box opening, glass catching light (a gentle chime), profound silence. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Static close-up. Hands open a box. A notebook. Then — a lens. Lifted toward the sun. Prismatic light explodes across the frame. The character's expression shifts subtly — wonder, then recognition, then calm acceptance. The lens is tucked carefully away. Audio: high-altitude wind, delicate glass sound, a single deep breath, silence. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S10_D",
+    "scene_id": "S10",
+    "scene_description_ru": "Амин: «Пойдёмте домой.» Тако в шоке: «МЫ ПРОШЛИ ВЕСЬ КВЕСТ! Кто за этим стоит?!» Амин молча спускается. Карим пожимает плечами.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_karim_full.jpeg",
+      "персонажи_hq/char_tako_full.jpeg",
+      "локации_hq/loc_tower_top_view.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 1, preserving identical facial features and proportions, stands on the tower platform, box closed, notebook under arm, expression calm and resolved, already turning toward the ladder to descend. Then, the exact character from Image 3, preserving identical facial features, stares with absolute disbelief, jaw dropped, arms thrown out in frustration and incredulity. Then, the exact character from Image 2, preserving identical facial features, stands between, expression of mild bemusement, shrugging with palms up. Tower top, railing, sky. Use Image 4 as the exact background location. Medium-wide shot, eye-level. Bright morning light, comedic contrast between calm and outrage. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 3, preserving identical facial features and proportions, gesticulates wildly on the tower platform, expression of explosive frustration and disbelief, counting off reasons on fingers, deeply indignant about leaving without answers. Then, the exact character from Image 1, preserving identical facial features, walks calmly toward the ladder, not turning back, serene and decided. Then, the exact character from Image 2, preserving identical facial features, watches both with raised eyebrows, caught between amusement and confusion. Tower platform, sky, railing. Use Image 4 as the exact background location. Medium shot, eye-level. Bright morning light, comedic emotional contrast. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "First, the exact character from Image 1, preserving identical facial features and proportions, descends the ladder, back to the camera, moving with quiet certainty, one hand holding the notebook securely. Then, the exact character from Image 3, preserving identical facial features, stands at the railing above, arms wide in theatrical despair, shouting after the departing figure. Then, the exact character from Image 2, preserving identical facial features, looks between the two, shrugging helplessly. Tower platform and ladder, bright sky. Use Image 4 as the exact background location. Medium shot, slight high angle from the platform. Morning light, the comic frustration contrasting with serene departure. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "First, the exact character from Image 3, preserving identical facial features and proportions, leans over the tower railing, calling down after Image 1 character who is already descending, face flushed with comic outrage, arms gesturing dramatically. Then, the exact character from Image 2, preserving identical facial features, places a calming hand on Image 3 character's shoulder, expression of amused sympathy. Tower top looking down, bright sky. Use Image 4 as the exact background location. Medium shot, slightly looking down from the platform. Bright backlit morning, dramatic comic exasperation. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium-wide shot on the tower platform. One character says calmly: \"Let's go home.\" Another explodes — arms waving, voice raised in disbelief. The calm one begins descending the ladder without a word. The third shrugs. Audio: calm voice, outraged tirade, ladder clanking, exasperated groan. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Slow pull back from the tower platform. One character turns and starts down the ladder. Another protests wildly — listing everything they've been through. The third watches, bemused. The departing figure keeps going, unbothered. Audio: passionate complaining, metal ladder sounds, wind, a resigned sigh. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S11_A",
+    "scene_id": "S11",
+    "scene_description_ru": "Кабинет папы, вечер. Амин достаёт линзу. Ставит на полку — она ложится ровно в пятно пыли. Папа смотрит. Молчит. «Передатчик — тоже ты?»",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_papa_full.jpeg",
+      "локации_hq/loc_kabinet_bookshelf.jpg"
+    ],
+    "nano_banana_prompt_first": "The exact character from Image 1, preserving identical facial features and proportions, stands before a bookshelf, carefully placing a glass lens in a copper frame onto a specific empty spot on the shelf, expression quiet and knowing, the gesture deliberate and precise. Use Image 3 as the exact background location. Close-up, eye-level, focused on the hands and the shelf. Warm evening lamp light, the lens glinting softly. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "The exact character from Image 1, preserving identical facial features and proportions, reaches toward a bookshelf, gently setting a glass lens into a dust outline that matches perfectly, expression serene and resolute, the final piece returning to its place. Use Image 3 as the exact background location. Close-up on hands, lens, and shelf detail. Warm desk lamp illumination, dust motes in the beam, the lens fitting millimeter-perfect. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "First, the exact character from Image 1, preserving identical facial features and proportions, stands facing Image 2 character, expression calm and direct, eyes holding a quiet question that needs no words — just confirmation. Then, the exact character from Image 2, preserving identical facial features, stands near the desk, looking at the lens on the shelf, then at Image 1 character, expression caught between surprise and a barely suppressed knowing smile. Use Image 3 as the exact background location. Medium shot, eye-level. Warm lamp light, the bookshelf between them, a moment of truth suspended in golden light. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "First, the exact character from Image 2, preserving identical facial features and proportions, gazes at the lens now on the shelf, then slowly turns to Image 1 character, the mask of surprise dissolving into a quiet, proud, barely visible smile. Then, the exact character from Image 1, preserving identical facial features, meets the gaze steadily, expression mature and knowing. Use Image 3 as the exact background location. Medium close-up, eye-level. Rich warm lamp light, book-lined background, profound eye contact, silent recognition. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Slow push in. A character places a glass lens on a bookshelf — it fits perfectly into a dust outline. Turns to face someone standing by the desk. Long silence. Then speaks: \"The transmitter — was that you too?\" A faint smile forms on the other face. Audio: glass placed gently on wood, deep silence, quiet confident voice, warm silence. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Static close-up. Hands set a copper-framed lens onto a shelf spot. It fits exactly. The camera slowly pulls back to reveal two characters facing each other. Eyes meet. Understanding passes without words. Then a quiet question. Then — a smile. Audio: lens touching wood, complete silence, a single heartfelt question, warmth. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S11_B",
+    "scene_id": "S11",
+    "scene_description_ru": "«Зачем?» — «Ты сам сказал — нет приключений.» Амин вспоминает. «Ты запомнил?» — «Я всегда слушаю.» Тёплая тишина. Два человека, которые понимают друг друга.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_amin_full.jpeg",
+      "персонажи_hq/char_papa_full.jpeg",
+      "локации_hq/loc_kabinet_desk_closeup.jpg"
+    ],
+    "nano_banana_prompt_first": "First, the exact character from Image 1, preserving identical facial features and proportions, stands in the office, expression shifting from questioning to slow, dawning realization — remembering an offhand remark from days ago, eyes softening with emotion. Then, the exact character from Image 2, preserving identical facial features, stands calmly, expression of gentle knowing patience, the one who remembered. Use Image 3 as the exact background location. Medium close-up, eye-level. Warm golden lamp light, intimate office atmosphere, emotional weight. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "First, the exact character from Image 1, preserving identical facial features and proportions, looks at Image 2 character with widening eyes, mouth slightly open, the memory clicking into place — a forgotten dinner conversation suddenly meaningful, expression of touched surprise. Then, the exact character from Image 2, preserving identical facial features, watches with a calm, tender half-smile, saying nothing, letting the realization unfold. Use Image 3 as the exact background location. Close-up on both faces, eye-level. Warm desk lamp light, profound emotional connection, quiet revelation. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "First, the exact character from Image 1, preserving identical facial features and proportions, looks at Image 2 character with deep gratitude and new understanding, eyes glistening with emotion, a mature quiet smile forming, words unnecessary. Then, the exact character from Image 2, preserving identical facial features, smiles warmly back, expression of unconditional love and quiet satisfaction, the adventure successful. Use Image 3 as the exact background location. Medium close-up, eye-level. Warm golden lamp glow, bookshelves softly blurred behind, the most intimate and tender moment in the story. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "First, the exact character from Image 2, preserving identical facial features and proportions, smiles with warm eyes, expression of deep paternal love and quiet triumph, having given something more valuable than any gift. Then, the exact character from Image 1, preserving identical facial features, returns the smile with moist eyes, expression of profound gratitude and understanding that will last a lifetime. Use Image 3 as the exact background location. Close-up on faces, eye-level. Rich warm lamplight, everything else soft and blurred, the emotional climax bathed in golden light. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Slow push in on two characters standing in a lamp-lit office. One asks: \"Why?\" The other answers gently: \"You said life has no real adventures.\" A beat. The questioner's eyes widen with memory. Silence. Then both smile. Audio: quiet voice, profound answer, silence, soft warm music hint. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Static close-up on two faces in warm light. A question. An answer that reaches back to a forgotten dinner conversation. Eyes widen. A breath catches. Understanding fills the space. Two smiles — different but equal. Audio: quiet exchange, stunned silence, emotional breath, the warmest silence imaginable. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S11_C",
+    "scene_id": "S11",
+    "scene_description_ru": "Амин: «Спасибо, пап.» «Это было настоящее приключение.» Уходит. Папа один. Берёт линзу. Поворачивает. Свет преломляется. Ставит обратно. Улыбается.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_papa_full.jpeg",
+      "локации_hq/loc_kabinet_full.jpg"
+    ],
+    "nano_banana_prompt_first": "The exact character from Image 1, preserving identical facial features and proportions, sits alone at the desk in the office, the door just closed, expression of deep warm contentment, a private smile that comes from accomplishing something meaningful unseen. Use Image 2 as the exact background location. Medium shot, eye-level. Warm lamp light, the empty chair across the desk, post-farewell quietude. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "The exact character from Image 1, preserving identical facial features and proportions, sits behind the desk, leaning back in the chair, alone now, expression of satisfied peace, eyes slightly distant with happy reflection. Use Image 2 as the exact background location. Medium close-up, eye-level. Warm golden lamp light, book-spines softly blurred, solitary contentment. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "The exact character from Image 1, preserving identical facial features and proportions, holds the glass lens from the shelf in both hands, turning it gently, prismatic light dancing on the face and desk, expression of nostalgic tenderness and quiet joy, savoring a private victory. Use Image 2 as the exact background location. Close-up, eye-level. Warm lamp light refracting through the lens, rainbow colors on the face, the most peaceful moment in the story. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The exact character from Image 1, preserving identical facial features and proportions, sets the lens back on the shelf gently, then leans back in the chair with a full, warm smile, eyes soft, hands resting on the desk, utterly at peace. Use Image 2 as the exact background location. Medium shot, eye-level. Warm lamp light, the lens glinting on the shelf, a father's quiet triumph. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Slow dolly in. Alone in a lamp-lit office. The character reaches to the shelf, picks up the lens. Turns it in the fingers — prismatic light dances across the room. Smiles. Places it back. Leans back. Pure contentment. Audio: quiet room, glass turning in fingers, soft warm music, satisfied sigh. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Static close-up on hands lifting a lens from a shelf. Turning it slowly. Light fractures into rainbows on the desk. The lens is placed back. The character sits down. Smiles to self. Silence. Audio: delicate glass sound, prismatic shimmer, chair creaking, deepest contented silence. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S12_A",
+    "scene_id": "S12",
+    "scene_description_ru": "Комната Тако, ночь. Лежит в кровати. Бормочет: «Это шпионы... мой позывной — Молния... Амин знает, но молчит...»",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_tako_full.jpeg",
+      "локации_hq/loc_tako_room_desk.jpg"
+    ],
+    "nano_banana_prompt_first": "The exact character from Image 1, preserving identical facial features and proportions, lies in bed, blanket pulled up to the chin, staring up at the ceiling, expression dreamy and excited, lips moving in a whispered monologue, eyes wide and awake in the darkness. Use Image 2 as the exact background location. Medium shot, slightly high angle looking down at the bed. Very dim blue moonlight through a window, cozy bedroom darkness. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "The exact character from Image 1, preserving identical facial features and proportions, lies in bed, one arm behind the head, the other gesturing at the ceiling as if addressing an invisible audience, expression of animated theorizing, whispering passionately into the dark. Use Image 2 as the exact background location. Close-up, slight high angle. Soft moonlight catching the face, bedroom shadows, the active mind refusing sleep. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "The exact character from Image 1, preserving identical facial features and proportions, lies in bed, now on one side, expression narrowing with detective-like suspicion, whispering about codes and agents, one finger raised making a point to nobody, utterly convinced of a conspiracy theory. Use Image 2 as the exact background location. Medium close-up, eye-level from beside the bed. Very dim moonlight, bedroom darkness, the comedic intensity of the solitary detective. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_last_b": "The exact character from Image 1, preserving identical facial features and proportions, lies in bed facing the wall, whispering intently, one hand making conspiratorial gestures in the dark, expression of absolute certainty about a wild theory, nodding to self in agreement. Use Image 2 as the exact background location. Close-up from behind, over the shoulder. Faint moonlight, deep bedroom shadows, the lonely theorist in full flow. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Static medium shot from above. A character lies in bed, staring at the ceiling. Lips move — whispering theories. Gestures with one hand in the dark. Nods to self. Turns to one side. Keeps whispering with increasing conviction. Audio: soft whispering about spies and codes, blanket rustling, gentle night ambiance. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Locked-off close-up. In bed, blanket to chin. Eyes dart around the dark ceiling. Lips move rapidly in a whispered monologue — theories tumbling out. One hand rises, counts off points. The hand drops. More whispering. Audio: barely audible whispered conspiracy theories, soft breathing, cricket sounds outside. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  },
+  {
+    "clip_id": "S12_B",
+    "scene_id": "S12",
+    "scene_description_ru": "«Завтра. Сейчас Молния отдыхает.» Переворачивается на бок. Засыпает. Затемнение. КОНЕЦ.",
+    "nano_banana_ingredients": [
+      "персонажи_hq/char_tako_full.jpeg",
+      "локации_hq/loc_tako_room_desk.jpg"
+    ],
+    "nano_banana_prompt_first": "The exact character from Image 1, preserving identical facial features and proportions, lies in bed, eyes heavy-lidded but still whispering, expression shifting from intense theorizing to drowsy surrender, eyelids fluttering, the last resistance against sleep fading. Use Image 2 as the exact background location. Close-up, slight high angle. Very dim moonlight, warm blanket tones, the transition from wake to sleep. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_first_b": "The exact character from Image 1, preserving identical facial features and proportions, mutters one last whispered declaration, yawns mid-sentence, eyes blinking slowly, losing the battle with sleep, expression softening from determined to utterly relaxed. Use Image 2 as the exact background location. Close-up, eye-level from beside the bed. Soft moonlight, peaceful drowsiness, the comic detective surrendering to exhaustion. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "nano_banana_prompt_mid": null,
+    "nano_banana_prompt_mid_b": null,
+    "nano_banana_prompt_last": "The exact character from Image 1, preserving identical facial features and proportions, sleeps peacefully on one side in bed, face relaxed and serene, a faint smile on the lips, breathing slowly, completely at rest. Darkness. Use Image 2 as the exact background location. Close-up, slightly high angle. Very dim moonlight fading to near-darkness, peaceful sleeping face, fade to black beginning at the edges of the frame. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Gentle fade to black.",
+    "nano_banana_prompt_last_b": "The exact character from Image 1, preserving identical facial features and proportions, curled up in bed, sound asleep, face peaceful, the smallest contented smile, one hand tucked under the cheek. The room darkens around the sleeping figure. Use Image 2 as the exact background location. Medium close-up, slight high angle. Near-darkness, the faintest moonlight on the face, everything else fading to black, the story ending in warm quietude. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+    "veo_prompt": "Slow dolly out. In bed, the character whispers one last thing, yawns, rolls onto one side. Eyes close. Breathing slows. Sleep takes over. The image gradually fades to black. Audio: final whispered words trailing off, deep sleepy sigh, gentle breathing, silence, fade to nothing. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_prompt_b": "Static close-up. The character mumbles, blinks heavily, turns over. Stillness. Asleep. The moonlight on the face dims. Darkness gathers. Fade to black. The end. Audio: drowsy mumbling fading, a last contented breath, night crickets fading, total peaceful silence. Smooth cinematic motion, 3D Pixar-style animation, family-friendly.",
+    "veo_mode": "frames",
+    "veo_variant_count": 4
+  }
+]

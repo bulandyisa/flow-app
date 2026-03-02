@@ -193,6 +193,34 @@
           "variants": [],
           "best_variant": null,
           "best_avg": null
+        },
+        {
+          "attempt": 4,
+          "prompt": "Static medium shot. One character looks at the other across the workbench, eyes newly alive with purpose. Says: \"Tomorrow. After school.\" The other nods, a slow grin spreading. Audio: quiet garage hum, a decisive voice, soft agreement. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [
+            {
+              "file": "variant_1.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_4.mp4",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
         }
       ],
       "selected_variant_a": null,
