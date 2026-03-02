@@ -1,0 +1,171 @@
+{
+  "clip_id": "S07_A",
+  "components": {
+    "nb_first": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, sits hunched over the workbench covered with scattered notes and a notebook, pen in hand, expression of deep frustration, brow creased, crossing out a line of calculations. Then, the exact character from Image 2, preserving identical facial features, stands nearby watching, expression of quiet concern. Then, the exact character from Image 3, preserving identical facial features, sits in a corner of the garage, fidgeting with a small object, glancing over occasionally. Use Image 4 as the exact background location. Medium shot, eye-level. Warm garage light, papers strewn across the surface. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": {
+                "char_face": 8,
+                "char_outfit": 9,
+                "char_count": 10,
+                "anatomy_hands": 9,
+                "anatomy_body": 9,
+                "anatomy_face": 10,
+                "scale": 9,
+                "physics": 9,
+                "spatial": 10,
+                "scenario_action": 10,
+                "scenario_emotion": 10,
+                "scenario_objects": 10,
+                "loc_match": 10,
+                "lighting": 10,
+                "artifacts": 10,
+                "style_3d": 10,
+                "composition": 10
+              },
+              "avg": 9.588235294117647
+            },
+            {
+              "file": "variant_3.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": 1,
+          "best_avg": 9.588235294117647
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 1,
+        "variant": 1
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "nb_mid": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_last": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, sits at the workbench, head bowed, pen resting on the notebook, expression defeated and exhausted, notes covered in crossed-out calculations. Then, the exact character from Image 2, preserving identical facial features, watches with concern, unsure what to say. Then, the exact character from Image 3, preserving identical facial features, sits quietly in the corner, subdued. Use Image 4 as the exact background location. Medium shot, eye-level. Dim late-day garage light, somber mood, the weight of failure in the posture. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 5.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": {
+                "char_face": 9,
+                "char_outfit": 9,
+                "char_count": 10,
+                "anatomy_hands": 9,
+                "anatomy_body": 9,
+                "anatomy_face": 10,
+                "scale": 9,
+                "physics": 9,
+                "spatial": 10,
+                "scenario_action": 10,
+                "scenario_emotion": 10,
+                "scenario_objects": 10,
+                "loc_match": 10,
+                "lighting": 10,
+                "artifacts": 10,
+                "style_3d": 10,
+                "composition": 10
+              },
+              "avg": 9.647058823529411
+            },
+            {
+              "file": "variant_2.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": 0,
+          "best_avg": 9.647058823529411
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 1,
+        "variant": 0
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "veo": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "Static medium shot. The character writes rapidly in a notebook, pauses, crosses it out. Writes again. Crosses out again. Drops the pen. Head sinks toward the desk. Defeated sigh. Audio: pen scratching paper, frustrated sigh, pen dropped on wood. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        },
+        {
+          "attempt": 2,
+          "prompt": "Static medium shot. The character writes rapidly in a notebook, pauses, crosses it out. Writes again. Crosses out again. Drops the pen. Head sinks toward the desk. Defeated sigh. Audio: pen scratching paper, frustrated sigh, pen dropped on wood. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        },
+        {
+          "attempt": 3,
+          "prompt": "Static medium shot. The character writes rapidly in a notebook, pauses, crosses it out. Writes again. Crosses out again. Drops the pen. Head sinks toward the desk. Defeated sigh. Audio: pen scratching paper, frustrated sigh, pen dropped on wood. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        },
+        {
+          "attempt": 4,
+          "prompt": "Static medium shot. The character writes rapidly in a notebook, pauses, crosses it out. Writes again. Crosses out again. Drops the pen. Head sinks toward the desk. Defeated sigh. Audio: pen scratching paper, frustrated sigh, pen dropped on wood. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        },
+        {
+          "attempt": 5,
+          "prompt": "Static medium shot. The character writes rapidly in a notebook, pauses, crosses it out. Writes again. Crosses out again. Drops the pen. Head sinks toward the desk. Defeated sigh. Audio: pen scratching paper, frustrated sigh, pen dropped on wood. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [
+            {
+              "file": "variant_1.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_4.mp4",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    }
+  }
+}

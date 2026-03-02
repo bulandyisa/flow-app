@@ -1,0 +1,148 @@
+{
+  "clip_id": "S01_B",
+  "components": {
+    "nb_first": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "The exact character from Image 1, preserving identical facial features and proportions, leans back in a chair at the dinner table, arms crossed, expression of deep boredom and restlessness, gaze drifting away from the food. Use Image 2 as the exact background location. Medium close-up, eye-level. Warm evening light, slightly dimmer mood. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 3 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "variants": [
+            {
+              "file": "prompt_a/variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_b/variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_b/variant_2.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_b/variant_3.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_b/variant_4.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null,
+          "prompt_b": "The exact character from Image 1, preserving identical facial features and proportions, leans back in the chair at the table, arms crossed loosely, letting out a sigh, expression of quiet dissatisfaction. Use Image 2 as the exact background location. Close-up, slightly from the side. Soft warm overhead light, subdued tones. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 3 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "batch_a_count": 1,
+          "batch_b_count": 4
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 1,
+        "variant": 0
+      },
+      "selected_variant_b": {
+        "attempt": 1,
+        "variant": 4
+      },
+      "status": "accepted"
+    },
+    "nb_mid": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_last": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "The exact character from Image 1, preserving identical facial features and proportions, turns toward a window, gazing out with a wistful, contemplative expression, one hand resting on the table edge. Longing visible in the eyes. Use Image 2 as the exact background location. Medium close-up, profile view. Warm indoor light mixing with cool blue twilight from the window. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 3.",
+          "variants": [
+            {
+              "file": "prompt_a/variant_1.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null,
+          "prompt_b": "The exact character from Image 1, preserving identical facial features and proportions, stares through the window, face half-lit by evening sky, expression pensive and yearning, fingers tapping the table absently. Use Image 2 as the exact background location. Close-up, three-quarter profile. Warm amber indoor light contrasted with cool dusk from window. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 3.",
+          "batch_a_count": 1,
+          "batch_b_count": 0
+        },
+        {
+          "attempt": 2,
+          "prompt": "The exact character from Image 1, preserving identical facial features and proportions, turns toward a window, gazing out with a wistful, contemplative expression, one hand resting on the table edge. Longing visible in the eyes. Use Image 2 as the exact background location. Medium close-up, profile view. Warm indoor light mixing with cool blue twilight from the window. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 3.",
+          "variants": [
+            {
+              "file": "prompt_a/variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_a/variant_2.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null,
+          "prompt_b": "The exact character from Image 1, preserving identical facial features and proportions, stares through the window, face half-lit by evening sky, expression pensive and yearning, fingers tapping the table absently. Use Image 2 as the exact background location. Close-up, three-quarter profile. Warm amber indoor light contrasted with cool dusk from window. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 3.",
+          "batch_a_count": 2,
+          "batch_b_count": 0
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 1,
+        "variant": 0
+      },
+      "selected_variant_b": {
+        "attempt": 2,
+        "variant": 0
+      },
+      "status": "accepted"
+    },
+    "veo": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "A: Slow dolly in. The character leans back from the table, sighs, then turns to gaze out the window with a wistful expression. Stillness settles. Audio: quiet kitchen ambiance fading, soft sigh. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.\n---\nB: Static close-up. The character pushes food around the plate, expression shifting from boredom to quiet longing, then slowly turns toward the window. Eyes reflect the fading daylight. Audio: fork scraping plate softly, distant evening sounds. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [
+            {
+              "file": "prompt_a/variant_1.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_a/variant_2.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_a/variant_3.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_a/variant_4.mp4",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null,
+          "prompt_b": "Static close-up. The character pushes food around the plate, expression shifting from boredom to quiet longing, then slowly turns toward the window. Eyes reflect the fading daylight. Audio: fork scraping plate softly, distant evening sounds. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "batch_a_count": 4,
+          "batch_b_count": 0
+        }
+      ],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    }
+  }
+}

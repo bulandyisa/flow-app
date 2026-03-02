@@ -1,0 +1,186 @@
+{
+  "clip_id": "S11_C",
+  "components": {
+    "nb_first": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "The exact character from Image 1, preserving identical facial features and proportions, sits alone at the desk in the office, the door just closed, expression of deep warm contentment, a private smile that comes from accomplishing something meaningful unseen. Use Image 2 as the exact background location. Medium shot, eye-level. Warm lamp light, the empty chair across the desk, post-farewell quietude. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 3 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_4.png",
+              "scores": {
+                "char_face": 10,
+                "char_outfit": 10,
+                "char_count": 10,
+                "anatomy_hands": 10,
+                "anatomy_body": 10,
+                "anatomy_face": 10,
+                "scale": 10,
+                "physics": 10,
+                "spatial": 10,
+                "scenario_action": 9,
+                "scenario_emotion": 10,
+                "scenario_objects": 9,
+                "loc_match": 10,
+                "lighting": 10,
+                "artifacts": 10,
+                "style_3d": 10,
+                "composition": 9
+              },
+              "avg": 9.823529411764707
+            }
+          ],
+          "best_variant": 3,
+          "best_avg": 9.823529411764707
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 1,
+        "variant": 3
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "nb_mid": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_last": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "The exact character from Image 1, preserving identical facial features and proportions, holds the glass lens from the shelf in both hands, turning it gently, prismatic light dancing on the face and desk, expression of nostalgic tenderness and quiet joy, savoring a private victory. Use Image 2 as the exact background location. Close-up, eye-level. Warm lamp light refracting through the lens, rainbow colors on the face, the most peaceful moment in the story. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 3.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": {
+                "char_face": 10,
+                "char_outfit": 10,
+                "char_count": 10,
+                "anatomy_hands": 9,
+                "anatomy_body": 10,
+                "anatomy_face": 10,
+                "scale": 10,
+                "physics": 10,
+                "spatial": 10,
+                "scenario_action": 10,
+                "scenario_emotion": 10,
+                "scenario_objects": 10,
+                "loc_match": 10,
+                "lighting": 10,
+                "artifacts": 10,
+                "style_3d": 10,
+                "composition": 10
+              },
+              "avg": 9.941176470588236
+            },
+            {
+              "file": "variant_2.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_4.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": 0,
+          "best_avg": 9.941176470588236
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 1,
+        "variant": 0
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "veo": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "Slow dolly in. Alone in a lamp-lit office. The character reaches to the shelf, picks up the lens. Turns it in the fingers — prismatic light dances across the room. Smiles. Places it back. Leans back. Pure contentment. Audio: quiet room, glass turning in fingers, soft warm music, satisfied sigh. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        },
+        {
+          "attempt": 2,
+          "prompt": "Slow dolly in. Alone in a lamp-lit office. The character reaches to the shelf, picks up the lens. Turns it in the fingers — prismatic light dances across the room. Smiles. Places it back. Leans back. Pure contentment. Audio: quiet room, glass turning in fingers, soft warm music, satisfied sigh. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        },
+        {
+          "attempt": 3,
+          "prompt": "Slow dolly in. Alone in a lamp-lit office. The character reaches to the shelf, picks up the lens. Turns it in the fingers — prismatic light dances across the room. Smiles. Places it back. Leans back. Pure contentment. Audio: quiet room, glass turning in fingers, soft warm music, satisfied sigh. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        },
+        {
+          "attempt": 4,
+          "prompt": "Slow dolly in. Alone in a lamp-lit office. The character reaches to the shelf, picks up the lens. Turns it in the fingers — prismatic light dances across the room. Smiles. Places it back. Leans back. Pure contentment. Audio: quiet room, glass turning in fingers, soft warm music, satisfied sigh. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        },
+        {
+          "attempt": 5,
+          "prompt": "Slow dolly in. Alone in a lamp-lit office. The character reaches to the shelf, picks up the lens. Turns it in the fingers — prismatic light dances across the room. Smiles. Places it back. Leans back. Pure contentment. Audio: quiet room, glass turning in fingers, soft warm music, satisfied sigh. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [
+            {
+              "file": "variant_1.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_4.mp4",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "clip_id": "S08_B",
+  "components": {
+    "nb_first": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character in a grey hoodie from Image 1, preserving identical facial features and proportions, freezes behind the wall, eyes locked on a figure in the distance who has turned toward them, expression shifting from focused to alarmed, body rigid. Then, the exact character in a black hoodie from Image 2, preserving identical facial features, tenses beside, recognizing the danger. Then, the exact character in a red-and-white striped shirt and red cap from Image 3, preserving identical facial features, shrinks down, terror on the face. Use Image 4 as the exact background location. Medium shot, eye-level. Late afternoon sun, the moment before flight, adrenaline in the postures. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": {
+                "char_face": 9,
+                "char_outfit": 10,
+                "char_count": 9,
+                "anatomy_hands": 8,
+                "anatomy_body": 9,
+                "anatomy_face": 8,
+                "scale": 9,
+                "physics": 10,
+                "spatial": 9,
+                "scenario_action": 9,
+                "scenario_emotion": 9,
+                "scenario_objects": 8,
+                "loc_match": 9,
+                "lighting": 10,
+                "artifacts": 9,
+                "style_3d": 10,
+                "composition": 9
+              },
+              "avg": 9.058823529411764
+            },
+            {
+              "file": "variant_2.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": 0,
+          "best_avg": 9.058823529411764
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 1,
+        "variant": 0
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "nb_mid": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_last": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "veo": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    }
+  }
+}

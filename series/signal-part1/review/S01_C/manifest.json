@@ -1,0 +1,136 @@
+{
+  "clip_id": "S01_C",
+  "components": {
+    "nb_first": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, sits at the dinner table, eating calmly, eyes lowered to the plate, expression neutral and quiet. Then, the exact character from Image 2, preserving identical facial features, sits further at the table, looking away toward a window. Then, the exact character from Image 3, preserving identical facial features, sits at the table, chatting. Then, the exact character from Image 4, preserving identical facial features, sits nearby, listening to Image 3. Then, the exact character from Image 5, preserving identical facial features, sits beside Image 4. Use Image 6 as the exact background location. Medium-wide shot, eye-level. Warm dinner lighting, gentle overhead glow. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 7 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_4.png",
+              "scores": {
+                "char_face": 8,
+                "char_outfit": 9,
+                "char_count": 10,
+                "anatomy_hands": 9,
+                "anatomy_body": 9,
+                "anatomy_face": 9,
+                "scale": 9,
+                "physics": 9,
+                "spatial": 9,
+                "scenario_action": 9,
+                "scenario_emotion": 9,
+                "scenario_objects": 9,
+                "loc_match": 9,
+                "lighting": 10,
+                "artifacts": 9,
+                "style_3d": 10,
+                "composition": 10
+              },
+              "avg": 9.176470588235293
+            }
+          ],
+          "best_variant": 3,
+          "best_avg": 9.176470588235293
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 1,
+        "variant": 3
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "nb_mid": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_last": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, sits at the dinner table, gaze now lifted and fixed on Image 2 character, lingering a moment longer than usual, expression thoughtful and quietly determined. Then, the exact character from Image 2, preserving identical facial features, sits at the table unaware, still looking toward the window. Then, the exact character from Image 3, preserving identical facial features, continues talking at the table. Then, the exact character from Image 4, preserving identical facial features, clears a plate. Then, the exact character from Image 5, preserving identical facial features, listens to Image 3. Use Image 6 as the exact background location. Medium-wide shot, eye-level. Same warm dinner lighting, a faint glint of intent in Image 1's eyes. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 7.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        },
+        {
+          "attempt": 2,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, sits at the dinner table, gaze now lifted and fixed on Image 2 character, lingering a moment longer than usual, expression thoughtful and quietly determined. Then, the exact character from Image 2, preserving identical facial features, sits at the table unaware, still looking toward the window. Then, the exact character from Image 3, preserving identical facial features, continues talking at the table. Then, the exact character from Image 4, preserving identical facial features, clears a plate. Then, the exact character from Image 5, preserving identical facial features, listens to Image 3. Use Image 6 as the exact background location. Medium-wide shot, eye-level. Same warm dinner lighting, a faint glint of intent in Image 1's eyes. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 7.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": {
+                "char_face": 8,
+                "char_outfit": 9,
+                "char_count": 10,
+                "anatomy_hands": 9,
+                "anatomy_body": 9,
+                "anatomy_face": 9,
+                "scale": 9,
+                "physics": 9,
+                "spatial": 9,
+                "scenario_action": 9,
+                "scenario_emotion": 9,
+                "scenario_objects": 9,
+                "loc_match": 9,
+                "lighting": 10,
+                "artifacts": 9,
+                "style_3d": 10,
+                "composition": 10
+              },
+              "avg": 9.176470588235293
+            },
+            {
+              "file": "variant_3.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_4.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": 1,
+          "best_avg": 9.176470588235293
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 2,
+        "variant": 1
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "veo": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    }
+  }
+}

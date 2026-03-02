@@ -1,0 +1,167 @@
+{
+  "clip_id": "S06_B",
+  "components": {
+    "nb_first": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, stands before a boarded-up building, examining a shiny new padlock on a rusty door, expression suspicious and analytical. Then, the exact character from Image 2, preserving identical facial features, inspects the boarded windows, hands testing the boards. Then, the exact character from Image 3, preserving identical facial features, crouches beside the wall, tugging at a rusty ventilation grate that wobbles. Use Image 4 as the exact background location. Medium-wide shot, eye-level. Afternoon light, rundown building exterior. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        },
+        {
+          "attempt": 2,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, stands before a boarded-up building, examining a shiny new padlock on a rusty door, expression suspicious and analytical. Then, the exact character from Image 2, preserving identical facial features, inspects the boarded windows, hands testing the boards. Then, the exact character from Image 3, preserving identical facial features, crouches beside the wall, tugging at a rusty ventilation grate that wobbles. Use Image 4 as the exact background location. Medium-wide shot, eye-level. Afternoon light, rundown building exterior. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 5 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.png",
+              "scores": {
+                "char_face": 8,
+                "char_outfit": 9,
+                "char_count": 10,
+                "anatomy_hands": 9,
+                "anatomy_body": 9,
+                "anatomy_face": 9,
+                "scale": 9,
+                "physics": 9,
+                "spatial": 9,
+                "scenario_action": 9,
+                "scenario_emotion": 9,
+                "scenario_objects": 9,
+                "loc_match": 9,
+                "lighting": 9,
+                "artifacts": 9,
+                "style_3d": 10,
+                "composition": 10
+              },
+              "avg": 9.117647058823529
+            }
+          ],
+          "best_variant": 2,
+          "best_avg": 9.117647058823529
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 2,
+        "variant": 2
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "nb_mid": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_last": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "The exact character from Image 3, preserving identical facial features and proportions, squeezes through a narrow ventilation opening in the wall of an abandoned building, flashlight gripped in one hand, body halfway through, expression tense but resolved. Outside, afternoon light illuminates half the body still visible outside. Use Image 4 as the exact background location. Medium close-up, low angle. Half in shadow, half in daylight, dramatic contrast. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 5.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.png",
+              "scores": {
+                "char_face": 10,
+                "char_outfit": 10,
+                "char_count": 10,
+                "anatomy_hands": 9,
+                "anatomy_body": 9,
+                "anatomy_face": 10,
+                "scale": 9,
+                "physics": 9,
+                "spatial": 10,
+                "scenario_action": 10,
+                "scenario_emotion": 9,
+                "scenario_objects": 10,
+                "loc_match": 9,
+                "lighting": 9,
+                "artifacts": 10,
+                "style_3d": 10,
+                "composition": 10
+              },
+              "avg": 9.588235294117647
+            },
+            {
+              "file": "variant_4.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": 2,
+          "best_avg": 9.588235294117647
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 1,
+        "variant": 2
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "veo": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "Static medium shot. Three characters examine a boarded-up building. One crouches by a vent grate, pulls it loose. Accepts a flashlight. Takes a breath. Squeezes into the dark opening, disappearing from view. Audio: rusty metal scraping, deep breath, clothes scraping against concrete. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        },
+        {
+          "attempt": 2,
+          "prompt": "Static medium shot. Three characters examine a boarded-up building. One crouches by a vent grate, pulls it loose. Accepts a flashlight. Takes a breath. Squeezes into the dark opening, disappearing from view. Audio: rusty metal scraping, deep breath, clothes scraping against concrete. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [
+            {
+              "file": "variant_1.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_4.mp4",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    }
+  }
+}

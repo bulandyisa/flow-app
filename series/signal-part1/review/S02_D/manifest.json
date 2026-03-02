@@ -1,0 +1,181 @@
+{
+  "clip_id": "S02_D",
+  "components": {
+    "nb_first": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, sits at the workbench holding the atlas, looking across at Image 2 character with a new intensity in the eyes, determination forming. Then, the exact character from Image 2, preserving identical facial features, sits nearby, eyebrows raised in a questioning look, waiting for a decision. Use Image 3 as the exact background location. Medium shot, eye-level. Warm garage light, late afternoon mood. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 4 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "variants": [
+            {
+              "file": "prompt_a/variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_a/variant_2.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null,
+          "prompt_b": "First, the exact character from Image 1, preserving identical facial features and proportions, grips the edge of the atlas, gaze sharp and alive, something alive stirring in the eyes for the first time. Then, the exact character from Image 2, preserving identical facial features, tilts head, expression curious and expectant. Use Image 3 as the exact background location. Medium close-up, slight low angle. Late afternoon light filtering through garage, warm and purposeful. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 4 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "batch_a_count": 2,
+          "batch_b_count": 0
+        },
+        {
+          "attempt": 2,
+          "prompt": "First, the exact character from Image 1, preserving identical facial features and proportions, sits at the workbench holding the atlas, looking across at Image 2 character with a new intensity in the eyes, determination forming. Then, the exact character from Image 2, preserving identical facial features, sits nearby, eyebrows raised in a questioning look, waiting for a decision. Use Image 3 as the exact background location. Medium shot, eye-level. Warm garage light, late afternoon mood. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 4 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "variants": [
+            {
+              "file": "prompt_a/variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_a/variant_2.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_a/variant_3.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "prompt_a/variant_4.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null,
+          "prompt_b": "First, the exact character from Image 1, preserving identical facial features and proportions, grips the edge of the atlas, gaze sharp and alive, something alive stirring in the eyes for the first time. Then, the exact character from Image 2, preserving identical facial features, tilts head, expression curious and expectant. Use Image 3 as the exact background location. Medium close-up, slight low angle. Late afternoon light filtering through garage, warm and purposeful. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 4 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "batch_a_count": 4,
+          "batch_b_count": 0
+        },
+        {
+          "attempt": 3,
+          "prompt": "First, the exact character from Image 2, preserving identical facial features and proportions, sits at the workbench holding the atlas, looking across at Image 1 character with a new intensity in the eyes, determination forming. Then, the exact character from Image 1, preserving identical facial features, sits nearby, eyebrows raised in a questioning look, waiting for a decision. Use Image 3 as the exact background location. Medium shot, eye-level. Warm garage light, late afternoon mood. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 4 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null,
+          "prompt_b": "First, the exact character from Image 2, preserving identical facial features and proportions, grips the edge of the atlas, gaze sharp and alive, something alive stirring in the eyes for the first time. Then, the exact character from Image 1, preserving identical facial features, tilts head, expression curious and expectant. Use Image 3 as the exact background location. Medium close-up, slight low angle. Late afternoon light filtering through garage, warm and purposeful. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 4 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "batch_a_count": 0,
+          "batch_b_count": 0
+        },
+        {
+          "attempt": 4,
+          "prompt": "First, the exact character from Image 1 in a grey hoodie, preserving identical facial features and proportions, sits at the workbench gripping an open atlas with both hands, looking across at the other character with new intensity and determination in the eyes. Then, the exact character from Image 2 in a black hoodie with a white star, preserving identical facial features, sits nearby with arms crossed, eyebrows raised in a questioning look, waiting for a decision. Use Image 3 as the exact background location. Medium shot, eye-level. Warm garage light, late afternoon mood. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 4 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": {
+                "char_face": 8,
+                "char_outfit": 9,
+                "char_count": 10,
+                "anatomy_hands": 9,
+                "anatomy_body": 9,
+                "anatomy_face": 9,
+                "scale": 9,
+                "physics": 9,
+                "spatial": 9,
+                "scenario_action": 9,
+                "scenario_emotion": 9,
+                "scenario_objects": 9,
+                "loc_match": 9,
+                "lighting": 9,
+                "artifacts": 9,
+                "style_3d": 10,
+                "composition": 9
+              },
+              "avg": 9.058823529411764
+            },
+            {
+              "file": "variant_2.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": 0,
+          "best_avg": 9.058823529411764
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 4,
+        "variant": 0
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "nb_mid": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_last": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character from Image 2, preserving identical facial features and proportions, looks directly at Image 1 character with confident resolve, chin raised, eyes bright and alive, mouth set in determination. Then, the exact character from Image 1, preserving identical facial features, meets the gaze with a slow smile of agreement, nodding subtly. Use Image 3 as the exact background location. Medium shot, eye-level. Warm golden garage light, sense of a pact being made. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 4.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.png",
+              "scores": {
+                "char_face": 8,
+                "char_outfit": 9,
+                "char_count": 10,
+                "anatomy_hands": 9,
+                "anatomy_body": 9,
+                "anatomy_face": 9,
+                "scale": 9,
+                "physics": 9,
+                "spatial": 9,
+                "scenario_action": 9,
+                "scenario_emotion": 9,
+                "scenario_objects": 9,
+                "loc_match": 9,
+                "lighting": 9,
+                "artifacts": 9,
+                "style_3d": 10,
+                "composition": 9
+              },
+              "avg": 9.058823529411764
+            },
+            {
+              "file": "variant_4.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": 2,
+          "best_avg": 9.058823529411764
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 1,
+        "variant": 2
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "veo": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    }
+  }
+}
