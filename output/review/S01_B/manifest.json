@@ -239,6 +239,13 @@
           "prompt_b": "Static close-up. The character pushes food around the plate, expression shifting from boredom to quiet longing, then slowly turns toward the window. Eyes reflect the fading daylight. Audio: fork scraping plate softly, distant evening sounds. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
           "batch_a_count": 4,
           "batch_b_count": 3
+        },
+        {
+          "attempt": 3,
+          "prompt": "Slow dolly in. The character leans back from the table, sighs, then turns to gaze out the window with a wistful expression. Stillness settles. Audio: quiet kitchen ambiance fading, soft sigh. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
         }
       ],
       "selected_variant_a": null,

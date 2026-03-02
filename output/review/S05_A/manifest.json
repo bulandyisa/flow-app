@@ -1,0 +1,79 @@
+{
+  "clip_id": "S05_A",
+  "components": {
+    "nb_first": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character in a grey hoodie from Image 1, preserving identical facial features and proportions, stands at the edge of a weathered stone bridge over a small stream, looking down at two fishermen sitting below, expression frustrated and calculating. Then, the exact character in a black hoodie from Image 2, preserving identical facial features, leans on the bridge railing, waiting patiently, arms crossed. Then, the exact character in a red-and-white striped shirt and red cap from Image 3, preserving identical facial features, sits on the ground nearby, chin on knees, expression of extreme impatience. Use Image 4 as the exact background location. Medium-wide shot, eye-level. Bright afternoon sunlight, natural outdoor tones. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.png",
+              "scores": {
+                "char_face": 8,
+                "char_outfit": 10,
+                "char_count": 9,
+                "anatomy_hands": 8,
+                "anatomy_body": 9,
+                "anatomy_face": 8,
+                "scale": 9,
+                "physics": 10,
+                "spatial": 9,
+                "scenario_action": 8,
+                "scenario_emotion": 8,
+                "scenario_objects": 9,
+                "loc_match": 9,
+                "lighting": 10,
+                "artifacts": 9,
+                "style_3d": 10,
+                "composition": 10
+              },
+              "avg": 9.0
+            },
+            {
+              "file": "variant_4.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": 2,
+          "best_avg": 9.0
+        }
+      ],
+      "selected_variant_a": {
+        "attempt": 1,
+        "variant": 2
+      },
+      "selected_variant_b": null,
+      "status": "accepted"
+    },
+    "nb_mid": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "nb_last": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    },
+    "veo": {
+      "attempts": [],
+      "selected_variant_a": null,
+      "selected_variant_b": null,
+      "status": "pending"
+    }
+  }
+}
