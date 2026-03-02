@@ -37,6 +37,13 @@
           "variants": [],
           "best_variant": null,
           "best_avg": null
+        },
+        {
+          "attempt": 6,
+          "prompt": "A solitary dark silhouette walks briskly down an empty street at night, seen from behind, moving with purpose. Streetlights cast long pools of amber light on the pavement. The figure is indistinct — only an outline against the dim glow. Use Image 1 as the exact background location. Wide shot, low angle. Night lighting — sparse amber streetlamps, deep shadows, film noir atmosphere. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic, mysterious. Use Image 2 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
         }
       ],
       "selected_variant_a": null,

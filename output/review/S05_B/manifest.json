@@ -64,7 +64,15 @@
       "status": "pending"
     },
     "nb_last": {
-      "attempts": [],
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character in a red-and-white striped shirt and red cap from Image 1, preserving identical facial features and proportions, waves goodbye to two figures walking away along the stream with fishing rods over their shoulders, expression of smug satisfaction, hands on hips, barely containing a grin. Then, the exact character in a grey hoodie from Image 2, preserving identical facial features, and the exact character in a black hoodie from Image 3, preserving identical facial features, approach from the bridge, exchanging relieved glances. Use Image 4 as the exact background location. Medium shot, eye-level. Warm afternoon light, the departing fishermen in the middle distance. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 5.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
       "selected_variant_a": null,
       "selected_variant_b": null,
       "status": "pending"

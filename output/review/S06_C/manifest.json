@@ -9,6 +9,29 @@
           "variants": [],
           "best_variant": null,
           "best_avg": null
+        },
+        {
+          "attempt": 2,
+          "prompt": "The exact character from Image 1, preserving identical facial features and proportions, crouches in a dark dusty basement, flashlight beam sweeping across weathered brick walls, expression of nervous determination, body tense and alert, whispering to self for courage. Use Image 2 as the exact background location. Medium shot, low angle. Single flashlight source creating dramatic shadows, dust motes floating. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Use Image 3 as reference for the exact room layout, furniture placement, and all visible objects.",
+          "variants": [
+            {
+              "file": "variant_1.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.png",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.png",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
         }
       ],
       "selected_variant_a": null,
