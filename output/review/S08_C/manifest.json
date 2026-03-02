@@ -30,8 +30,26 @@
           "variants": [
             {
               "file": "variant_1.png",
-              "scores": null,
-              "avg": null
+              "scores": {
+                "char_face": 9,
+                "char_outfit": 10,
+                "char_count": 10,
+                "anatomy_hands": 10,
+                "anatomy_body": 9,
+                "anatomy_face": 9,
+                "scale": 10,
+                "physics": 10,
+                "spatial": 9,
+                "scenario_action": 10,
+                "scenario_emotion": 10,
+                "scenario_objects": 9,
+                "loc_match": 9,
+                "lighting": 10,
+                "artifacts": 9,
+                "style_3d": 10,
+                "composition": 10
+              },
+              "avg": 9.588235294117647
             },
             {
               "file": "variant_2.png",
@@ -39,13 +57,16 @@
               "avg": null
             }
           ],
-          "best_variant": null,
-          "best_avg": null
+          "best_variant": 0,
+          "best_avg": 9.588235294117647
         }
       ],
-      "selected_variant_a": null,
+      "selected_variant_a": {
+        "attempt": 4,
+        "variant": 0
+      },
       "selected_variant_b": null,
-      "status": "pending"
+      "status": "accepted"
     },
     "nb_mid": {
       "attempts": [],
