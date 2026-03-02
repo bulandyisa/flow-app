@@ -119,7 +119,29 @@
       "status": "accepted"
     },
     "veo": {
-      "attempts": [],
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "Static medium shot. Three characters huddle behind a corner. One unfolds a note, studies it, then opens an atlas. Fingers trace the map. They exchange glances — the next destination found. Audio: paper rustling, pages turning, quiet excited whispers. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        },
+        {
+          "attempt": 2,
+          "prompt": "Static medium shot. Three characters huddle behind a corner. One unfolds a note, studies it, then opens an atlas. Fingers trace the map. They exchange glances — the next destination found. Audio: paper rustling, pages turning, quiet excited whispers. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        },
+        {
+          "attempt": 3,
+          "prompt": "Static medium shot. Three characters huddle behind a corner. One unfolds a note, studies it, then opens an atlas. Fingers trace the map. They exchange glances — the next destination found. Audio: paper rustling, pages turning, quiet excited whispers. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
       "selected_variant_a": null,
       "selected_variant_b": null,
       "status": "pending"

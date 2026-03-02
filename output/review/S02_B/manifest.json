@@ -170,7 +170,29 @@
       "status": "accepted"
     },
     "veo": {
-      "attempts": [],
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "Slow push in. All three characters freeze as a rhythmic coded signal emerges from the radio — short, long, short, long — followed by a monotone voice reading numbers. Nobody moves. The signal repeats, then silence. Audio: rhythmic beeping pattern, mechanical monotone voice saying numbers, then abrupt silence. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        },
+        {
+          "attempt": 2,
+          "prompt": "Slow push in. All three characters freeze as a rhythmic coded signal emerges from the radio — short, long, short, long — followed by a monotone voice reading numbers. Nobody moves. The signal repeats, then silence. Audio: rhythmic beeping pattern, mechanical monotone voice saying numbers, then abrupt silence. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        },
+        {
+          "attempt": 3,
+          "prompt": "Slow push in. All three characters freeze as a rhythmic coded signal emerges from the radio — short, long, short, long — followed by a monotone voice reading numbers. Nobody moves. The signal repeats, then silence. Audio: rhythmic beeping pattern, mechanical monotone voice saying numbers, then abrupt silence. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
       "selected_variant_a": null,
       "selected_variant_b": null,
       "status": "pending"
