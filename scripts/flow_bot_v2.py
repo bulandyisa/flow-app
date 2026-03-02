@@ -44,12 +44,8 @@ FLOW_URL = 'https://labs.google/fx/ru/tools/flow'
 ACCOUNTS = [
     # Bot 1 — Акк 1, сессия .session
     {'session_dir': PROJECT_ROOT / '.session', 'project_url': None},
-    # Bot 2 — Акк 1, сессия .session_1b
-    {'session_dir': PROJECT_ROOT / '.session_1b', 'project_url': None},
-    # Bot 3 — Акк 2, сессия .session_2
+    # Bot 2 — Акк 2, сессия .session_2
     {'session_dir': PROJECT_ROOT / '.session_2', 'project_url': None},
-    # Bot 4 — Акк 2, сессия .session_2b
-    {'session_dir': PROJECT_ROOT / '.session_2b', 'project_url': None},
 ]
 
 _current_account_idx = 0

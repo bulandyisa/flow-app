@@ -967,13 +967,15 @@ def page_timeline():
         with cols[1]:
             st.markdown(clip["scene_description_ru"])
 
-        # VEO videos in a row
+        # VEO videos — max 2 per row for comfortable viewing
         videos = _find_veo_videos(clip_id)
         if videos:
-            vid_cols = st.columns(len(videos))
-            for i, vpath in enumerate(videos):
-                with vid_cols[i]:
-                    st.video(str(vpath))
+            for row_start in range(0, len(videos), 2):
+                row_videos = videos[row_start:row_start + 2]
+                vid_cols = st.columns(2)
+                for i, vpath in enumerate(row_videos):
+                    with vid_cols[i]:
+                        st.video(str(vpath))
         else:
             # Fallback: show keyframes if no videos
             first_frame = FRAMES_DIR / f"{clip_id}_first.png"
