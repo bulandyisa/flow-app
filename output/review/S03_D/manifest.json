@@ -140,6 +140,24 @@
           "variants": [],
           "best_variant": null,
           "best_avg": null
+        },
+        {
+          "attempt": 4,
+          "prompt": "Static medium shot. Three characters huddle behind a corner. One unfolds a note, studies it, then opens an atlas. Fingers trace the map. They exchange glances — the next destination found. Audio: paper rustling, pages turning, quiet excited whispers. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [
+            {
+              "file": "variant_1.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.mp4",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
         }
       ],
       "selected_variant_a": null,
