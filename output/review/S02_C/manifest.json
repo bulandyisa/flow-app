@@ -188,6 +188,34 @@
           "variants": [],
           "best_variant": null,
           "best_avg": null
+        },
+        {
+          "attempt": 4,
+          "prompt": "Slow dolly in. The character writes numbers quickly on paper, then grabs an old atlas. Flips pages. Finger traces the map and stops on a point. Eyes widen — realization. Audio: pen scratching paper, pages rustling, a soft gasp. Smooth cinematic motion, 3D Pixar-style animation, family-friendly. No subtitles.",
+          "variants": [
+            {
+              "file": "variant_1.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_2.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_3.mp4",
+              "scores": null,
+              "avg": null
+            },
+            {
+              "file": "variant_4.mp4",
+              "scores": null,
+              "avg": null
+            }
+          ],
+          "best_variant": null,
+          "best_avg": null
         }
       ],
       "selected_variant_a": null,
