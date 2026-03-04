@@ -72,9 +72,43 @@ SERIES = {
         "chars_dir_fallback": "sosed_персонажи",
         "locs_dir": "sosed_локации_hq",
         "locs_dir_fallback": "sosed_локации",
-        "scene_colors": {},
-        "scene_labels": {},
-        "char_display": {},
+        "scene_colors": {
+            "S01": "#E8B849", "S02": "#49B6E8", "S03": "#E85A49",
+            "S04": "#6BE849", "S05": "#C149E8", "S06": "#E89849",
+            "S07": "#49E8D6", "S08": "#E84980", "S09": "#8B49E8",
+            "S10": "#B8E849", "S11": "#E8D649", "S12": "#4998E8",
+            "S13": "#E8B849", "S14": "#49B6E8", "S15": "#E85A49",
+            "S16": "#6BE849", "S17": "#C149E8", "S18": "#E89849",
+            "S19": "#49E8D6", "S20": "#E84980", "S21": "#8B49E8",
+        },
+        "scene_labels": {
+            "S01": "С1 — Улица, новый сосед",
+            "S02": "С2 — Гараж, обсуждение",
+            "S03": "С3 — Дом Джамиля, плов",
+            "S04": "С4 — Двор Джамиля, чай",
+            "S05": "С5 — Кухня, разговор",
+            "S06": "С6 — Гараж, карта города",
+            "S07": "С7 — Улицы, расследование",
+            "S08": "С8 — Стройка, камера",
+            "S09": "С9 — Библиотека, подшивки",
+            "S10": "С10 — Гараж, связи на доске",
+            "S11": "С11 — Забор, разговор",
+            "S12": "С12 — Старый квартал",
+            "S13": "С13 — Паркинг за мечетью",
+            "S14": "С14 — Ночь, слежка",
+            "S15": "С15 — Пожар, спасение",
+            "S16": "С16 — После пожара",
+            "S17": "С17 — Автомойка, улики",
+            "S18": "С18 — Подземный город",
+            "S19": "С19 — Возвращение",
+            "S20": "С20 — Признание Джамиля",
+            "S21": "С21 — Финал",
+        },
+        "char_display": {
+            "Amin": "Амин", "Karim": "Карим", "Tako": "Тако",
+            "Papa": "Папа", "Mama": "Мама", "Aya": "Ая",
+            "Jamil": "Джамиль", "Simba": "Симба",
+        },
     },
 }
 
@@ -797,6 +831,337 @@ def page_review():
             for clip in clips:
                 cid = clip["clip_id"]
                 st.session_state.pop(f"decision_{cid}", None)
+
+            st.rerun()
+
+
+def _load_manifest(clip_id: str) -> dict:
+    """Load manifest.json for a clip from review directory."""
+    path = REVIEW_DIR / clip_id / "manifest.json"
+    if path.exists():
+        with open(path) as f:
+            m = json.load(f)
+        for c in ("nb_first", "nb_mid", "nb_last", "veo"):
+            comp = m.get("components", {}).get(c, {})
+            comp.setdefault("selected_variant_a", None)
+            comp.setdefault("selected_variant_b", None)
+            comp.setdefault("attempts", [])
+            comp.setdefault("status", "pending")
+            m.setdefault("components", {})[c] = comp
+        return m
+    return {
+        "clip_id": clip_id,
+        "components": {
+            c: {"attempts": [], "selected_variant_a": None, "selected_variant_b": None, "status": "pending"}
+            for c in ("nb_first", "nb_mid", "nb_last", "veo")
+        },
+    }
+
+
+def _save_manifest(clip_id: str, manifest: dict):
+    """Save manifest.json for a clip."""
+    path = REVIEW_DIR / clip_id / "manifest.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(manifest, f, indent=2, ensure_ascii=False)
+
+
+def _chain_select_variant(clip_id: str, component: str, attempt: int, variant_idx: int):
+    """Accept a variant: update manifest + copy to frames/clips."""
+    suffixes = {"nb_first": "first", "nb_mid": "mid", "nb_last": "last"}
+    manifest = _load_manifest(clip_id)
+
+    # Find the variant file
+    attempt_dir = REVIEW_DIR / clip_id / component / f"attempt_{attempt}"
+    if component in suffixes:
+        variant_file = attempt_dir / f"variant_{variant_idx + 1}.png"
+        if not variant_file.exists():
+            variant_file = attempt_dir / "prompt_a" / f"variant_{variant_idx + 1}.png"
+        if variant_file.exists():
+            FRAMES_DIR.mkdir(parents=True, exist_ok=True)
+            dest = FRAMES_DIR / f"{clip_id}_{suffixes[component]}.png"
+            shutil.copy2(variant_file, dest)
+    elif component == "veo":
+        variant_file = attempt_dir / f"variant_{variant_idx + 1}.mp4"
+        if not variant_file.exists():
+            variant_file = attempt_dir / "prompt_a" / f"variant_{variant_idx + 1}.mp4"
+        if variant_file.exists():
+            CLIPS_DIR.mkdir(parents=True, exist_ok=True)
+            dest = CLIPS_DIR / f"{clip_id}_clip.mp4"
+            shutil.copy2(variant_file, dest)
+
+    # Update manifest
+    manifest["components"][component]["status"] = "accepted"
+    manifest["components"][component]["selected_variant_a"] = {
+        "attempt": attempt, "variant": variant_idx,
+    }
+    _save_manifest(clip_id, manifest)
+
+
+def _chain_reject_variant(clip_id: str, component: str, feedback: str = ""):
+    """Reject all variants of latest attempt."""
+    manifest = _load_manifest(clip_id)
+    manifest["components"][component]["status"] = "rejected"
+    if feedback:
+        manifest["components"][component]["feedback"] = feedback
+    _save_manifest(clip_id, manifest)
+
+
+def page_chain_review():
+    """Chain review page — shows clips by manifest status, not commands.json.
+
+    Works with --chain mode: each clip can be at a different stage.
+    Shows only clips that need review (have generated variants not yet accepted).
+    """
+    all_clips = load_clips()
+
+    # --- Scene filter ---
+    all_scene_ids = list(dict.fromkeys(c["scene_id"] for c in all_clips))
+    scene_options = {sid: SCENE_LABELS.get(sid, sid) for sid in all_scene_ids}
+
+    filter_col1, filter_col2 = st.columns([3, 1])
+
+    with filter_col1:
+        selected_scenes = st.multiselect(
+            "Сцены",
+            all_scene_ids,
+            default=all_scene_ids,
+            format_func=lambda x: scene_options[x],
+            key="chain_scene_filter",
+        )
+
+    with filter_col2:
+        view_mode = st.selectbox(
+            "Показать",
+            ["Ожидает ревью", "Все клипы", "Принятые", "Заблокированные"],
+            key="chain_view_mode",
+        )
+
+    if selected_scenes:
+        clips = [c for c in all_clips if c["scene_id"] in selected_scenes]
+    else:
+        clips = all_clips
+
+    # --- Load all manifests and classify ---
+    needs_review = []  # has variants, not accepted
+    accepted_clips = []
+    blocked_clips = []  # no variants yet
+    all_manifests = {}
+
+    for clip in clips:
+        cid = clip["clip_id"]
+        manifest = _load_manifest(cid)
+        all_manifests[cid] = manifest
+
+        # Check each component
+        clip_info = {"clip": clip, "manifest": manifest, "review_items": []}
+
+        for comp in ("nb_first", "nb_last"):
+            comp_data = manifest["components"].get(comp, {})
+            status = comp_data.get("status", "pending")
+            attempts = comp_data.get("attempts", [])
+
+            if status == "accepted":
+                continue
+
+            # Has generated variants waiting for review?
+            all_attempts = get_all_attempt_variants(cid, comp)
+            if all_attempts:
+                clip_info["review_items"].append((comp, all_attempts))
+
+        if clip_info["review_items"]:
+            needs_review.append(clip_info)
+        else:
+            # Check if all components are accepted
+            first_ok = manifest["components"]["nb_first"].get("status") == "accepted"
+            last_ok = manifest["components"]["nb_last"].get("status") == "accepted"
+            if first_ok and last_ok:
+                accepted_clips.append(clip_info)
+            elif first_ok:
+                accepted_clips.append(clip_info)
+            else:
+                blocked_clips.append(clip_info)
+
+    # --- Stats ---
+    total = len(clips)
+    total_first_accepted = sum(
+        1 for c in clips
+        if all_manifests[c["clip_id"]]["components"]["nb_first"].get("status") == "accepted"
+    )
+    total_last_accepted = sum(
+        1 for c in clips
+        if all_manifests[c["clip_id"]]["components"]["nb_last"].get("status") == "accepted"
+    )
+    total_both = sum(
+        1 for c in clips
+        if all_manifests[c["clip_id"]]["components"]["nb_first"].get("status") == "accepted"
+        and all_manifests[c["clip_id"]]["components"]["nb_last"].get("status") == "accepted"
+    )
+
+    st.header("Chain Ревью")
+
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Всего клипов", total)
+    with col2:
+        st.metric("First принято", f"{total_first_accepted}/{total}")
+    with col3:
+        st.metric("Last принято", f"{total_last_accepted}/{total}")
+    with col4:
+        st.metric("Ожидает ревью", len(needs_review))
+
+    # Progress bar
+    progress = total_both / total if total else 0
+    st.progress(progress, text=f"Полностью готовы: {total_both}/{total} ({progress:.0%})")
+
+    st.markdown("---")
+
+    # --- Determine which clips to show ---
+    if view_mode == "Ожидает ревью":
+        display_items = needs_review
+        if not display_items:
+            st.info("Нет клипов, ожидающих ревью. Запустите бота: `./scripts/run_safe.sh --chain --account 1`")
+    elif view_mode == "Принятые":
+        display_items = accepted_clips
+        if not display_items:
+            st.info("Пока нет принятых клипов.")
+    elif view_mode == "Заблокированные":
+        display_items = blocked_clips
+        if not display_items:
+            st.info("Нет заблокированных клипов.")
+    else:
+        display_items = needs_review + accepted_clips + blocked_clips
+
+    # --- Render clips ---
+    current_scene = None
+    has_decisions = False
+
+    for item in display_items:
+        clip = item["clip"]
+        cid = clip["clip_id"]
+        manifest = item["manifest"]
+
+        # Scene header
+        if clip["scene_id"] != current_scene:
+            current_scene = clip["scene_id"]
+            color = SCENE_COLORS.get(current_scene, "#49B6E8")
+            label = SCENE_LABELS.get(current_scene, current_scene)
+            st.markdown(
+                f'<h4 style="border-left:4px solid {color};padding-left:12px;'
+                f'margin-top:24px;margin-bottom:8px;">{label}</h4>',
+                unsafe_allow_html=True,
+            )
+
+        # Component status badges
+        first_status = manifest["components"]["nb_first"].get("status", "pending")
+        last_status = manifest["components"]["nb_last"].get("status", "pending")
+
+        status_icons = {"accepted": "🟢", "pending": "⚪", "rejected": "🔴", "generated": "🟡"}
+        status_labels = {"accepted": "Принято", "pending": "Ожидание", "rejected": "Отклонено", "generated": "На ревью"}
+
+        desc = clip.get("scene_description_ru", "")[:120]
+        st.markdown(
+            f"**{cid}** — {desc} &nbsp; "
+            f"`first:` {status_icons.get(first_status, '⚪')} {status_labels.get(first_status, first_status)} &nbsp; "
+            f"`last:` {status_icons.get(last_status, '⚪')} {status_labels.get(last_status, last_status)}"
+        )
+
+        # Show accepted frames as thumbnails
+        if first_status == "accepted":
+            first_frame = FRAMES_DIR / f"{cid}_first.png"
+            if first_frame.exists():
+                fc1, fc2 = st.columns([1, 5])
+                with fc1:
+                    st.image(str(first_frame), width=150, caption="First (принято)")
+                if last_status == "accepted":
+                    last_frame = FRAMES_DIR / f"{cid}_last.png"
+                    if last_frame.exists():
+                        with fc2:
+                            st.image(str(last_frame), width=150, caption="Last (принято)")
+
+        # Show review items (variants awaiting selection)
+        review_items = item.get("review_items", [])
+        for comp, all_attempts in review_items:
+            comp_label = {"nb_first": "Первый кадр", "nb_last": "Последний кадр"}.get(comp, comp)
+            latest_attempt_num, variants = all_attempts[-1]
+
+            st.markdown(f"**{comp_label}** — попытка {latest_attempt_num} ({len(variants)} вариантов)")
+
+            # Show variant images
+            cols = st.columns(min(len(variants), 4))
+            for vi, vpath in enumerate(variants):
+                with cols[vi % 4]:
+                    if vpath.suffix == ".mp4":
+                        st.video(str(vpath))
+                    else:
+                        st.image(str(vpath), use_container_width=True)
+                    st.caption(f"Вариант {vi + 1}")
+
+            # Selection controls
+            sel_col, rej_col = st.columns([3, 1])
+            with sel_col:
+                options = [f"Вариант {i+1}" for i in range(len(variants))] + ["Не выбрано"]
+                default_idx = len(options) - 1
+                prev = st.session_state.get(f"chain_decision_{cid}_{comp}")
+                if isinstance(prev, tuple) and prev[0] == "selected":
+                    if prev[1] < len(variants):
+                        default_idx = prev[1]
+
+                choice = st.radio(
+                    f"Выбор для {cid}/{comp}", options, index=default_idx,
+                    key=f"chain_radio_{cid}_{comp}", horizontal=True, label_visibility="collapsed",
+                )
+
+            with rej_col:
+                reject = st.checkbox("Отклонить", key=f"chain_rej_{cid}_{comp}")
+
+            if reject:
+                feedback = st.text_area(
+                    f"Что исправить в {cid}/{comp}?",
+                    placeholder="Опишите проблему...",
+                    key=f"chain_feedback_{cid}_{comp}",
+                    height=68,
+                )
+                st.session_state[f"chain_decision_{cid}_{comp}"] = ("rejected", feedback)
+                has_decisions = True
+            elif choice != "Не выбрано":
+                variant_idx = int(choice.split()[-1]) - 1
+                st.session_state[f"chain_decision_{cid}_{comp}"] = ("selected", variant_idx, latest_attempt_num)
+                has_decisions = True
+
+        if review_items:
+            st.divider()
+
+    # --- Submit decisions ---
+    if has_decisions:
+        st.markdown("---")
+        if st.button("Отправить решения", type="primary", key="chain_btn_submit", use_container_width=True):
+            selected_count = 0
+            rejected_count = 0
+
+            for item in display_items:
+                cid = item["clip"]["clip_id"]
+                for comp, all_attempts in item.get("review_items", []):
+                    decision = st.session_state.get(f"chain_decision_{cid}_{comp}")
+                    if isinstance(decision, tuple):
+                        if decision[0] == "selected":
+                            _chain_select_variant(cid, comp, decision[2], decision[1])
+                            selected_count += 1
+                        elif decision[0] == "rejected":
+                            feedback = decision[1] if len(decision) > 1 else ""
+                            _chain_reject_variant(cid, comp, feedback)
+                            rejected_count += 1
+
+                    # Clear decision
+                    st.session_state.pop(f"chain_decision_{cid}_{comp}", None)
+
+            msg_parts = []
+            if selected_count:
+                msg_parts.append(f"Принято: {selected_count}")
+            if rejected_count:
+                msg_parts.append(f"Отклонено: {rejected_count}")
+            if msg_parts:
+                st.success(" | ".join(msg_parts))
 
             st.rerun()
 
@@ -1564,12 +1929,14 @@ def main():
     # --- Navigation ---
     page = st.sidebar.radio(
         "Навигация",
-        ["Ревью", "Пары кадров", "Клипы", "Таймлайн", "Сценарий", "Референсы"],
+        ["Chain Ревью", "Ревью", "Пары кадров", "Клипы", "Таймлайн", "Сценарий", "Референсы"],
         label_visibility="collapsed",
     )
 
     # --- Page routing ---
-    if page == "Ревью":
+    if page == "Chain Ревью":
+        page_chain_review()
+    elif page == "Ревью":
         page_review()
     elif page == "Пары кадров":
         page_keyframe_pairs()

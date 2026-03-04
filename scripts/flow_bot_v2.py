@@ -3494,6 +3494,156 @@ def do_phase_select(phase, clip_commands):
     return selected_count
 
 
+def do_chain(pw, scenes_filter=None, use_builtin_chromium=False):
+    """Chain workflow: process clips sequentially within each scene (first→last→first→last).
+
+    For each scene, processes clips in order:
+      S01_A nb_first → S01_A nb_last → S01_B nb_first → S01_B nb_last → ...
+    Skips clips whose dependencies aren't met (previous clip's last frame not accepted).
+    All scenes are interleaved in one pass — ready clips from any scene get processed.
+
+    scenes_filter: 'odd', 'even', or comma-separated scene IDs like 'S01,S03,S05'
+    """
+    all_clips = load_clips()
+
+    # Filter scenes
+    if scenes_filter:
+        if scenes_filter == 'odd':
+            allowed = {f'S{i:02d}' for i in range(1, 22, 2)}
+        elif scenes_filter == 'even':
+            allowed = {f'S{i:02d}' for i in range(2, 22, 2)}
+        else:
+            allowed = set(scenes_filter.split(','))
+        all_clips = [c for c in all_clips if c['scene_id'] in allowed]
+
+    if not all_clips:
+        print('  No clips to process.')
+        return
+
+    # Group by scene, preserving order
+    from collections import OrderedDict
+    scenes = OrderedDict()
+    for clip in all_clips:
+        sid = clip['scene_id']
+        scenes.setdefault(sid, []).append(clip)
+
+    print(f'\n  Chain mode: {len(all_clips)} clips across {len(scenes)} scenes')
+    print(f'  Scenes: {", ".join(scenes.keys())}')
+
+    # Launch browser
+    ctx = launch_browser(pw, use_builtin_chromium=use_builtin_chromium)
+    print('  Launched browser.')
+    page = ctx.pages[0] if ctx.pages else ctx.new_page()
+
+    def _on_console(msg):
+        if msg.type in ('error', 'warning'):
+            print(f'  [CONSOLE {msg.type.upper()}] {msg.text[:300]}')
+    page.on('console', _on_console)
+
+    ensure_project(page)
+    wait_for_flow_ready(page)
+
+    summary = {'generated': [], 'skipped': [], 'blocked': []}
+    total_generated = 0
+
+    # Keep looping until no more progress can be made
+    max_passes = 50  # safety limit
+    for pass_num in range(1, max_passes + 1):
+        progress_this_pass = 0
+        print(f'\n{"="*60}')
+        print(f'  Pass {pass_num}')
+        print(f'{"="*60}')
+
+        for sid, scene_clips in scenes.items():
+            for clip_idx, clip in enumerate(scene_clips):
+                cid = clip['clip_id']
+                is_first_in_scene = (clip_idx == 0)
+
+                _ensure_chat_view(page)
+                manifest = load_manifest(cid)
+
+                for component in ('nb_first', 'nb_last'):
+                    # Skip mid for now (most clips don't use it)
+                    if component == 'nb_last' and not clip.get('nano_banana_prompt_last'):
+                        continue
+
+                    status = manifest['components'][component].get('status', 'pending')
+                    if status in ('accepted', 'needs_manual_work'):
+                        continue
+
+                    # Check if already generated (waiting for selection by Claude Code)
+                    attempts = manifest['components'][component].get('attempts', [])
+                    if attempts and status == 'generated':
+                        continue
+
+                    # Dependency check
+                    if component == 'nb_first' and not is_first_in_scene:
+                        # Need previous clip's last frame to be ACCEPTED
+                        ref = find_scene_ref(cid)
+                        if not ref:
+                            prev_cid = scene_clips[clip_idx - 1]['clip_id']
+                            prev_manifest = load_manifest(prev_cid)
+                            prev_last_status = prev_manifest['components']['nb_last'].get('status', 'pending')
+                            if prev_last_status != 'accepted':
+                                # Blocked — previous clip not done yet
+                                continue
+                    elif component == 'nb_last':
+                        # Need this clip's first frame to be accepted
+                        ref = _resolve_ref_frame(manifest, cid, component)
+                        if not ref:
+                            continue
+
+                    # Ready to generate
+                    attempt = get_next_attempt(manifest, component)
+                    if attempt == 0:
+                        manifest['components'][component]['status'] = 'needs_manual_work'
+                        save_manifest(cid, manifest)
+                        continue
+
+                    first_frame_ref = None
+                    if component == 'nb_first':
+                        first_frame_ref = find_scene_ref(cid)  # may be None for first clip
+                    else:
+                        first_frame_ref = _resolve_ref_frame(manifest, cid, component)
+
+                    print(f'\n  [{sid}] {cid} / {component} / attempt_{attempt}')
+                    if first_frame_ref:
+                        print(f'    ref: {first_frame_ref.name}')
+
+                    variants = review_nano_banana(page, clip, manifest, component, attempt,
+                                                  first_frame_ref=first_frame_ref)
+                    if variants:
+                        summary['generated'].append(f'{cid}/{component}/a{attempt}')
+                        total_generated += 1
+                        progress_this_pass += 1
+                    else:
+                        summary['blocked'].append(f'{cid}/{component}/a{attempt}')
+
+                    human_pause_between_generations()
+
+        if progress_this_pass == 0:
+            print(f'\n  No progress in pass {pass_num} — stopping.')
+            break
+
+        print(f'\n  Pass {pass_num} done: {progress_this_pass} generations')
+
+    # Summary
+    print(f'\n{"="*60}')
+    print(f'  CHAIN COMPLETE')
+    print(f'  Total generated: {total_generated}')
+    if summary["generated"]:
+        print(f'  Generated:')
+        for g in summary['generated']:
+            print(f'    {g}')
+    if summary["blocked"]:
+        print(f'  Blocked/failed:')
+        for b in summary['blocked']:
+            print(f'    {b}')
+    print(f'{"="*60}')
+
+    ctx.close()
+
+
 def do_phase(pw, use_builtin_chromium=False):
     """Execute phase-based workflow from commands.json."""
     cmd = _load_commands()
@@ -3666,8 +3816,10 @@ def main():
     group.add_argument('--login', action='store_true', help='Open browser for manual login')
     group.add_argument('--sync-dashboard', action='store_true', help='Sync files to signal-dashboard')
     group.add_argument('--phase', action='store_true', help='Phase workflow: reads output/commands.json')
+    group.add_argument('--chain', action='store_true', help='Chain workflow: sequential first→last per scene')
 
     parser.add_argument('--clip', type=str, default=None, help='Clip ID or comma-separated list: S02_B,S02_C,S02_D')
+    parser.add_argument('--scenes', type=str, default=None, help='Scene filter: odd, even, or comma-separated list: S01,S03,S05')
     parser.add_argument('--component', type=str, default=None, choices=['nb_first','nb_mid','nb_last','veo'])
     parser.add_argument('--attempt', type=int, default=None)
     parser.add_argument('--variant', type=int, default=None)
@@ -3678,9 +3830,22 @@ def main():
     parser.add_argument('--account', type=int, default=1, choices=range(1, len(ACCOUNTS)+1))
     parser.add_argument('--project', type=str, default=None, help='Project UUID to use (overrides auto-detect)')
     parser.add_argument('--chromium', action='store_true', help='Use built-in Chromium instead of system Chrome (for parallel bots)')
+    parser.add_argument('--prompts', type=str, default=None, help='Path to prompts JSON file (overrides default)')
+    parser.add_argument('--output-dir', type=str, default=None, help='Output directory (overrides default output/)')
 
     args = parser.parse_args()
     _current_account_idx = args.account - 1
+
+    # Override paths if --prompts or --output-dir provided
+    global PROMPTS_PATH, OUTPUT_DIR, FRAMES_DIR, CLIPS_DIR, REVIEW_DIR, SCREENSHOTS_DIR
+    if args.prompts:
+        PROMPTS_PATH = Path(args.prompts).resolve()
+    if args.output_dir:
+        OUTPUT_DIR = Path(args.output_dir).resolve()
+        FRAMES_DIR = OUTPUT_DIR / 'frames'
+        CLIPS_DIR = OUTPUT_DIR / 'clips'
+        REVIEW_DIR = OUTPUT_DIR / 'review'
+        SCREENSHOTS_DIR = OUTPUT_DIR / 'screenshots'
 
     for d in (FRAMES_DIR, CLIPS_DIR, REVIEW_DIR, SCREENSHOTS_DIR):
         d.mkdir(parents=True, exist_ok=True)
@@ -3726,6 +3891,20 @@ def main():
         sys.exit(0)
     elif args.sync_dashboard:
         do_sync_dashboard(args.clip)
+    elif args.chain:
+        timeout = GLOBAL_TIMEOUT_SEC
+        if timeout > 0:
+            signal.signal(signal.SIGALRM, _timeout_handler)
+            signal.alarm(timeout)
+            print(f'  Timeout: {timeout}s')
+        with sync_playwright() as pw:
+            try:
+                do_chain(pw, scenes_filter=args.scenes, use_builtin_chromium=args.chromium)
+            finally:
+                signal.alarm(0)
+                if _active_context:
+                    try: _active_context.close()
+                    except Exception: pass
     elif args.phase:
         timeout = GLOBAL_TIMEOUT_SEC
         if timeout > 0:
