@@ -40,6 +40,7 @@ SCREENSHOTS_DIR = OUTPUT_DIR / 'screenshots'
 REFS_DIR     = PROJECT_ROOT
 
 FLOW_URL = 'https://labs.google/fx/ru/tools/flow'
+COMMANDS_PATH = OUTPUT_DIR / 'commands.json'
 
 ACCOUNTS = [
     # Bot 1 — Акк 1, сессия .session
@@ -97,7 +98,16 @@ def human_delay_long(lo=4.0, hi=8.0):
     time.sleep(random.uniform(lo, hi))
 
 def human_pause_between_generations():
-    time.sleep(random.uniform(45, 65))
+    """Pause between generation attempts — long enough to avoid per-minute throttling."""
+    pause = random.uniform(90, 150)
+    print(f'    Pausing {pause:.0f}s between generations...')
+    time.sleep(pause)
+
+def human_pause_after_error():
+    """Longer pause after server_error — back off to let throttle reset."""
+    pause = random.uniform(120, 180)
+    print(f'    Backing off {pause:.0f}s after error...')
+    time.sleep(pause)
 
 
 # ── Human-like interactions ──────────────────────────────────────────────────
@@ -964,7 +974,7 @@ def _upload_in_dialog(page, fpath):
         fc = fc_info.value
         fc.set_files(str(fpath))
         print(f'    Uploaded: {fpath.name}')
-        human_delay(3, 5)
+        human_delay(5, 8)
         return True
     except Exception as e:
         print(f'    File chooser failed: {e}')
@@ -973,7 +983,7 @@ def _upload_in_dialog(page, fpath):
         if file_input:
             file_input.set_input_files(str(fpath))
             print(f'    Uploaded (input): {fpath.name}')
-            human_delay(3, 5)
+            human_delay(5, 8)
             return True
         return False
 
@@ -1062,7 +1072,7 @@ def _upload_ingredient_fresh(page, fpath):
         return False
 
     # Step 4: Wait for upload to process
-    human_delay(3, 5)
+    human_delay(5, 8)
 
     # Step 5: Handle crop dialog if it appeared (critical — Escape would CANCEL it!)
     for _ in range(3):
@@ -1409,7 +1419,7 @@ def click_generate(page):
     if pos:
         page.mouse.click(pos['x'], pos['y'])
         print('  Clicked Generate.')
-        human_delay(1.5, 3.5)
+        human_delay(3.0, 6.0)
     else:
         raise RuntimeError('Generate button not found')
 
@@ -2359,6 +2369,13 @@ def copy_selected_to_output(clip_id, manifest, trim_start=None, trim_end=None):
                 print(f'  Copied → {dest.name}')
 
 
+def mark_selected_simple(manifest, component, attempt, variant_idx):
+    """Mark variant as selected (user-driven, no score validation)."""
+    comp = manifest['components'][component]
+    comp['selected_variant_a'] = {'attempt': attempt, 'variant': variant_idx}
+    comp['status'] = 'accepted'
+
+
 def _all_done(manifest):
     for c in ('nb_first','nb_mid','nb_last','veo'):
         comp = manifest['components'].get(c, {})
@@ -2421,6 +2438,10 @@ def generate_nb_batch(page, clip_id, component, prompt, attempt, ingredients, de
                 print(f'    Retry also failed ({result})')
         else:
             print(f'    Retry button not found')
+
+    if result != 'success':
+        # Back off after failed generation to avoid throttling
+        human_pause_after_error()
 
     if result == 'success':
         # Wait for API response to be fully captured
@@ -2937,6 +2958,10 @@ def review_veo_batch(page, clip, clip_id, prompt, first_frame, last_frame, attem
         else:
             print(f'  VEO {batch_label} retry button not found')
 
+    if result != 'success':
+        # Back off after failed generation to avoid throttling
+        human_pause_after_error()
+
     capture.stop(page)
 
     if result == 'content_filter':
@@ -3397,6 +3422,227 @@ def _auto_push_to_git(clip_filter=None):
         print(f'  Dashboard auto-push error: {e}')
 
 
+# ── Phase workflow ────────────────────────────────────────────────────────────
+
+def _load_commands():
+    """Load commands.json for phase-based workflow."""
+    if not COMMANDS_PATH.exists():
+        return None
+    with open(COMMANDS_PATH) as f:
+        return json.load(f)
+
+
+def _save_commands(cmd):
+    """Save commands.json."""
+    with open(COMMANDS_PATH, 'w') as f:
+        json.dump(cmd, f, indent=2, ensure_ascii=False)
+
+
+def do_phase_select(phase, clip_commands):
+    """Copy selected variants to output/frames or output/clips. No browser needed."""
+    suffixes = {'nb_first': 'first', 'nb_mid': 'mid', 'nb_last': 'last'}
+    selected_count = 0
+
+    for cid, cmd_info in clip_commands.items():
+        if cmd_info.get('status') != 'selected':
+            continue
+
+        variant_idx = cmd_info['variant']  # 0-based
+        attempt = cmd_info.get('attempt', 1)
+        manifest = load_manifest(cid)
+
+        attempt_dir = REVIEW_DIR / cid / phase / f'attempt_{attempt}'
+
+        if phase in suffixes:
+            # Try flat format first, then prompt_a subdirectory
+            variant_file = attempt_dir / f'variant_{variant_idx + 1}.png'
+            if not variant_file.exists():
+                variant_file = attempt_dir / 'prompt_a' / f'variant_{variant_idx + 1}.png'
+
+            if variant_file.exists():
+                FRAMES_DIR.mkdir(parents=True, exist_ok=True)
+                dest = FRAMES_DIR / f'{cid}_{suffixes[phase]}.png'
+                shutil.copy2(variant_file, dest)
+                print(f'  {cid}: variant_{variant_idx + 1} → {dest.name}')
+
+                mark_selected_simple(manifest, phase, attempt, variant_idx)
+                save_manifest(cid, manifest)
+                cmd_info['status'] = 'accepted'
+                selected_count += 1
+            else:
+                print(f'  {cid}: variant file not found: {variant_file}')
+
+        elif phase == 'veo':
+            variant_file = attempt_dir / f'variant_{variant_idx + 1}.mp4'
+            if not variant_file.exists():
+                variant_file = attempt_dir / 'prompt_a' / f'variant_{variant_idx + 1}.mp4'
+
+            if variant_file.exists():
+                CLIPS_DIR.mkdir(parents=True, exist_ok=True)
+                dest = CLIPS_DIR / f'{cid}_clip.mp4'
+                shutil.copy2(variant_file, dest)
+                print(f'  {cid}: variant_{variant_idx + 1} → {dest.name}')
+
+                mark_selected_simple(manifest, phase, attempt, variant_idx)
+                save_manifest(cid, manifest)
+                cmd_info['status'] = 'accepted'
+                selected_count += 1
+            else:
+                print(f'  {cid}: variant file not found: {variant_file}')
+
+    print(f'\n  Selected: {selected_count} clips')
+    return selected_count
+
+
+def do_phase(pw, use_builtin_chromium=False):
+    """Execute phase-based workflow from commands.json."""
+    cmd = _load_commands()
+    if not cmd:
+        print('Error: output/commands.json not found. Use the dashboard to start a phase.')
+        sys.exit(1)
+
+    phase = cmd['phase']
+    action = cmd.get('action', 'generate')
+    clip_commands = cmd.get('clips', {})
+
+    print(f'\n  Phase: {phase}')
+    print(f'  Action: {action}')
+
+    # Select action: copy selected variants without browser
+    if action == 'select':
+        do_phase_select(phase, clip_commands)
+        _save_commands(cmd)
+        _auto_push_to_git()
+        return
+
+    # Determine which clips need generation
+    all_clips = load_clips()
+    clips_to_generate = []
+    for clip in all_clips:
+        cid = clip['clip_id']
+        clip_cmd = clip_commands.get(cid, {})
+        status = clip_cmd.get('status', 'pending')
+        if status in ('pending', 'rejected'):
+            clips_to_generate.append(clip)
+
+    if not clips_to_generate:
+        print('  No clips need generation.')
+        return
+
+    print(f'  Clips to generate: {len(clips_to_generate)}')
+
+    # Mark bot as running
+    cmd['bot_running'] = True
+    _save_commands(cmd)
+
+    # Launch browser
+    ctx = launch_browser(pw, use_builtin_chromium=use_builtin_chromium)
+    print('  Launched browser.')
+    page = ctx.pages[0] if ctx.pages else ctx.new_page()
+
+    def _on_console(msg):
+        if msg.type in ('error', 'warning'):
+            print(f'  [CONSOLE {msg.type.upper()}] {msg.text[:300]}')
+    page.on('console', _on_console)
+
+    ensure_project(page)
+    wait_for_flow_ready(page)
+
+    summary = {'generated': [], 'failed': []}
+
+    for i, clip in enumerate(clips_to_generate):
+        cid = clip['clip_id']
+        clip_cmd = clip_commands.get(cid, {})
+        print(f'\n[{i+1}/{len(clips_to_generate)}] Phase {phase}: {cid}')
+
+        _ensure_chat_view(page)
+        manifest = load_manifest(cid)
+
+        if phase in ('nb_first', 'nb_mid', 'nb_last'):
+            # Determine attempt number
+            attempt = get_next_attempt(manifest, phase)
+            if attempt == 0:
+                print(f'  {cid}: max attempts reached, skip')
+                summary['failed'].append(f'{cid}/{phase}')
+                continue
+
+            # Check dependency
+            first_frame_ref = None
+            if phase in ('nb_mid', 'nb_last'):
+                ref = _resolve_ref_frame(manifest, cid, phase)
+                if not ref:
+                    print(f'  {cid}: waiting for previous frame — skip')
+                    summary['failed'].append(f'{cid}/{phase} (no ref)')
+                    continue
+                first_frame_ref = ref
+            else:
+                first_frame_ref = _resolve_ref_frame(manifest, cid, phase)
+
+            variants = review_nano_banana(page, clip, manifest, phase, attempt,
+                                          first_frame_ref=first_frame_ref)
+            if variants:
+                summary['generated'].append(f'{cid}/{phase}/a{attempt} ({len(variants)}v)')
+                clip_commands.setdefault(cid, {})['status'] = 'generated'
+                clip_commands[cid]['attempt'] = attempt
+            else:
+                summary['failed'].append(f'{cid}/{phase}/a{attempt}')
+                clip_commands.setdefault(cid, {})['status'] = 'failed'
+
+        elif phase == 'veo':
+            fp = FRAMES_DIR / f'{cid}_first.png'
+            lp = FRAMES_DIR / f'{cid}_last.png'
+            if not fp.exists() or not lp.exists():
+                print(f'  {cid}: frames not ready, skip')
+                summary['failed'].append(f'{cid}/veo (no frames)')
+                continue
+
+            attempt = get_next_attempt(manifest, 'veo')
+            if attempt == 0:
+                print(f'  {cid}: max attempts reached, skip')
+                summary['failed'].append(f'{cid}/veo')
+                continue
+
+            variants = review_veo(page, clip, manifest, attempt, fp, lp,
+                                  veo_mode=clip.get('veo_mode', 'frames'))
+            if variants:
+                summary['generated'].append(f'{cid}/veo/a{attempt} ({len(variants)}v)')
+                clip_commands.setdefault(cid, {})['status'] = 'generated'
+                clip_commands[cid]['attempt'] = attempt
+            else:
+                summary['failed'].append(f'{cid}/veo/a{attempt}')
+                clip_commands.setdefault(cid, {})['status'] = 'failed'
+
+        # Save progress after each clip
+        _save_commands(cmd)
+
+        if i < len(clips_to_generate) - 1:
+            human_pause_between_generations()
+
+    # Summary
+    print(f'\n{"="*60}')
+    print(f'  Generated: {len(summary["generated"])}')
+    for g in summary['generated']:
+        print(f'    {g}')
+    print(f'  Failed: {len(summary["failed"])}')
+    for f in summary['failed']:
+        print(f'    {f}')
+    print(f'{"="*60}')
+
+    # Mark bot as done
+    cmd['bot_running'] = False
+    _save_commands(cmd)
+
+    ctx.close()
+
+    # Auto-push results
+    if summary['generated']:
+        try:
+            _auto_push_to_git()
+            print('  Results pushed to git.')
+        except Exception as e:
+            print(f'  Git push error: {e}')
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 def _timeout_handler(signum, frame):
@@ -3419,6 +3665,7 @@ def main():
     group.add_argument('--extract-frames', action='store_true', help='Extract video frames')
     group.add_argument('--login', action='store_true', help='Open browser for manual login')
     group.add_argument('--sync-dashboard', action='store_true', help='Sync files to signal-dashboard')
+    group.add_argument('--phase', action='store_true', help='Phase workflow: reads output/commands.json')
 
     parser.add_argument('--clip', type=str, default=None, help='Clip ID or comma-separated list: S02_B,S02_C,S02_D')
     parser.add_argument('--component', type=str, default=None, choices=['nb_first','nb_mid','nb_last','veo'])
@@ -3479,6 +3726,20 @@ def main():
         sys.exit(0)
     elif args.sync_dashboard:
         do_sync_dashboard(args.clip)
+    elif args.phase:
+        timeout = GLOBAL_TIMEOUT_SEC
+        if timeout > 0:
+            signal.signal(signal.SIGALRM, _timeout_handler)
+            signal.alarm(timeout)
+            print(f'  Timeout: {timeout}s')
+        with sync_playwright() as pw:
+            try:
+                do_phase(pw, use_builtin_chromium=args.chromium)
+            finally:
+                signal.alarm(0)
+                if _active_context:
+                    try: _active_context.close()
+                    except Exception: pass
     elif args.review:
         timeout = GLOBAL_TIMEOUT_SEC
         if timeout > 0:

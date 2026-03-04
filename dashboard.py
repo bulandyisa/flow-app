@@ -1,11 +1,13 @@
 """
 СИГНАЛ — Production Dashboard
 Streamlit-дашборд для анимационного проекта
-v2.1 — compact thumbnails, video section fix
+v3.0 — interactive review page with phase workflow
 """
 
 import json
 import os
+import shutil
+from datetime import datetime
 from pathlib import Path
 
 import streamlit as st
@@ -14,6 +16,100 @@ import streamlit as st
 # Config
 # ---------------------------------------------------------------------------
 BASE_DIR = Path(__file__).parent
+
+# ---------------------------------------------------------------------------
+# Series definitions
+# ---------------------------------------------------------------------------
+SERIES = {
+    "signal": {
+        "id": "signal",
+        "title": "Сигнал",
+        "icon": "📡",
+        "color": "#E8B849",
+        "output_dir": "output",
+        "prompts_file": "output/prompts/all_prompts.json",
+        "scenario_file": "scenario_signal.txt",
+        "chars_dir": "персонажи_hq",
+        "chars_dir_fallback": "персонажи",
+        "locs_dir": "локации_hq",
+        "locs_dir_fallback": "локации",
+        "scene_colors": {
+            "S01": "#E8B849", "S02": "#49B6E8", "S03": "#E85A49",
+            "S04": "#6BE849", "S05": "#C149E8", "S06": "#E89849",
+            "S07": "#49E8D6", "S08": "#E84980", "S09": "#8B49E8",
+            "S10": "#B8E849", "S11": "#E8D649", "S12": "#4998E8",
+        },
+        "scene_labels": {
+            "S01": "Сцена 1 — Кухня, ужин",
+            "S02": "Сцена 2 — Гараж, радиоприёмник",
+            "S03": "Сцена 3 — Магазин, велосипед",
+            "S04": "Сцена 4 — Парк, поиски",
+            "S05": "Сцена 5 — Мост через ручей",
+            "S06": "Сцена 6 — Школа, перемена",
+            "S07": "Сцена 7 — Гараж, задача",
+            "S08": "Сцена 8 — Пустырь, склад",
+            "S09": "Сцена 9 — Кабинет папы",
+            "S10": "Сцена 10 — Водонапорная башня",
+            "S11": "Сцена 11 — Кабинет папы, линза",
+            "S12": "Сцена 12 — Комната Тако, ночь",
+        },
+        "char_display": {
+            "Amin": "Амин", "Karim": "Карим", "Tako": "Тако",
+            "Papa": "Папа", "Mama": "Мама", "Aya": "Ая",
+            "Hasan": "Хасан", "Rami": "Рами", "Samir": "Самир",
+            "Shaki": "Шаки",
+        },
+    },
+    "sosed": {
+        "id": "sosed",
+        "title": "Сосед",
+        "icon": "🏠",
+        "color": "#49B6E8",
+        "output_dir": "output_sosed",
+        "prompts_file": "output_sosed/prompts/all_prompts.json",
+        "scenario_file": "scenario_sosed.txt",
+        "chars_dir": "sosed_персонажи_hq",
+        "chars_dir_fallback": "sosed_персонажи",
+        "locs_dir": "sosed_локации_hq",
+        "locs_dir_fallback": "sosed_локации",
+        "scene_colors": {},
+        "scene_labels": {},
+        "char_display": {},
+    },
+}
+
+DEFAULT_SERIES = "signal"
+
+
+def _get_series_config() -> dict:
+    """Get current series config from session state."""
+    sid = st.session_state.get("current_series", DEFAULT_SERIES)
+    return SERIES.get(sid, SERIES[DEFAULT_SERIES])
+
+
+def _series_paths(cfg: dict) -> dict:
+    """Resolve all paths for a series config."""
+    output_dir = BASE_DIR / cfg["output_dir"]
+    chars_dir = BASE_DIR / cfg["chars_dir"]
+    if not chars_dir.exists():
+        chars_dir = BASE_DIR / cfg["chars_dir_fallback"]
+    locs_dir = BASE_DIR / cfg["locs_dir"]
+    if not locs_dir.exists():
+        locs_dir = BASE_DIR / cfg["locs_dir_fallback"]
+    return {
+        "prompts_file": BASE_DIR / cfg["prompts_file"],
+        "frames_dir": output_dir / "frames",
+        "clips_dir": output_dir / "clips",
+        "review_dir": output_dir / "review",
+        "status_file": output_dir / "status.json",
+        "commands_file": output_dir / "commands.json",
+        "scenario_file": BASE_DIR / cfg["scenario_file"],
+        "chars_dir": chars_dir,
+        "locs_dir": locs_dir,
+    }
+
+
+# Active series paths (set in main(), used by all pages)
 PROMPTS_FILE = BASE_DIR / "output" / "prompts" / "all_prompts.json"
 FRAMES_DIR = BASE_DIR / "output" / "frames"
 CLIPS_DIR = BASE_DIR / "output" / "clips"
@@ -23,49 +119,33 @@ CHARS_DIR = BASE_DIR / "персонажи_hq" if (BASE_DIR / "персонаж�
 LOCS_DIR = BASE_DIR / "локации_hq" if (BASE_DIR / "локации_hq").exists() else BASE_DIR / "локации"
 SCENARIO_FILE = BASE_DIR / "scenario_signal.txt"
 STATUS_FILE = BASE_DIR / "output" / "status.json"
+COMMANDS_FILE = BASE_DIR / "output" / "commands.json"
 
-SCENE_COLORS = {
-    "S01": "#E8B849",  # gold
-    "S02": "#49B6E8",  # blue
-    "S03": "#E85A49",  # red
-    "S04": "#6BE849",  # green
-    "S05": "#C149E8",  # purple
-    "S06": "#E89849",  # orange
-    "S07": "#49E8D6",  # teal
-    "S08": "#E84980",  # pink
-    "S09": "#8B49E8",  # violet
-    "S10": "#B8E849",  # lime
-    "S11": "#E8D649",  # amber
-    "S12": "#4998E8",  # steel blue
-}
+# These globals are updated by _apply_series() in main()
+SCENE_COLORS: dict = {}
+SCENE_LABELS: dict = {}
+CHAR_DISPLAY: dict = {}
 
-SCENE_LABELS = {
-    "S01": "Сцена 1 — Кухня, ужин",
-    "S02": "Сцена 2 — Гараж, радиоприёмник",
-    "S03": "Сцена 3 — Магазин, велосипед",
-    "S04": "Сцена 4 — Парк, поиски",
-    "S05": "Сцена 5 — Мост через ручей",
-    "S06": "Сцена 6 — Школа, перемена",
-    "S07": "Сцена 7 — Гараж, задача",
-    "S08": "Сцена 8 — Пустырь, склад",
-    "S09": "Сцена 9 — Кабинет папы",
-    "S10": "Сцена 10 — Водонапорная башня",
-    "S11": "Сцена 11 — Кабинет папы, линза",
-    "S12": "Сцена 12 — Комната Тако, ночь",
-}
 
-CHAR_DISPLAY = {
-    "Amin": "Амин",
-    "Karim": "Карим",
-    "Tako": "Тако",
-    "Papa": "Папа",
-    "Mama": "Мама",
-    "Aya": "Ая",
-    "Hasan": "Хасан",
-    "Rami": "Рами",
-    "Samir": "Самир",
-    "Shaki": "Шаки",
-}
+def _apply_series():
+    """Apply current series config to global variables."""
+    global PROMPTS_FILE, FRAMES_DIR, CLIPS_DIR, REVIEW_DIR, CHARS_DIR, LOCS_DIR
+    global SCENARIO_FILE, STATUS_FILE, COMMANDS_FILE, SCENE_COLORS, SCENE_LABELS, CHAR_DISPLAY
+
+    cfg = _get_series_config()
+    paths = _series_paths(cfg)
+    PROMPTS_FILE = paths["prompts_file"]
+    FRAMES_DIR = paths["frames_dir"]
+    CLIPS_DIR = paths["clips_dir"]
+    REVIEW_DIR = paths["review_dir"]
+    STATUS_FILE = paths["status_file"]
+    COMMANDS_FILE = paths["commands_file"]
+    SCENARIO_FILE = paths["scenario_file"]
+    CHARS_DIR = paths["chars_dir"]
+    LOCS_DIR = paths["locs_dir"]
+    SCENE_COLORS = cfg["scene_colors"]
+    SCENE_LABELS = cfg["scene_labels"]
+    CHAR_DISPLAY = cfg["char_display"]
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -171,6 +251,127 @@ def loc_thumbnail(location: str) -> str | None:
         if matches:
             return str(matches[0])
     return None
+
+
+# ---------------------------------------------------------------------------
+# Phase workflow helpers
+# ---------------------------------------------------------------------------
+
+PHASE_LABELS = {
+    "nb_first": "Первые кадры",
+    "nb_last": "Последние кадры",
+    "veo": "Видео",
+}
+
+PHASE_NUMBERS = {"nb_first": 1, "nb_last": 2, "veo": 3}
+
+
+def load_commands() -> dict:
+    """Load current phase commands from commands.json."""
+    if COMMANDS_FILE.exists():
+        with open(COMMANDS_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+
+def save_commands(cmd: dict):
+    """Save commands.json."""
+    with open(COMMANDS_FILE, "w", encoding="utf-8") as f:
+        json.dump(cmd, f, indent=2, ensure_ascii=False)
+
+
+def get_review_variants(clip_id: str, component: str) -> list[Path]:
+    """Get variant files for the latest attempt. Supports flat and prompt_a/ formats."""
+    comp_dir = REVIEW_DIR / clip_id / component
+    if not comp_dir.exists():
+        return []
+
+    attempts = sorted(comp_dir.glob("attempt_*"))
+    if not attempts:
+        return []
+
+    latest = attempts[-1]
+    ext = "*.mp4" if component == "veo" else "*.png"
+
+    # Flat format first (new)
+    flat = sorted(latest.glob(ext))
+    if flat:
+        return flat
+
+    # Fallback: prompt_a + prompt_b (old format)
+    result = []
+    for batch in ["prompt_a", "prompt_b"]:
+        batch_dir = latest / batch
+        if batch_dir.exists():
+            result.extend(sorted(batch_dir.glob(ext)))
+    return result
+
+
+def get_all_attempt_variants(clip_id: str, component: str) -> list[tuple[int, list[Path]]]:
+    """Get variants for ALL attempts, not just latest. Returns [(attempt_num, [paths]), ...]."""
+    comp_dir = REVIEW_DIR / clip_id / component
+    if not comp_dir.exists():
+        return []
+
+    result = []
+    for attempt_dir in sorted(comp_dir.glob("attempt_*")):
+        try:
+            attempt_num = int(attempt_dir.name.replace("attempt_", ""))
+        except ValueError:
+            continue
+
+        ext = "*.mp4" if component == "veo" else "*.png"
+
+        # Flat format
+        files = sorted(attempt_dir.glob(ext))
+        if not files:
+            # Fallback: prompt_a/ subdirectory
+            pa = attempt_dir / "prompt_a"
+            if pa.exists():
+                files = sorted(pa.glob(ext))
+
+        if files:
+            result.append((attempt_num, files))
+    return result
+
+
+def do_local_select(phase: str, selections: dict):
+    """Copy selected variants to output/frames or output/clips. Runs in dashboard process."""
+    suffixes = {"nb_first": "first", "nb_mid": "mid", "nb_last": "last"}
+    count = 0
+
+    for clip_id, info in selections.items():
+        if info.get("status") != "selected":
+            continue
+
+        variant_idx = info["variant"]
+        attempt = info.get("attempt", 1)
+
+        attempt_dir = REVIEW_DIR / clip_id / phase / f"attempt_{attempt}"
+
+        if phase in suffixes:
+            variant_file = attempt_dir / f"variant_{variant_idx + 1}.png"
+            if not variant_file.exists():
+                variant_file = attempt_dir / "prompt_a" / f"variant_{variant_idx + 1}.png"
+
+            if variant_file.exists():
+                FRAMES_DIR.mkdir(parents=True, exist_ok=True)
+                dest = FRAMES_DIR / f"{clip_id}_{suffixes[phase]}.png"
+                shutil.copy2(variant_file, dest)
+                count += 1
+
+        elif phase == "veo":
+            variant_file = attempt_dir / f"variant_{variant_idx + 1}.mp4"
+            if not variant_file.exists():
+                variant_file = attempt_dir / "prompt_a" / f"variant_{variant_idx + 1}.mp4"
+
+            if variant_file.exists():
+                CLIPS_DIR.mkdir(parents=True, exist_ok=True)
+                dest = CLIPS_DIR / f"{clip_id}_clip.mp4"
+                shutil.copy2(variant_file, dest)
+                count += 1
+
+    return count
 
 
 # ---------------------------------------------------------------------------
@@ -286,6 +487,268 @@ def inject_css():
 # ---------------------------------------------------------------------------
 # Pages
 # ---------------------------------------------------------------------------
+
+def page_review():
+    """Interactive review page — user selects/rejects variants per clip."""
+    clips = load_clips()
+    cmd = load_commands()
+
+    # Determine current phase
+    phase = cmd.get("phase", "nb_first")
+    phase_label = PHASE_LABELS.get(phase, phase)
+    phase_num = PHASE_NUMBERS.get(phase, 1)
+    bot_running = cmd.get("bot_running", False)
+    clip_commands = cmd.get("clips", {})
+
+    # Count stats
+    total = len(clips)
+    accepted_count = sum(
+        1 for c in clips
+        if clip_commands.get(c["clip_id"], {}).get("status") == "accepted"
+    )
+    generated_count = sum(
+        1 for c in clips
+        if clip_commands.get(c["clip_id"], {}).get("status") == "generated"
+    )
+
+    # --- Header ---
+    st.header(f"Фаза {phase_num}: {phase_label}")
+
+    hcol1, hcol2, hcol3 = st.columns([4, 1, 1])
+    with hcol1:
+        st.progress(accepted_count / total if total else 0)
+    with hcol2:
+        st.metric("Принято", f"{accepted_count}/{total}")
+    with hcol3:
+        st.metric("На ревью", str(generated_count))
+
+    if bot_running:
+        st.warning("Бот сейчас работает. Дождитесь завершения генерации.")
+
+    # --- Action buttons ---
+    btn_cols = st.columns(4)
+
+    with btn_cols[0]:
+        can_start = not bot_running and not cmd.get("action")
+        if can_start and generated_count == 0 and accepted_count < total:
+            if st.button("Запустить генерацию", type="primary", key="btn_start"):
+                new_cmd = {
+                    "version": 1,
+                    "phase": phase,
+                    "action": "generate",
+                    "bot_running": False,
+                    "created_at": datetime.now().isoformat(),
+                    "clips": {
+                        c["clip_id"]: {"status": "pending", "attempt": 1}
+                        for c in clips
+                        if clip_commands.get(c["clip_id"], {}).get("status") != "accepted"
+                    },
+                }
+                # Preserve accepted clips
+                for cid, info in clip_commands.items():
+                    if info.get("status") == "accepted":
+                        new_cmd["clips"][cid] = info
+                save_commands(new_cmd)
+                st.success("Команда записана. Запустите бота: `./scripts/run_safe.sh --phase --account 1`")
+                st.rerun()
+
+    with btn_cols[1]:
+        # "Submit" button — process selections and rejections
+        pass  # Rendered below after gathering decisions
+
+    with btn_cols[2]:
+        if accepted_count == total and phase == "nb_first":
+            if st.button("Последние кадры", type="primary", key="btn_next_last"):
+                new_cmd = {
+                    "version": 1,
+                    "phase": "nb_last",
+                    "action": "generate",
+                    "bot_running": False,
+                    "created_at": datetime.now().isoformat(),
+                    "clips": {c["clip_id"]: {"status": "pending", "attempt": 1} for c in clips},
+                }
+                save_commands(new_cmd)
+                st.success("Фаза 2 начата. Запустите бота: `./scripts/run_safe.sh --phase --account 1`")
+                st.rerun()
+
+        if accepted_count == total and phase == "nb_last":
+            if st.button("Сгенерить видео", type="primary", key="btn_next_veo"):
+                new_cmd = {
+                    "version": 1,
+                    "phase": "veo",
+                    "action": "generate",
+                    "bot_running": False,
+                    "created_at": datetime.now().isoformat(),
+                    "clips": {c["clip_id"]: {"status": "pending", "attempt": 1} for c in clips},
+                }
+                save_commands(new_cmd)
+                st.success("Фаза 3 начата. Запустите бота: `./scripts/run_safe.sh --phase --account 1`")
+                st.rerun()
+
+    with btn_cols[3]:
+        # Phase selector
+        new_phase = st.selectbox(
+            "Фаза", list(PHASE_LABELS.keys()),
+            index=list(PHASE_LABELS.keys()).index(phase),
+            format_func=lambda x: PHASE_LABELS[x],
+            key="phase_select",
+            label_visibility="collapsed",
+        )
+        if new_phase != phase:
+            cmd["phase"] = new_phase
+            save_commands(cmd)
+            st.rerun()
+
+    st.markdown("---")
+
+    # --- Clip variant grid ---
+    current_scene = None
+    has_decisions = False
+
+    for clip in clips:
+        clip_id = clip["clip_id"]
+
+        # Scene header
+        if clip["scene_id"] != current_scene:
+            current_scene = clip["scene_id"]
+            color = SCENE_COLORS.get(current_scene, "#888")
+            label = SCENE_LABELS.get(current_scene, current_scene)
+            st.markdown(
+                f'<h4 style="border-left:4px solid {color};padding-left:12px;'
+                f'margin-top:20px;margin-bottom:8px;">{label}</h4>',
+                unsafe_allow_html=True,
+            )
+
+        clip_cmd = clip_commands.get(clip_id, {})
+        clip_status = clip_cmd.get("status", "")
+
+        # Already accepted — show green thumbnail
+        if clip_status == "accepted":
+            acc_col1, acc_col2 = st.columns([1, 9])
+            with acc_col1:
+                st.markdown(f"**{clip_id}**")
+            with acc_col2:
+                if phase in ("nb_first", "nb_mid", "nb_last"):
+                    suffix = {"nb_first": "first", "nb_mid": "mid", "nb_last": "last"}[phase]
+                    frame_path = FRAMES_DIR / f"{clip_id}_{suffix}.png"
+                    if frame_path.exists():
+                        st.image(str(frame_path), width=200, caption="Принято")
+                    else:
+                        st.success("Принято")
+                else:
+                    st.success("Принято")
+            continue
+
+        # Not generated yet
+        all_attempts = get_all_attempt_variants(clip_id, phase)
+        if not all_attempts:
+            st.markdown(f"**{clip_id}** — *варианты ещё не сгенерированы*")
+            continue
+
+        # Show description
+        desc = clip.get("scene_description_ru", "")
+        st.markdown(f"**{clip_id}** — {desc[:100]}")
+
+        # Show variants from latest attempt
+        latest_attempt, variants = all_attempts[-1]
+
+        if phase == "veo":
+            # Video variants
+            cols = st.columns(min(len(variants), 4))
+            for vi, vpath in enumerate(variants):
+                with cols[vi % 4]:
+                    st.video(str(vpath))
+                    st.caption(f"Вариант {vi + 1}")
+        else:
+            # Image variants
+            cols = st.columns(min(len(variants), 4))
+            for vi, vpath in enumerate(variants):
+                with cols[vi % 4]:
+                    st.image(str(vpath), use_container_width=True)
+                    st.caption(f"Вариант {vi + 1}")
+
+        # Selection controls
+        sel_col, rej_col = st.columns([3, 1])
+        with sel_col:
+            options = [f"Вариант {i+1}" for i in range(len(variants))] + ["Не выбрано"]
+            # Restore previous selection if any
+            default_idx = len(options) - 1
+            prev_decision = st.session_state.get(f"decision_{clip_id}")
+            if isinstance(prev_decision, tuple) and prev_decision[0] == "selected":
+                sel_idx = prev_decision[1]
+                if sel_idx < len(variants):
+                    default_idx = sel_idx
+
+            choice = st.radio(
+                f"Выбор для {clip_id}", options, index=default_idx,
+                key=f"radio_{clip_id}", horizontal=True, label_visibility="collapsed",
+            )
+
+        with rej_col:
+            reject = st.checkbox("Отклонить", key=f"rej_{clip_id}")
+
+        # Store decision in session state
+        if reject:
+            st.session_state[f"decision_{clip_id}"] = "rejected"
+            has_decisions = True
+        elif choice != "Не выбрано":
+            variant_idx = int(choice.split()[-1]) - 1
+            st.session_state[f"decision_{clip_id}"] = ("selected", variant_idx, latest_attempt)
+            has_decisions = True
+
+        st.divider()
+
+    # --- Submit button (after all clips rendered) ---
+    if has_decisions or generated_count > 0:
+        st.markdown("---")
+        if st.button("Отправить решения", type="primary", key="btn_submit", use_container_width=True):
+            selections = {}
+            rejections = {}
+
+            for clip in clips:
+                cid = clip["clip_id"]
+                decision = st.session_state.get(f"decision_{cid}")
+                if decision == "rejected":
+                    rejections[cid] = {"status": "rejected", "attempt": clip_commands.get(cid, {}).get("attempt", 1)}
+                elif isinstance(decision, tuple) and decision[0] == "selected":
+                    selections[cid] = {
+                        "status": "selected",
+                        "variant": decision[1],
+                        "attempt": decision[2],
+                    }
+
+            # 1. Instantly copy selected variants to output/frames
+            if selections:
+                count = do_local_select(phase, selections)
+                st.success(f"Принято: {count} клипов")
+
+            # 2. Update commands.json
+            for cid, info in selections.items():
+                clip_commands[cid] = {"status": "accepted", "attempt": info["attempt"], "variant": info["variant"]}
+            for cid, info in rejections.items():
+                clip_commands[cid] = info
+
+            if rejections:
+                cmd.update({
+                    "phase": phase,
+                    "action": "regenerate",
+                    "bot_running": False,
+                    "created_at": datetime.now().isoformat(),
+                    "clips": clip_commands,
+                })
+                save_commands(cmd)
+                st.warning(f"Отклонено: {len(rejections)} клипов. Запустите бота для перегенерации.")
+            else:
+                cmd["clips"] = clip_commands
+                save_commands(cmd)
+
+            # Clear decisions from session state
+            for clip in clips:
+                cid = clip["clip_id"]
+                st.session_state.pop(f"decision_{cid}", None)
+
+            st.rerun()
+
 
 def page_clips():
     """Main clips dashboard page."""
@@ -998,31 +1461,69 @@ def page_timeline():
 
 def main():
     st.set_page_config(
-        page_title="СИГНАЛ — Dashboard",
-        page_icon="📡",
+        page_title="Animation Dashboard",
+        page_icon="🎬",
         layout="wide",
         initial_sidebar_state="expanded",
     )
 
     inject_css()
 
+    # --- Series selector ---
+    series_options = list(SERIES.keys())
+    series_labels = {k: f'{v["icon"]} {v["title"]}' for k, v in SERIES.items()}
+
+    if "current_series" not in st.session_state:
+        st.session_state.current_series = DEFAULT_SERIES
+
+    selected_series = st.sidebar.selectbox(
+        "Серия",
+        series_options,
+        index=series_options.index(st.session_state.current_series),
+        format_func=lambda x: series_labels[x],
+        key="series_select",
+    )
+    if selected_series != st.session_state.current_series:
+        st.session_state.current_series = selected_series
+        st.rerun()
+
+    # Apply series config to globals
+    _apply_series()
+    cfg = _get_series_config()
+
     # --- Sidebar header ---
     st.sidebar.markdown(
-        '<h1 style="text-align:center;color:#E8B849;">📡 СИГНАЛ</h1>'
+        f'<h1 style="text-align:center;color:{cfg["color"]};">'
+        f'{cfg["icon"]} {cfg["title"]}</h1>'
         '<p style="text-align:center;color:#888;font-size:0.85em;">'
         'Production Dashboard</p>',
         unsafe_allow_html=True,
     )
 
+    # --- Check if series is configured ---
+    if not PROMPTS_FILE.exists():
+        st.sidebar.markdown("---")
+        st.header(f'{cfg["icon"]} {cfg["title"]}')
+        st.info(
+            f'Серия **{cfg["title"]}** ещё не настроена.\n\n'
+            f'Для начала работы нужно:\n'
+            f'1. Добавить сценарий: `{cfg["scenario_file"]}`\n'
+            f'2. Создать промпты: `{cfg["prompts_file"]}`\n'
+            f'3. Загрузить референсы персонажей и локаций'
+        )
+        return
+
     # --- Navigation ---
     page = st.sidebar.radio(
         "Навигация",
-        ["Пары кадров", "Клипы", "Таймлайн", "Сценарий", "Референсы"],
+        ["Ревью", "Пары кадров", "Клипы", "Таймлайн", "Сценарий", "Референсы"],
         label_visibility="collapsed",
     )
 
     # --- Page routing ---
-    if page == "Пары кадров":
+    if page == "Ревью":
+        page_review()
+    elif page == "Пары кадров":
         page_keyframe_pairs()
     elif page == "Клипы":
         st.title("Клипы")
@@ -1037,9 +1538,9 @@ def main():
     # --- Footer ---
     st.sidebar.markdown("---")
     st.sidebar.markdown(
-        '<p style="text-align:center;color:#555;font-size:0.75em;">'
-        'СИГНАЛ / Signal<br>3D Pixar-style Animation<br>'
-        'Nano Banana Pro + VEO 3.1</p>',
+        f'<p style="text-align:center;color:#555;font-size:0.75em;">'
+        f'{cfg["title"]}<br>3D Pixar-style Animation<br>'
+        f'Nano Banana Pro + VEO 3.1</p>',
         unsafe_allow_html=True,
     )
 
