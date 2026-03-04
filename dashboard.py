@@ -687,9 +687,22 @@ def page_review():
         with rej_col:
             reject = st.checkbox("Отклонить", key=f"rej_{clip_id}")
 
+        # Feedback text area (shown when rejecting)
+        if reject:
+            prev_feedback = clip_cmd.get("feedback", "")
+            feedback = st.text_area(
+                f"Что исправить в {clip_id}?",
+                value=prev_feedback,
+                placeholder="Например: персонажи одного роста, Тако должен быть ниже Амина",
+                key=f"feedback_{clip_id}",
+                height=68,
+            )
+        else:
+            feedback = ""
+
         # Store decision in session state
         if reject:
-            st.session_state[f"decision_{clip_id}"] = "rejected"
+            st.session_state[f"decision_{clip_id}"] = ("rejected", feedback)
             has_decisions = True
         elif choice != "Не выбрано":
             variant_idx = int(choice.split()[-1]) - 1
@@ -708,8 +721,15 @@ def page_review():
             for clip in clips:
                 cid = clip["clip_id"]
                 decision = st.session_state.get(f"decision_{cid}")
-                if decision == "rejected":
-                    rejections[cid] = {"status": "rejected", "attempt": clip_commands.get(cid, {}).get("attempt", 1)}
+                if isinstance(decision, tuple) and decision[0] == "rejected":
+                    feedback_text = decision[1] if len(decision) > 1 else ""
+                    rej_entry = {
+                        "status": "rejected",
+                        "attempt": clip_commands.get(cid, {}).get("attempt", 1),
+                    }
+                    if feedback_text:
+                        rej_entry["feedback"] = feedback_text
+                    rejections[cid] = rej_entry
                 elif isinstance(decision, tuple) and decision[0] == "selected":
                     selections[cid] = {
                         "status": "selected",
@@ -729,6 +749,7 @@ def page_review():
                 clip_commands[cid] = info
 
             if rejections:
+                feedback_count = sum(1 for r in rejections.values() if r.get("feedback"))
                 cmd.update({
                     "phase": phase,
                     "action": "regenerate",
@@ -737,7 +758,11 @@ def page_review():
                     "clips": clip_commands,
                 })
                 save_commands(cmd)
-                st.warning(f"Отклонено: {len(rejections)} клипов. Запустите бота для перегенерации.")
+                msg = f"Отклонено: {len(rejections)} клипов."
+                if feedback_count:
+                    msg += f" Комментарии: {feedback_count}."
+                msg += " Запустите бота для перегенерации."
+                st.warning(msg)
             else:
                 cmd["clips"] = clip_commands
                 save_commands(cmd)
