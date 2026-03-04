@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).parent
 SERIES = {
     "signal": {
         "id": "signal",
-        "title": "Путь Амина",
+        "title": "Сигнал",
         "icon": "📡",
         "color": "#E8B849",
         "output_dir": "output",
@@ -1512,13 +1512,19 @@ def page_timeline():
 
 def main():
     st.set_page_config(
-        page_title="Animation Dashboard",
+        page_title="Путь Амина — Dashboard",
         page_icon="🎬",
         layout="wide",
         initial_sidebar_state="expanded",
     )
 
     inject_css()
+
+    # --- Sidebar header ---
+    st.sidebar.markdown(
+        '<h1 style="text-align:center;color:#E8B849;">🎬 Путь Амина</h1>',
+        unsafe_allow_html=True,
+    )
 
     # --- Series selector ---
     series_options = list(SERIES.keys())
@@ -1542,19 +1548,10 @@ def main():
     _apply_series()
     cfg = _get_series_config()
 
-    # --- Sidebar header ---
-    st.sidebar.markdown(
-        f'<h1 style="text-align:center;color:{cfg["color"]};">'
-        f'{cfg["icon"]} {cfg["title"]}</h1>'
-        '<p style="text-align:center;color:#888;font-size:0.85em;">'
-        'Production Dashboard</p>',
-        unsafe_allow_html=True,
-    )
-
     # --- Check if series is configured ---
     if not PROMPTS_FILE.exists():
         st.sidebar.markdown("---")
-        st.header(f'{cfg["icon"]} {cfg["title"]}')
+        st.header(f'{cfg["icon"]} Серия: {cfg["title"]}')
         st.info(
             f'Серия **{cfg["title"]}** ещё не настроена.\n\n'
             f'Для начала работы нужно:\n'
@@ -1589,9 +1586,9 @@ def main():
     # --- Footer ---
     st.sidebar.markdown("---")
     st.sidebar.markdown(
-        f'<p style="text-align:center;color:#555;font-size:0.75em;">'
-        f'{cfg["title"]}<br>3D Pixar-style Animation<br>'
-        f'Nano Banana Pro + VEO 3.1</p>',
+        '<p style="text-align:center;color:#555;font-size:0.75em;">'
+        'Путь Амина<br>3D Pixar-style Animation<br>'
+        'Nano Banana Pro + VEO 3.1</p>',
         unsafe_allow_html=True,
     )
 
