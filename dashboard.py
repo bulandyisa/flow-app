@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).parent
 SERIES = {
     "signal": {
         "id": "signal",
-        "title": "Сигнал",
+        "title": "Путь Амина",
         "icon": "📡",
         "color": "#E8B849",
         "output_dir": "output",
@@ -490,7 +490,7 @@ def inject_css():
 
 def page_review():
     """Interactive review page — user selects/rejects variants per clip."""
-    clips = load_clips()
+    all_clips = load_clips()
     cmd = load_commands()
 
     # Determine current phase
@@ -500,7 +500,24 @@ def page_review():
     bot_running = cmd.get("bot_running", False)
     clip_commands = cmd.get("clips", {})
 
-    # Count stats
+    # --- Scene filter ---
+    all_scene_ids = list(dict.fromkeys(c["scene_id"] for c in all_clips))  # preserve order
+    scene_options = {sid: SCENE_LABELS.get(sid, sid) for sid in all_scene_ids}
+
+    selected_scenes = st.multiselect(
+        "Сцены",
+        all_scene_ids,
+        default=all_scene_ids,
+        format_func=lambda x: scene_options[x],
+        key="scene_filter",
+    )
+
+    if selected_scenes:
+        clips = [c for c in all_clips if c["scene_id"] in selected_scenes]
+    else:
+        clips = all_clips
+
+    # Count stats (filtered)
     total = len(clips)
     accepted_count = sum(
         1 for c in clips
@@ -557,7 +574,7 @@ def page_review():
         pass  # Rendered below after gathering decisions
 
     with btn_cols[2]:
-        if accepted_count == total and phase == "nb_first":
+        if accepted_count == total and total > 0 and phase == "nb_first":
             if st.button("Последние кадры", type="primary", key="btn_next_last"):
                 new_cmd = {
                     "version": 1,
@@ -567,11 +584,16 @@ def page_review():
                     "created_at": datetime.now().isoformat(),
                     "clips": {c["clip_id"]: {"status": "pending", "attempt": 1} for c in clips},
                 }
+                # Preserve clips outside current filter
+                for c in all_clips:
+                    cid = c["clip_id"]
+                    if cid not in new_cmd["clips"] and cid in clip_commands:
+                        new_cmd["clips"][cid] = clip_commands[cid]
                 save_commands(new_cmd)
                 st.success("Фаза 2 начата. Запустите бота: `./scripts/run_safe.sh --phase --account 1`")
                 st.rerun()
 
-        if accepted_count == total and phase == "nb_last":
+        if accepted_count == total and total > 0 and phase == "nb_last":
             if st.button("Сгенерить видео", type="primary", key="btn_next_veo"):
                 new_cmd = {
                     "version": 1,
@@ -581,6 +603,10 @@ def page_review():
                     "created_at": datetime.now().isoformat(),
                     "clips": {c["clip_id"]: {"status": "pending", "attempt": 1} for c in clips},
                 }
+                for c in all_clips:
+                    cid = c["clip_id"]
+                    if cid not in new_cmd["clips"] and cid in clip_commands:
+                        new_cmd["clips"][cid] = clip_commands[cid]
                 save_commands(new_cmd)
                 st.success("Фаза 3 начата. Запустите бота: `./scripts/run_safe.sh --phase --account 1`")
                 st.rerun()
