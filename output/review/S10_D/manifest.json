@@ -23,6 +23,13 @@
           "variants": [],
           "best_variant": null,
           "best_avg": null
+        },
+        {
+          "attempt": 4,
+          "prompt": "First, the exact character in a grey hoodie from Image 1, preserving identical facial features and proportions, stands on the tower platform, box closed, notebook under arm, expression calm and resolved, already turning toward the ladder to descend. Then, the exact character in a red-and-white striped shirt and red cap from Image 3, preserving identical facial features, stares with absolute disbelief, jaw dropped, arms thrown out in frustration and incredulity. Then, the exact character in a black hoodie from Image 2, preserving identical facial features, stands between, expression of mild bemusement, shrugging with palms up. Tower top, railing, sky. Use Image 4 as the exact background location. Medium-wide shot, eye-level. Bright morning light, comedic contrast between calm and outrage. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
         }
       ],
       "selected_variant_a": null,

@@ -67,7 +67,9 @@ class GlobalTimeoutError(Exception):
 
 # Global reference to browser context for cleanup on timeout
 _active_context = None
+_active_browser = None  # Set when using CDP mode (connect_over_cdp)
 _active_pw = None
+_cdp_port = None  # Set via --cdp-port CLI arg
 
 GLOBAL_TIMEOUT_SEC = int(os.environ.get('FLOW_TIMEOUT', 600))  # default 10 min
 QUALITY_THRESHOLD = 9.0
@@ -305,26 +307,27 @@ CLIPS_DIR = OUTPUT_DIR / 'clips'
 SCREENSHOTS_DIR = OUTPUT_DIR / 'screenshots'
 REVIEW_DIR = OUTPUT_DIR / 'review'
 FLOW_URL = 'https://labs.google/fx/ru/tools/flow'
-FLOW_PROJECT_URL = 'https://labs.google/fx/ru/tools/flow/project/38f939b2-1f84-4503-8a12-09fc19e4c4a4'
 ACCOUNTS = [
-    {   # Bot 1 — Аккаунт 1, основная сессия
+    {   # Bot 1 — Аккаунт 1, основная сессия (helper1)
         'session_dir': PROJECT_ROOT / '.session',
-        'project_url': FLOW_PROJECT_URL,
+        'project_url': 'https://labs.google/fx/tools/flow/project/30ef5dbf-fe01-44af-8a3e-63e36b476730',
     },
     {   # Bot 2 — Аккаунт 1, клон сессии (helper2)
         'session_dir': PROJECT_ROOT / '.session_1b',
-        'project_url': '',  # создастся автоматически при первом запуске
+        'project_url': 'https://labs.google/fx/ru/tools/flow/project/e65e372b-9062-44e6-bfc4-b7ed17de5a4c',
     },
     {   # Bot 3 — Аккаунт 2, основная сессия (helper3)
         'session_dir': PROJECT_ROOT / '.session_2',
-        'project_url': '',  # создастся автоматически при первом запуске
+        'project_url': 'https://labs.google/fx/ru/tools/flow/project/492b843c-217a-4c83-8c2d-4e0b0f0b1dc8',
     },
     {   # Bot 4 — Аккаунт 2, клон сессии (helper4)
         'session_dir': PROJECT_ROOT / '.session_2b',
-        'project_url': '',  # создастся автоматически при первом запуске
+        'project_url': 'https://labs.google/fx/ru/tools/flow/project/32329ba5-c927-4be9-a40b-74ae7335d768',
     },
 ]
 _current_account_idx = 0
+_disable_gpu = False
+_expecting_filechooser = False  # True when bot is about to trigger a file chooser intentionally
 PAUSE_BETWEEN_GENERATIONS = 45
 PAGE_LOAD_TIMEOUT = 120000
 GENERATION_TIMEOUT = 300
@@ -596,14 +599,8 @@ def validate_veo_prompt(prompt, clip_id=None):
     return warnings
 
 
-def sanitize_prompt(prompt = None):
-    '''Sanitize prompt per VEO_SAFETY_GUIDE.md rules.
-
-    - Remove age mentions (e.g. "7-year-old", "15yo")
-    - Replace trigger words
-    - Ensure \'3D Pixar-style animation\' is present
-    - Add \'no subtitles\' if missing
-    '''
+def _sanitize_common(prompt):
+    '''Common sanitization: remove ages, replace trigger words.'''
     p = prompt
     p = _re.sub('\\b\\d{1,2}-year-old\\b', 'animated', p)
     p = _re.sub('\\b\\d{1,2}yo\\b', 'animated', p)
@@ -620,10 +617,34 @@ def sanitize_prompt(prompt = None):
         'criminal': 'troublemaker' }
     for old, new in trigger_map.items():
         p = _re.sub(_re.escape(old), new, p, flags = _re.IGNORECASE)
+    return p
+
+
+def sanitize_prompt(prompt = None):
+    '''Sanitize VEO (video) prompt.
+
+    - Common: remove ages, replace trigger words
+    - Ensure \'3D Pixar-style animation\' is present
+    - Add \'no subtitles\' if missing
+    '''
+    p = _sanitize_common(prompt)
     if '3D Pixar' not in p and 'Pixar-style' not in p:
         p = p.rstrip('. ') + '. 3D Pixar-style animation, family-friendly.'
     if 'no subtitle' not in p.lower():
         p = p.rstrip('. ') + '. No subtitles.'
+    return p
+
+
+def sanitize_nb_prompt(prompt = None):
+    '''Sanitize NB (image) prompt.
+
+    - Common: remove ages, replace trigger words
+    - Ensure Pixar style tag is present (without word "animation")
+    - Do NOT add "no subtitles" (irrelevant for images)
+    '''
+    p = _sanitize_common(prompt)
+    if '3D Pixar' not in p and 'Pixar-style' not in p:
+        p = p.rstrip('. ') + '. 3D Pixar-style, family-friendly.'
     return p
 
 
@@ -720,11 +741,40 @@ def ensure_dirs():
     GENERATED_REFS_DIR.mkdir(parents = True, exist_ok = True)
 
 
-def launch_browser(pw = None, headless = None, account = None):
-    '''Launch Chromium with persistent context (saves cookies/session).
+def launch_browser(pw = None, headless = None, account = None, cdp_port = None):
+    '''Launch Chromium with persistent context OR connect to existing Chrome via CDP.
 
     account: 0-based index into ACCOUNTS list. None uses _current_account_idx.
+    cdp_port: if set, connect to already-running Chrome on this port instead of launching.
+              User must start Chrome manually first with: ./scripts/launch_chrome.sh N
     '''
+    global _active_context, _active_browser
+
+    # --- CDP mode: connect to user-launched Chrome ---
+    if cdp_port:
+        print(f'  Connecting to Chrome via CDP on port {cdp_port}...')
+        browser = pw.chromium.connect_over_cdp(f'http://localhost:{cdp_port}')
+        _active_browser = browser
+        # Use the first (default) context — this is the user's browser context
+        ctx = browser.contexts[0] if browser.contexts else browser.new_context()
+        _active_context = ctx
+        print(f'  Connected! Contexts: {len(browser.contexts)}, Pages: {len(ctx.pages)}')
+        # Setup file chooser handler on existing pages
+        def _dismiss_unexpected_fc(fc):
+            global _expecting_filechooser
+            if _expecting_filechooser:
+                return
+            try:
+                fc.set_files([])
+                print('  (auto-dismissed unexpected file chooser dialog)')
+            except Exception:
+                pass
+        for p in ctx.pages:
+            p.on('filechooser', _dismiss_unexpected_fc)
+        ctx.on('page', lambda p: p.on('filechooser', _dismiss_unexpected_fc))
+        return ctx
+
+    # --- Standard mode: launch new Chrome instance ---
     acct = ACCOUNTS[account if account is not None else _current_account_idx]
     session_dir = acct['session_dir']
     session_dir.mkdir(parents=True, exist_ok=True)
@@ -737,12 +787,7 @@ def launch_browser(pw = None, headless = None, account = None):
     vp_h = 900 + random.randint(-15, 15)
     print(f'  Using account {account if account is not None else _current_account_idx} (session: {session_dir.name})')
     print(f'  Viewport: {vp_w}x{vp_h}')
-    ctx = pw.chromium.launch_persistent_context(
-        str(session_dir),
-        headless=headless,
-        viewport={'width': vp_w, 'height': vp_h},
-        locale='ru-RU',
-        args=[
+    chrome_args = [
             '--disable-blink-features=AutomationControlled',
             '--disable-features=AutomationControlled',
             '--disable-infobars',
@@ -750,18 +795,230 @@ def launch_browser(pw = None, headless = None, account = None):
             '--no-first-run',
             '--no-default-browser-check',
             f'--window-size={vp_w + random.randint(0, 10)},{vp_h + random.randint(50, 80)}',
-        ],
+    ]
+    if _disable_gpu:
+        chrome_args += [
+            '--disable-gpu',
+            '--disable-software-rasterizer',
+            '--disable-gpu-compositing',
+        ]
+        print(f'  GPU disabled (CPU rendering)')
+    ctx = pw.chromium.launch_persistent_context(
+        str(session_dir),
+        headless=headless,
+        channel='chrome',
+        viewport={'width': vp_w, 'height': vp_h},
+        locale='ru-RU',
+        args=chrome_args,
     )
+    print(f'  Browser: system Chrome (channel=chrome)')
     ctx.add_init_script(STEALTH_JS)
-    global _active_context
+    # Auto-dismiss unexpected file chooser dialogs (Flow UI triggers one on page load since Feb 2026)
+    def _dismiss_unexpected_fc(fc):
+        global _expecting_filechooser
+        if _expecting_filechooser:
+            return  # Let expect_file_chooser handle it
+        try:
+            fc.set_files([])
+            print('  (auto-dismissed unexpected file chooser dialog)')
+        except Exception:
+            pass
+    for p in ctx.pages:
+        p.on('filechooser', _dismiss_unexpected_fc)
+    ctx.on('page', lambda p: p.on('filechooser', _dismiss_unexpected_fc))
     _active_context = ctx
     return ctx
 
 
+def _get_or_create_flow_page(ctx):
+    '''Find an existing Flow tab or create a new one.
+    In CDP mode, Chrome may have many tabs open — find the one with Flow.
+    When multiple Flow tabs exist, prefer the one with the longest title
+    (active projects have titles like "Flow - Feb 26 - 22:26", not just "Flow").
+    In standard mode (launch_persistent_context), just create a new page.
+    '''
+    if _cdp_port and ctx.pages:
+        # Collect all Flow tabs
+        flow_pages = []
+        for p in ctx.pages:
+            try:
+                url = p.url or ''
+                if 'labs.google' in url and '/flow' in url:
+                    title = ''
+                    try:
+                        title = p.title() or ''
+                    except Exception:
+                        pass
+                    flow_pages.append((p, url, title))
+                    print(f'  Found Flow tab: title="{title[:60]}" url={url[:80]}')
+            except Exception:
+                continue
+        if flow_pages:
+            # Prefer tab with longest title (active project has date in title)
+            flow_pages.sort(key = lambda x: len(x[2]), reverse = True)
+            best = flow_pages[0]
+            print(f'  Using Flow tab: "{best[2][:60]}" ({best[1][:80]})')
+            return best[0]
+        # No Flow tabs — reuse any non-chrome tab
+        for p in ctx.pages:
+            try:
+                url = p.url or ''
+                if url and url != 'about:blank' and 'chrome://' not in url:
+                    print(f'  No Flow tab found, reusing tab: {url[:50]}')
+                    return p
+            except Exception:
+                continue
+        print(f'  No suitable tab found, creating new tab')
+        return ctx.new_page()
+    return ctx.new_page()
+
+
 def get_project_url(account = None):
-    '''Get project URL for the current (or specified) account.'''
+    '''Get project URL for the current (or specified) account.
+    Falls back to FLOW_URL if no project URL configured (prevent empty goto).
+    '''
     idx = account if account is not None else _current_account_idx
-    return ACCOUNTS[idx]['project_url']
+    url = ACCOUNTS[idx]['project_url']
+    return url if url else FLOW_URL
+
+
+def _create_project_from_main_page(page):
+    """Navigate to Flow main page, dismiss modals, click 'Создать проект'.
+
+    Returns new project URL or None.
+    """
+    print('  Navigating to Flow main page to create/find a project...')
+    page.goto(FLOW_URL, timeout = PAGE_LOAD_TIMEOUT, wait_until = 'domcontentloaded')
+    # Wait for full load — the page may have JS-rendered content
+    try:
+        page.wait_for_load_state('networkidle', timeout = 30000)
+    except Exception:
+        pass  # networkidle may timeout on slow connections, that's OK
+    human_delay_long(4.0, 7.0)
+    take_debug_screenshot(page, 'main_page_loaded')
+
+    # Check if we landed on a recaptcha or login page
+    body_text = ''
+    try:
+        body_text = (page.text_content('body') or '')[:2000].lower()
+    except Exception:
+        pass
+    if 'recaptcha' in body_text and 'flow' not in body_text[:200]:
+        print('  WARNING: Recaptcha detected on main page — cannot auto-create project.')
+        print('  Please create a new project manually and pass its URL via --project-url.')
+        take_debug_screenshot(page, 'recaptcha_detected')
+        return None
+
+    # Dismiss welcome modals ("A new way to Flow", etc.) — multiple rounds
+    for _ in range(5):
+        dismiss_popups(page)
+        human_delay(0.5, 1.0)
+        page.keyboard.press('Escape')
+        human_delay(0.5, 1.0)
+
+    # Strategy 0: Click "Create with Flow" on the new-style landing page
+    for cta_label in ['Create with Flow', 'Создавайте с Flow', 'Начать']:
+        cta = page.query_selector(f'a:has-text("{cta_label}")') or page.query_selector(f'button:has-text("{cta_label}")')
+        if cta:
+            box = cta.bounding_box()
+            if box and box['width'] > 0:
+                print(f'  Found CTA: "{cta_label}" — clicking...')
+                human_click(page, cta)
+                # Wait for workspace to load (shows "Загрузка..." then project)
+                for _wait in range(30):
+                    human_delay(2.0, 3.0)
+                    new_url = page.url
+                    if '/project/' in new_url:
+                        ACCOUNTS[_current_account_idx]['project_url'] = new_url
+                        print(f'  Created new project via CTA: {new_url}')
+                        return new_url
+                    # Check if we're now in a workspace (prompt field visible)
+                    pf = page.query_selector('[role="textbox"], [contenteditable="true"]')
+                    if pf:
+                        box2 = pf.bounding_box()
+                        if box2 and box2['width'] > 50:
+                            new_url = page.url
+                            ACCOUNTS[_current_account_idx]['project_url'] = new_url
+                            print(f'  Workspace loaded via CTA: {new_url}')
+                            return new_url
+                take_debug_screenshot(page, 'cta_wait_timeout')
+                print(f'  CTA clicked but workspace did not load in time. URL: {page.url}')
+                break
+
+    # Strategy 1: Look for "Создать проект" / "Новый проект" / "Create project" button
+    for label in ['Создать проект', 'Новый проект', 'Create project', 'New project']:
+        create_btn = page.query_selector(f'button:has-text("{label}")')
+        if not create_btn:
+            create_btn = page.query_selector(f'a:has-text("{label}")')
+        if create_btn:
+            box = create_btn.bounding_box()
+            if box and box['width'] > 0:
+                print(f'  Found button: "{label}" — clicking...')
+                human_click(page, create_btn)
+                human_delay_long(5.0, 8.0)
+                new_url = page.url
+                if '/project/' in new_url:
+                    ACCOUNTS[_current_account_idx]['project_url'] = new_url
+                    print(f'  Created new project: {new_url}')
+                    return new_url
+
+    # Strategy 2: try clicking "+" button on main page
+    plus_btn = page.query_selector('button:has-text("add")')
+    if plus_btn:
+        box = plus_btn.bounding_box()
+        if box and box['y'] < 200:
+            print('  Found "+" button — clicking...')
+            human_click(page, plus_btn)
+            human_delay_long(5.0, 8.0)
+            new_url = page.url
+            if '/project/' in new_url:
+                ACCOUNTS[_current_account_idx]['project_url'] = new_url
+                print(f'  Created new project via "+": {new_url}')
+                return new_url
+
+    # Strategy 3: look for project cards — pick ANY existing project
+    # (better to use an existing working project than fail)
+    project_link = page.query_selector('a[href*="/project/"]')
+    if project_link:
+        human_click(page, project_link)
+        human_delay_long(5.0, 8.0)
+        new_url = page.url
+        if '/project/' in new_url:
+            ACCOUNTS[_current_account_idx]['project_url'] = new_url
+            print(f'  Opened existing project: {new_url}')
+            return new_url
+
+    # Strategy 4: try clicking any visible card-like element in the grid
+    cards = page.query_selector_all('div[role="link"], div[role="button"]')
+    for card in cards[:8]:
+        try:
+            box = card.bounding_box()
+            if box and box['width'] > 100 and box['height'] > 80 and box['y'] > 30:
+                human_click(page, card)
+                human_delay_long(5.0, 8.0)
+                new_url = page.url
+                if '/project/' in new_url:
+                    ACCOUNTS[_current_account_idx]['project_url'] = new_url
+                    print(f'  Opened project from grid: {new_url}')
+                    return new_url
+                break
+        except Exception:
+            continue
+
+    # Strategy 5: try direct navigation to image generator tool
+    # This URL should auto-create a project or open a scratchpad
+    print('  Trying direct navigation to image generator tool...')
+    page.goto(FLOW_URL + '/image-generator', timeout = PAGE_LOAD_TIMEOUT, wait_until = 'domcontentloaded')
+    human_delay_long(5.0, 8.0)
+    new_url = page.url
+    if '/project/' in new_url:
+        ACCOUNTS[_current_account_idx]['project_url'] = new_url
+        print(f'  Auto-created project via image-generator: {new_url}')
+        return new_url
+
+    print('  WARNING: Could not find or create a project')
+    take_debug_screenshot(page, 'create_project_failed')
+    return None
 
 
 def ensure_project(page = None):
@@ -770,30 +1027,27 @@ def ensure_project(page = None):
     Navigates to Flow main page, clicks 'Создать проект', saves the new URL.
     Returns True if a new project was created, False if existing project is fine.
     """
-    project_url = get_project_url()
+    project_url = ACCOUNTS[_current_account_idx]['project_url']
     # If URL is empty — go to main page and create project
     if not project_url:
         print('  No project URL configured — creating new project...')
-        page.goto(FLOW_URL, timeout = PAGE_LOAD_TIMEOUT, wait_until = 'domcontentloaded')
-        human_delay_long(3.0, 5.0)
-        dismiss_popups(page)
-        human_delay(1.0, 2.0)
-        # Click "Создать проект" on main page
-        create_btn = page.query_selector('button:has-text("Создать проект")')
-        if not create_btn:
-            create_btn = page.query_selector('button:has-text("Create project")')
-        if not create_btn:
-            create_btn = page.query_selector('button:has-text("Создать")')
-        if create_btn:
-            human_click(page, create_btn)
-            human_delay_long(4.0, 6.0)
-            new_url = page.url
-            ACCOUNTS[_current_account_idx]['project_url'] = new_url
-            print(f'  Created new project: {new_url}')
-            return True
-        print('  WARNING: Could not find "Создать проект" button')
+        return _create_project_from_main_page(page) is not None
+    # If URL exists — check if we're already on this project
+    current_url = page.url or ''
+    # Extract project ID from URLs to compare
+    target_id = project_url.split('/project/')[-1].rstrip('/').split('?')[0] if '/project/' in project_url else ''
+    current_id = current_url.split('/project/')[-1].rstrip('/').split('?')[0] if '/project/' in current_url else ''
+    if target_id and current_id and target_id == current_id:
+        print(f'  Already on correct project ({target_id[:12]}...), skipping navigation')
         return False
-    # If URL exists, navigate and check for "Проект не найден"
+    # Navigate to project
+    if _cdp_port:
+        # In CDP mode, page.goto() kills the Flow SPA.
+        # If we're not on the right project, we can't navigate there.
+        # The user must open the correct project tab manually.
+        print(f'  CDP mode: not on correct project (current={current_id[:12]}, target={target_id[:12]})')
+        print(f'  Please open the project manually in Chrome: {project_url}')
+        raise RuntimeError(f'CDP mode: wrong project tab. Open {project_url} in Chrome manually.')
     page.goto(project_url, timeout = PAGE_LOAD_TIMEOUT, wait_until = 'domcontentloaded')
     human_delay_long(2.0, 4.0)
     body_text = ''
@@ -803,24 +1057,7 @@ def ensure_project(page = None):
         pass
     if 'не найден' in body_text or 'not found' in body_text:
         print('  Project not found — creating new project...')
-        page.goto(FLOW_URL, timeout = PAGE_LOAD_TIMEOUT, wait_until = 'domcontentloaded')
-        human_delay_long(3.0, 5.0)
-        dismiss_popups(page)
-        human_delay(1.0, 2.0)
-        create_btn = page.query_selector('button:has-text("Создать проект")')
-        if not create_btn:
-            create_btn = page.query_selector('button:has-text("Create project")')
-        if not create_btn:
-            create_btn = page.query_selector('button:has-text("Создать")')
-        if create_btn:
-            human_click(page, create_btn)
-            human_delay_long(4.0, 6.0)
-            new_url = page.url
-            ACCOUNTS[_current_account_idx]['project_url'] = new_url
-            print(f'  Created new project: {new_url}')
-            return True
-        print('  WARNING: Could not find "Создать проект" button')
-        return False
+        return _create_project_from_main_page(page) is not None
     return False
 
 
@@ -887,11 +1124,11 @@ def dismiss_popups(page = None):
                     dismissed = True
         except Exception:
             pass
-    # Strategy 4: Press Escape to dismiss any modal
+    # Strategy 4: Press Escape to dismiss any modal/overlay
     if not dismissed:
         try:
-            # Check if there's any dialog/modal visible
-            dialog = page.query_selector('div[role="dialog"], mat-dialog-container, div[class*="modal"]')
+            # Check if there's any dialog/modal/overlay visible
+            dialog = page.query_selector('div[role="dialog"], mat-dialog-container, div[class*="modal"], div[class*="overlay"]')
             if dialog:
                 box = dialog.bounding_box()
                 if box and box['width'] > 0:
@@ -933,13 +1170,34 @@ def wait_for_flow_ready(page = None):
     # Wait for prompt field — new UI uses contenteditable div, old used textarea
     READY_SELECTOR = '[role="textbox"], [contenteditable="true"], textarea'
     try:
-        page.wait_for_selector(READY_SELECTOR, timeout = PAGE_LOAD_TIMEOUT)
+        page.wait_for_selector(READY_SELECTOR, timeout = 15000)
     except Exception:
         # Prompt field not found — maybe another popup, or on wrong page
         print('  Prompt field not found — attempting to dismiss popups again...')
         take_debug_screenshot(page, 'flow_ready_retry')
+        # Try aggressive dismiss: Escape key multiple times
+        for _ in range(3):
+            page.keyboard.press('Escape')
+            human_delay(0.5, 1.0)
         dismiss_popups(page)
         human_delay(1.0, 2.0)
+        # Try clicking outside any modal (top-left corner)
+        try:
+            page.mouse.click(10, 10)
+            human_delay(0.5, 1.0)
+        except Exception:
+            pass
+        # Check if we're on main page (not in project) — need to create/open project
+        body_text_2 = ''
+        try:
+            body_text_2 = (page.text_content('body') or '')[:500].lower()
+        except Exception:
+            pass
+        if 'flow tv' in body_text_2 or 'new way to flow' in body_text_2.lower() or 'создать проект' in body_text_2:
+            print('  On main page — need to navigate to project...')
+            ensure_project(page)
+            human_delay_long(2.0, 4.0)
+            dismiss_popups(page)
         page.wait_for_selector(READY_SELECTOR, timeout = PAGE_LOAD_TIMEOUT)
     human_delay_long(1.5, 3.0)
     # Final check for any remaining popups
@@ -1092,14 +1350,158 @@ def clear_prompt(page = None):
         return None
 
 
-def fill_prompt(page = None, text = None):
-    '''Fill the prompt field with text.'''
+def _dispatch_full_input_events(page):
+    '''Dispatch a full set of DOM events on the prompt field so that
+    React/Lit/Angular frameworks pick up the content change.'''
+    page.evaluate("""() => {
+        const el = document.querySelector('[role="textbox"]') ||
+                   document.querySelector('[contenteditable="true"]');
+        if (!el) return;
+        const text = el.textContent || '';
+        // beforeinput
+        el.dispatchEvent(new InputEvent('beforeinput', {
+            bubbles: true, cancelable: true, inputType: 'insertText', data: text
+        }));
+        // input (the main one for React)
+        el.dispatchEvent(new InputEvent('input', {
+            bubbles: true, cancelable: true, inputType: 'insertText', data: text
+        }));
+        // change (for Angular/Lit)
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        // compositionend — some frameworks listen for this on contenteditable
+        el.dispatchEvent(new CompositionEvent('compositionend', {
+            bubbles: true, data: text
+        }));
+        // keydown/keyup of a generic key — triggers key-based listeners
+        el.dispatchEvent(new KeyboardEvent('keydown', {
+            bubbles: true, key: 'Unidentified', code: ''
+        }));
+        el.dispatchEvent(new KeyboardEvent('keyup', {
+            bubbles: true, key: 'Unidentified', code: ''
+        }));
+    }""")
+
+
+def _verify_prompt_filled(page, expected_text):
+    '''Check that the prompt field contains text AND the framework registered it.
+
+    Two checks:
+    1. DOM textContent is non-empty
+    2. Generate button is NOT disabled (framework accepted the input)
+    '''
+    result = page.evaluate("""() => {
+        const el = document.querySelector('[role="textbox"]') ||
+                   document.querySelector('[contenteditable="true"]');
+        const text = el ? el.textContent.trim() : '';
+        // Check if Generate button is disabled
+        const btn = document.querySelector('button:has(span.material-symbols-outlined)') ||
+                    document.querySelector('button[aria-label*="arrow_forward"]');
+        const btnDisabled = btn ? (btn.disabled || btn.getAttribute('aria-disabled') === 'true') : null;
+        return { text_len: text.length, btn_disabled: btnDisabled };
+    }""")
+    text_ok = result.get('text_len', 0) > 10
+    btn_disabled = result.get('btn_disabled')
+    if text_ok and btn_disabled is True:
+        print(f'  DOM has text ({result["text_len"]} chars) but Generate button is disabled — framework did not register input')
+        return False
+    return text_ok
+
+
+def _try_fill_prompt_once(page, text):
+    '''Try all 3 strategies to fill the prompt field. Returns True on success.'''
     field = _get_prompt_field(page)
     if not field:
         raise RuntimeError('Prompt field not found (no [role="textbox"] or textarea)')
     maybe_idle_movement(page)
+    human_click(page, field)
+    human_delay(0.2, 0.5)
+
+    # In CDP mode, skip JS-based strategies (execCommand, clipboard) — they break
+    # React's internal state and cause "Application error" crashes on Generate click.
+    # Use keyboard.type() directly which triggers all native browser events properly.
+    if _cdp_port:
+        human_click(page, field)
+        page.keyboard.press(f'{"Meta" if sys.platform == "darwin" else "Control"}+a')
+        human_delay(0.1, 0.2)
+        page.keyboard.press('Backspace')
+        human_delay(0.2, 0.4)
+        human_type(page, field, text)
+        human_delay(0.5, 1.0)
+        if _verify_prompt_filled(page, text):
+            print('  Prompt filled (keyboard.type, CDP mode).')
+            return True
+        return False
+
+    # Strategy 1: JS execCommand('insertText') + full event dispatch
+    success = page.evaluate("""(text) => {
+        const el = document.querySelector('[role="textbox"]') ||
+                   document.querySelector('[contenteditable="true"]');
+        if (!el) return false;
+        el.focus();
+        // Clear existing content
+        const sel = window.getSelection();
+        sel.selectAllChildren(el);
+        sel.deleteFromDocument();
+        // Insert via execCommand — triggers same events as real paste
+        const ok = document.execCommand('insertText', false, text);
+        if (!ok) return false;
+        return true;
+    }""", text)
+
+    if success:
+        _dispatch_full_input_events(page)
+        human_delay(0.3, 0.5)
+        if _verify_prompt_filled(page, text):
+            print('  Prompt filled (JS execCommand + events).')
+            human_delay(0.3, 0.8)
+            return True
+
+    # Strategy 2: Clipboard paste via Cmd+V
+    print('  execCommand failed, trying clipboard paste...')
+    page.evaluate("(text) => navigator.clipboard.writeText(text)", text)
+    human_delay(0.2, 0.4)
+    mod = 'Meta' if sys.platform == 'darwin' else 'Control'
+    page.keyboard.press(f'{mod}+a')
+    human_delay(0.1, 0.2)
+    page.keyboard.press(f'{mod}+v')
+    human_delay(0.5, 1.0)
+    _dispatch_full_input_events(page)
+    human_delay(0.3, 0.5)
+    if _verify_prompt_filled(page, text):
+        print('  Prompt filled (clipboard paste + events).')
+        human_delay(0.3, 0.8)
+        return True
+
+    # Strategy 3: Fallback to keyboard.type() — inherently triggers all native events
+    print('  Clipboard paste failed, falling back to keyboard.type()...')
+    # Clear field first
+    human_click(page, field)
+    page.keyboard.press(f'{"Meta" if sys.platform == "darwin" else "Control"}+a')
+    human_delay(0.1, 0.2)
+    page.keyboard.press('Backspace')
+    human_delay(0.2, 0.4)
     human_type(page, field, text)
-    human_delay(0.3, 0.8)
+    human_delay(0.5, 1.0)
+    return _verify_prompt_filled(page, text)
+
+
+def fill_prompt(page = None, text = None):
+    '''Fill the prompt field with text.
+
+    Uses JS-based insertion (execCommand/insertText + InputEvent dispatch)
+    instead of keyboard.type() to avoid CDP input detection by Google.
+    Falls back to clipboard paste, then to keyboard.type().
+    Retries up to 3 times if verification fails.
+    '''
+    MAX_RETRIES = 3
+    for attempt in range(1, MAX_RETRIES + 1):
+        check_page_crash(page)
+        if _try_fill_prompt_once(page, text):
+            return
+        print(f'  WARNING: Prompt field empty after attempt {attempt}/{MAX_RETRIES}, retrying...')
+        check_page_crash(page)
+        human_delay(1.0, 2.0)
+    raise RuntimeError(f'fill_prompt FAILED: prompt field still empty after {MAX_RETRIES} attempts')
 
 
 def dismiss_error_dialog(page = None):
@@ -1113,6 +1515,53 @@ def dismiss_error_dialog(page = None):
             human_delay(0.8, 1.8)
             return True
     return False
+
+
+def check_page_crash(page):
+    '''Detect if the Flow page has crashed ("Application error" in title).
+
+    If crashed, reloads the page and waits for it to recover.
+    In CDP mode, reload/goto kill the SPA, so we only detect but do NOT reload.
+    Returns True if a crash was detected, False if page is fine.
+    '''
+    try:
+        title = page.title() or ''
+    except Exception:
+        title = ''
+    if 'application error' not in title.lower():
+        return False
+    if _cdp_port:
+        # In CDP mode, page.reload() and page.goto() kill the Flow SPA.
+        # Google Flow often sets "Application error" in title during/after generation
+        # but the page content continues to work normally. In CDP mode we NEVER
+        # trust the title — always ignore it and let polling handle results/errors.
+        print(f'  PAGE CRASH title detected in CDP mode (title="{title[:80]}") — ignoring (CDP).')
+        return False
+    print(f'  PAGE CRASH detected (title="{title[:80]}") — reloading...')
+    page.reload(wait_until='domcontentloaded')
+    human_delay_long(4.0, 8.0)
+    READY_SELECTOR = '[role="textbox"], [contenteditable="true"], textarea'
+    try:
+        page.wait_for_selector(READY_SELECTOR, timeout=PAGE_LOAD_TIMEOUT)
+    except Exception:
+        pass
+    human_delay_long(2.0, 4.0)
+    # Verify recovery
+    try:
+        title = page.title() or ''
+    except Exception:
+        title = ''
+    if 'application error' in title.lower():
+        print('  Page still crashed after reload — re-navigating to project...')
+        page.goto(get_project_url(), timeout=PAGE_LOAD_TIMEOUT, wait_until='domcontentloaded')
+        human_delay_long(4.0, 8.0)
+        try:
+            page.wait_for_selector(READY_SELECTOR, timeout=PAGE_LOAD_TIMEOUT)
+        except Exception:
+            pass
+        human_delay_long(2.0, 4.0)
+    print('  Page recovered after crash.')
+    return True
 
 
 def ensure_enhance_prompt_off(page = None):
@@ -1201,56 +1650,107 @@ def set_image_model(page = None, model_name = None):
     if not _open_settings_popup(page):
         print('  WARNING: Settings popup not found — model unchanged')
         return None
-    # Find and click the model dropdown inside the popup
-    # Use JS click to avoid Radix overlay interception issues
-    dd_opened = page.evaluate("""() => {
-        const btns = document.querySelectorAll('button[aria-haspopup="menu"]');
-        for (const btn of btns) {
-            const text = (btn.textContent || '').trim();
-            if (text.includes('Nano Banana') || text.includes('Imagen') || text.includes('Veo')) {
-                if (text.includes('arrow_drop_down') || btn.getAttribute('aria-expanded') !== null) {
-                    btn.click();
-                    return true;
+    # Find the model dropdown button inside the popup and click with Playwright native click
+    # (JS click doesn't reliably open Radix UI dropdowns)
+    dd_btn = page.query_selector('button:has-text("arrow_drop_down"):has-text("Nano Banana")')
+    if not dd_btn:
+        dd_btn = page.query_selector('button:has-text("arrow_drop_down"):has-text("Imagen")')
+    if not dd_btn:
+        dd_btn = page.query_selector('button[aria-haspopup="menu"]')
+    if not dd_btn:
+        # Fallback: find by evaluating all buttons
+        dd_btn = page.evaluate_handle("""() => {
+            const btns = document.querySelectorAll('button');
+            for (const btn of btns) {
+                const text = (btn.textContent || '').trim();
+                if (text.includes('arrow_drop_down') &&
+                    (text.includes('Nano') || text.includes('Imagen') || text.includes('Veo'))) {
+                    return btn;
                 }
             }
-        }
-        return false;
-    }""")
-    if not dd_opened:
+            return null;
+        }""")
+        if dd_btn and dd_btn.as_element():
+            dd_btn = dd_btn.as_element()
+        else:
+            dd_btn = None
+    if not dd_btn:
         print(f'  WARNING: Model dropdown not found in popup — model unchanged')
         page.keyboard.press('Escape')
         human_delay(0.3, 0.8)
         return None
-    human_delay(0.8, 1.5)
-    # Select target model from dropdown menu items
-    # Use JS click to avoid "element intercepted" issues with Radix popover overlays
+    dd_text = (dd_btn.text_content() or '').strip()[:50]
+    print(f'  Clicking model dropdown: {dd_text}')
+    dd_btn.click()  # Playwright native click — required for Radix UI
+    human_delay(1.5, 2.5)  # Extra wait for dropdown to render
+    # Log all visible elements for debugging and select target model
     selected = page.evaluate("""(targetModel) => {
-        const items = document.querySelectorAll('[role="menuitem"]');
-        for (const item of items) {
+        // Collect all menu-like items with multiple selector strategies
+        const selectors = [
+            '[role="menuitem"]', '[role="option"]', '[role="menuitemradio"]',
+            '[role="menu"] > *', '[data-radix-popper-content-wrapper] div',
+            'ul > li', 'div[role="listbox"] > *'
+        ];
+        let allItems = [];
+        for (const sel of selectors) {
+            const items = document.querySelectorAll(sel);
+            for (const item of items) allItems.push(item);
+        }
+        // Deduplicate by element reference
+        allItems = [...new Set(allItems)];
+        // Collect text of visible items for logging
+        const visibleTexts = [];
+        for (const item of allItems) {
             const text = (item.textContent || '').trim();
+            if (text.length > 0 && text.length < 100 && item.offsetHeight > 0) {
+                visibleTexts.push(text.substring(0, 50));
+            }
+        }
+        // Try to find and click target model
+        for (const item of allItems) {
+            const text = (item.textContent || '').trim();
+            if (item.offsetHeight === 0) continue;
             if (targetModel === 'Nano Banana Pro') {
                 if (text.includes('Nano Banana') && text.includes('Pro')) {
                     item.click();
-                    return true;
+                    return {found: true, text: text, available: visibleTexts};
                 }
             } else if (targetModel === 'Nano Banana') {
                 if (text.includes('Nano Banana') && !text.includes('Pro')) {
                     item.click();
-                    return true;
+                    return {found: true, text: text, available: visibleTexts};
                 }
             } else {
                 if (text.includes(targetModel)) {
                     item.click();
-                    return true;
+                    return {found: true, text: text, available: visibleTexts};
                 }
             }
         }
-        return false;
+        // Last resort: scan ALL elements on page for "Pro" text inside any overlay/popup
+        const allEls = document.querySelectorAll('div, span, button, li, a');
+        for (const el of allEls) {
+            if (el.offsetHeight === 0 || el.offsetWidth === 0) continue;
+            const rect = el.getBoundingClientRect();
+            // Must be in popup/overlay area (z-index, floating position)
+            const style = window.getComputedStyle(el);
+            const zIndex = parseInt(style.zIndex) || 0;
+            const text = (el.textContent || '').trim();
+            if (targetModel === 'Nano Banana Pro' &&
+                text.includes('Nano Banana') && text.includes('Pro') &&
+                text.length < 50 && zIndex > 0) {
+                el.click();
+                return {found: true, text: text, available: visibleTexts, strategy: 'z-index'};
+            }
+        }
+        return {found: false, available: visibleTexts};
     }""", model_name)
-    if selected:
-        print(f'''  Model set to: {model_name}''')
+    if selected.get('found'):
+        strat = selected.get('strategy', 'standard')
+        print(f'''  Model set to: {model_name} (via {strat})''')
     else:
-        print(f'''  WARNING: Model \'{model_name}\' not found in dropdown''')
+        avail = selected.get('available', [])
+        print(f'''  WARNING: Model '{model_name}' not found in dropdown. Visible items: {avail[:10]}''')
     human_delay(0.3, 0.8)
     page.keyboard.press('Escape')
     human_delay(0.3, 0.8)
@@ -1265,6 +1765,7 @@ def click_generate(page = None):
     so we use a priority search: arrow_forward first, then specific fallbacks.
     Uses Playwright native click (not JS) for reliability.
     '''
+    check_page_crash(page)
     dismiss_error_dialog(page)
     # Priority 1: button with arrow_forward icon (the actual submit button)
     btn = page.query_selector('button:has-text("arrow_forward")')
@@ -1340,11 +1841,26 @@ def _scroll_chat_to_bottom(page):
 
 
 def _is_generating(page):
-    '''Check if generation is in progress (text "Генерация"/"Создание" visible).'''
+    '''Check if generation is in progress.
+
+    ONLY checks for visual indicators — progress placeholder cards showing "NN%".
+    Does NOT check body text because keywords like "Генерация", "генерируем",
+    "Generating", "Создание" are permanently present in i18n/help strings.
+    '''
     return page.evaluate("""() => {
-        const body = (document.body.textContent || '');
-        return body.includes('Генерация') || body.includes('генерируем') ||
-               body.includes('Generating') || body.includes('Создание');
+        // Progress placeholders — grey cards showing "NN%" — the ONLY reliable signal
+        const els = document.querySelectorAll('*');
+        for (const el of els) {
+            const text = (el.textContent || '').trim();
+            const rect = el.getBoundingClientRect();
+            // Match elements whose ONLY visible text is "NN%" and are large enough
+            // to be generation placeholder cards (not tiny UI labels)
+            if (/^\\d{1,3}%$/.test(text) && rect.width > 150 && rect.height > 80 &&
+                rect.y >= 0 && rect.y < window.innerHeight) {
+                return true;
+            }
+        }
+        return false;
     }""")
 
 
@@ -1368,10 +1884,19 @@ def wait_for_new_gallery_item(page = None, initial_urls = None, timeout_sec = GE
     '''
     elapsed = 0
     was_generating = False
+    # Scroll chat to bottom right away so generation placeholders are visible
+    _scroll_chat_to_bottom(page)
     while elapsed < timeout_sec:
         time.sleep(POLL_INTERVAL)
         elapsed += POLL_INTERVAL
+        # Check for page crash (Flow client-side exception)
+        if check_page_crash(page):
+            return 'server_error'
         maybe_idle_movement(page, probability=0.15)
+
+        # Periodically scroll chat to bottom to keep new content visible
+        if elapsed % 15 == 0:
+            _scroll_chat_to_bottom(page)
 
         # Check if generation is in progress
         generating = _is_generating(page)
@@ -1379,7 +1904,7 @@ def wait_for_new_gallery_item(page = None, initial_urls = None, timeout_sec = GE
             print(f'  Generation started ({elapsed}s)')
             was_generating = True
 
-        # Check for new images (without scrolling — virtual scroll removes old ones)
+        # Check for new images (scroll first to ensure they're in DOM)
         current_urls = get_gallery_urls(page, tab)
         new_urls = current_urls - initial_urls
         if new_urls:
@@ -1387,23 +1912,17 @@ def wait_for_new_gallery_item(page = None, initial_urls = None, timeout_sec = GE
             return 'success'
 
         # Generation was active but text disappeared = generation finished
-        # But new URLs may not have appeared yet due to virtual scroll
+        # But could be success OR error — check both
         if was_generating and not generating:
             print(f'  Generation text disappeared ({elapsed}s) — checking for results...')
-            # Wait a bit for images to render, then return success
-            # even if we can't see new URLs (virtual scroll may hide them)
             time.sleep(3)
+            # Check for new images first
             current_urls = get_gallery_urls(page, tab)
             new_urls = current_urls - initial_urls
             if new_urls:
                 print(f'  Found {len(new_urls)} new items after generation')
                 return 'success'
-            # Generation finished but no new URLs visible — still success
-            # (images are in DOM but may have scrolled out)
-            print(f'  Generation completed but new URLs not visible in viewport — treating as success')
-            return 'success'
-
-        if elapsed >= min_wait:
+            # No new images — check if error cards appeared instead
             error_text = page.evaluate("""() => {
                 const els = document.querySelectorAll('*');
                 for (const el of els) {
@@ -1414,7 +1933,43 @@ def wait_for_new_gallery_item(page = None, initial_urls = None, timeout_sec = GE
                          text.includes('не удалось')) &&
                         text.length < 300) {
                         const rect = el.getBoundingClientRect();
-                        if (rect.width > 100 && rect.height > 20) {
+                        if (rect.width > 100 && rect.height > 20 &&
+                            rect.y >= 0 && rect.y < window.innerHeight) {
+                            return text;
+                        }
+                    }
+                }
+                return null;
+            }""")
+            if error_text:
+                print(f'  ERROR after generation: {error_text[:80]}')
+                if 'Не удалось сгенерировать' in error_text:
+                    return 'content_filter'
+                return 'server_error'
+            # Generation finished, no errors visible, but no new URLs
+            # (images may have scrolled out of virtual viewport)
+            print(f'  Generation completed but new URLs not visible in viewport — treating as success')
+            return 'success'
+
+        # Only check for errors if:
+        # 1. Enough time has passed (min_wait) to avoid old error text
+        # 2. Generation is NOT actively in progress (no progress placeholders)
+        if elapsed >= min_wait and not generating:
+            error_text = page.evaluate("""() => {
+                // Look for error cards — they have warning icon + "Ошибка" + error text
+                // Scope: only elements currently visible in viewport (y > 0 && y < window.innerHeight)
+                const els = document.querySelectorAll('*');
+                for (const el of els) {
+                    const text = (el.textContent || '').trim();
+                    if ((text.includes('Что-то пошло не так') ||
+                         text.includes('Произошла ошибка') ||
+                         text.includes('Не удалось сгенерировать') ||
+                         text.includes('не удалось')) &&
+                        text.length < 300) {
+                        const rect = el.getBoundingClientRect();
+                        // Must be visible in viewport and reasonably sized
+                        if (rect.width > 100 && rect.height > 20 &&
+                            rect.y >= 0 && rect.y < window.innerHeight) {
                             return text;
                         }
                     }
@@ -1963,7 +2518,7 @@ def _find_ingredient_add_button(page = None):
             if (rect.width === 0 || rect.height === 0) continue;
             // New UI: '+' or 'add' button in bottom area near prompt
             if ((text === 'add' || text === '+' || text.includes('add')) &&
-                !text.includes('download') && rect.y > 700) {
+                !text.includes('download') && !text.includes('медиаконтент') && rect.y > 500) {
                 candidates.push({
                     text: text.substring(0, 30),
                     y: rect.y, x: rect.x,
@@ -2138,10 +2693,13 @@ def _upload_single_file(page = None, file_path = None):
         print(f'  WARNING: Upload button not found for {file_path.name}')
         return False
     try:
+        global _expecting_filechooser
+        _expecting_filechooser = True
         page.evaluate('(el) => el.click()', upload_btn)
         fc_info = page.expect_file_chooser(timeout=10000)
         with fc_info as file_chooser:
             file_chooser.set_files(str(file_path))
+        _expecting_filechooser = False
         human_delay_long(2.5, 5.0)
         for _ in range(15):
             if _dismiss_crop_dialog(page):
@@ -2149,13 +2707,155 @@ def _upload_single_file(page = None, file_path = None):
             human_delay(0.8, 1.8)
         return True
     except Exception as e:
+        _expecting_filechooser = False
         print(f'  WARNING: file chooser failed for {file_path.name}: {e}')
         return False
+
+
+def _select_ingredient_from_library(page, filename):
+    '''Try to select an ingredient by filename from the "Recently Used" library.
+
+    After clicking "+", the panel shows "Поиск объектов" search + "Recently Used" list.
+    Each item shows the original filename. We search for it and click to select.
+
+    Returns True if found and selected, False otherwise.
+    '''
+    # The panel should already be open (after clicking "+")
+    human_delay(0.3, 0.6)
+    # Try to find the item by filename text in the list
+    found = page.evaluate("""(filename) => {
+        // Look for list items/buttons that contain the filename
+        // Items are rows with thumbnail + filename text
+        const allEls = document.querySelectorAll('button, [role="option"], [role="listitem"], li, div');
+        for (const el of allEls) {
+            const text = (el.textContent || '').trim();
+            if (!text.includes(filename)) continue;
+            const rect = el.getBoundingClientRect();
+            // Must be visible and in the panel area
+            if (rect.width < 50 || rect.height < 20 || rect.width > 800) continue;
+            if (rect.y < 0 || rect.y > window.innerHeight) continue;
+            // Check it's a clickable ingredient item (has small image nearby)
+            const img = el.querySelector('img');
+            if (img || el.closest('[role="listbox"]') || el.closest('[role="list"]')) {
+                el.click();
+                return true;
+            }
+            // Fallback: click if it looks like a list item
+            if (rect.height > 30 && rect.height < 120) {
+                el.click();
+                return true;
+            }
+        }
+        return false;
+    }""", filename)
+    if found:
+        print(f'    Selected "{filename}" from library')
+        human_delay(0.5, 1.0)
+    return found
+
+
+def _select_or_upload_ingredient(page, fpath):
+    '''Try to select ingredient from Recently Used library, fall back to upload.
+
+    1. Click "+" to open ingredient panel
+    2. Look for filename in the list → click to select
+    3. If not found → click upload icon / "Загрузить изображение" → upload file
+
+    Returns True on success.
+    '''
+    filename = fpath.name
+    # Click "+" to open the panel
+    if not _find_ingredient_add_button(page):
+        print(f'    Could not open ingredient panel for {filename}')
+        return False
+    human_delay(0.5, 1.0)
+    # Try to find in Recently Used
+    if _select_ingredient_from_library(page, filename):
+        return True
+    # Not found in library — upload
+    print(f'    "{filename}" not in library, uploading...')
+    # Click "Загрузить изображение" in the panel
+    upload_btn = page.query_selector('button:has-text("Загрузить изображение")')
+    if not upload_btn:
+        upload_btn = page.query_selector(':text("Загрузить изображение")')
+    if upload_btn:
+        box = upload_btn.bounding_box()
+        if box and box['width'] > 0:
+            human_click(page, upload_btn)
+            human_delay(1.0, 2.0)
+    if _upload_single_file(page, fpath):
+        return True
+    return False
+
+
+def clear_ingredients(page):
+    '''Remove all existing ingredient thumbnails from the prompt area.
+
+    In the new Flow UI (Feb 2026), ingredients appear as small image thumbnails
+    near the prompt field, each with a "close" (×) button.
+    '''
+    cleared = 0
+    for _pass in range(10):  # max 10 ingredients
+        # Look for close/remove buttons on ingredient thumbnails near the prompt area
+        close_btn = page.evaluate("""() => {
+            // Ingredient thumbnails have close buttons — small × buttons near the bottom of page
+            const btns = document.querySelectorAll('button');
+            for (const btn of btns) {
+                const text = (btn.textContent || '').trim().toLowerCase();
+                if (text !== 'close' && text !== '×' && text !== 'cancel') continue;
+                const rect = btn.getBoundingClientRect();
+                // Ingredients are near the bottom (prompt area), small buttons
+                if (rect.width > 0 && rect.width < 40 && rect.height < 40 &&
+                    rect.y > window.innerHeight * 0.5) {
+                    btn.click();
+                    return true;
+                }
+            }
+            // Also try aria-label based buttons
+            const removeBtns = document.querySelectorAll('button[aria-label*="emov"], button[aria-label*="удал"], button[aria-label*="lose"], button[aria-label*="крыт"]');
+            for (const btn of removeBtns) {
+                const rect = btn.getBoundingClientRect();
+                if (rect.width > 0 && rect.y > window.innerHeight * 0.5) {
+                    btn.click();
+                    return true;
+                }
+            }
+            return false;
+        }""")
+        if not close_btn:
+            break
+        cleared += 1
+        human_delay(0.3, 0.6)
+    if cleared:
+        print(f'  Cleared {cleared} existing ingredient(s)')
+        human_delay(0.5, 1.0)
+    return cleared
+
+
+def _count_current_ingredients(page):
+    '''Count how many ingredient thumbnails are currently attached near the prompt area.'''
+    count = page.evaluate("""() => {
+        // Ingredient thumbnails are small images near the prompt area (bottom of page)
+        const imgs = document.querySelectorAll('img');
+        let count = 0;
+        for (const img of imgs) {
+            const rect = img.getBoundingClientRect();
+            // Thumbnails: small images (< 120px) in the bottom half of the page
+            if (rect.width > 10 && rect.width < 120 && rect.height > 10 && rect.height < 120 &&
+                rect.y > window.innerHeight * 0.5) {
+                count++;
+            }
+        }
+        return count;
+    }""")
+    return count or 0
 
 
 def upload_ingredients(page = None, ingredient_paths = None):
     """Upload ingredient images for Nano Banana image generation.
 
+    Checks if the correct number of ingredients is already attached.
+    If so, skips upload entirely. Otherwise clears and re-uploads.
     Opens the ingredient panel once, then uploads files one by one.
     Uses input[type='file'] set_input_files() for reliability after first crop.
     If that fails, tries closing/reopening panel.
@@ -2173,34 +2873,50 @@ def upload_ingredients(page = None, ingredient_paths = None):
     if not resolved:
         print('  No valid ingredient files to upload')
         return 0
-    if not _open_ingredient_panel(page):
-        print('  SKIP ingredients — panel not available')
-        return 0
-    uploaded = 0
+    # Check if the exact same set of ingredients is already loaded (by file paths)
+    resolved_keys = tuple(str(f) for f in resolved)
+    if resolved_keys == upload_ingredients._last_uploaded:
+        current_count = _count_current_ingredients(page)
+        if current_count == len(resolved):
+            print(f'  Ingredients already loaded ({len(resolved)} files, same set) — skipping upload')
+            return len(resolved)
+        else:
+            print(f'  Same ingredient set but count mismatch ({current_count} vs {len(resolved)}) — re-uploading')
+    # Different set or first upload — clear old and load new
+    current_count = _count_current_ingredients(page)
+    if current_count > 0:
+        print(f'  Clearing {current_count} old ingredient(s) before loading new set')
+        clear_ingredients(page)
+    loaded = 0
     for i, fpath in enumerate(resolved):
-        print(f'''  Uploading ingredient {i + 1}/{len(resolved)}: {fpath.name}''')
-        if _upload_single_file(page, fpath):
-            uploaded += 1
+        print(f'''  Loading ingredient {i + 1}/{len(resolved)}: {fpath.name}''')
+        # Try: select from library first, upload only if not found
+        if _select_or_upload_ingredient(page, fpath):
+            loaded += 1
             human_delay_medium(1.5, 3.5)
             continue
-        print(f'''  Retrying {fpath.name} with panel reopen...''')
+        # Retry with panel reopen
+        print(f'''  Retrying {fpath.name}...''')
         page.keyboard.press('Escape')
         human_delay_long(2.5, 5.0)
         _dismiss_crop_dialog(page)
         human_delay_medium(1.5, 3.5)
-        if not _find_ingredient_add_button(page):
-            continue
-        if not _wait_for_upload_button(page, timeout_sec = 20):
-            continue
-        if _upload_single_file(page, fpath):
-            uploaded += 1
+        if _select_or_upload_ingredient(page, fpath):
+            loaded += 1
             human_delay_medium(1.5, 3.5)
             continue
         print(f'''  WARNING: Skipping {fpath.name} after retry failed''')
     page.keyboard.press('Escape')
     human_delay(0.8, 1.8)
-    print(f'''  Uploaded {uploaded}/{len(resolved)} ingredients.''')
-    return uploaded
+    print(f'''  Loaded {loaded}/{len(resolved)} ingredients.''')
+    # Remember what we loaded so we can skip next time if same set
+    if loaded == len(resolved):
+        upload_ingredients._last_uploaded = resolved_keys
+    else:
+        upload_ingredients._last_uploaded = None
+    return loaded
+
+upload_ingredients._last_uploaded = None  # init
 
 
 def clear_veo_frame_slots(page = None):
@@ -2295,12 +3011,16 @@ def upload_frame_for_veo(page = None, frame_path = None, slot_index = None):
             print(f'    (direct input failed: {e})')
     if not uploaded and upload_btn:
         try:
+            global _expecting_filechooser
+            _expecting_filechooser = True
             page.evaluate("(el) => el.click()", upload_btn)
             fc_info = page.expect_file_chooser(timeout=10000)
             with fc_info as file_chooser:
                 file_chooser.set_files(str(frame_path))
+            _expecting_filechooser = False
             uploaded = True
         except Exception as e:
+            _expecting_filechooser = False
             print(f'    (button click + file chooser failed: {e})')
     if not uploaded:
         raise RuntimeError(f'Failed to upload {frame_path.name}')
@@ -2319,8 +3039,8 @@ def do_login(pw):
     print(f'''Opening Flow for Google login (account {_current_account_idx + 1})...''')
     print(f'''Session will be saved to: {acct['session_dir']}''')
     print()
-    ctx = launch_browser(pw, headless = False)
-    page = ctx.new_page()
+    ctx = launch_browser(pw, headless = False, cdp_port = _cdp_port)
+    page = _get_or_create_flow_page(ctx)
     try:
         page.goto(FLOW_URL, timeout = PAGE_LOAD_TIMEOUT, wait_until = 'commit')
     except Exception as e:
@@ -2414,7 +3134,7 @@ def _generate_single_frame(page, clip_id, frame_type = None, prompt = None, save
     Returns True on success.
     '''
     validate_nb_prompt(prompt, clip_id=f'{clip_id}/{frame_type}')
-    prompt = sanitize_prompt(prompt)
+    prompt = sanitize_nb_prompt(prompt)
     print(f'''\n  --- Generating {frame_type} frame for {clip_id} ---''')
     print(f'''  Prompt: {prompt[:80]}...''')
     clear_prompt(page)
@@ -2443,7 +3163,7 @@ def _generate_frame_review(page, clip_id, component = None, prompt = None, attem
     Returns list of saved variant paths.
     '''
     validate_nb_prompt(prompt, clip_id=f'{clip_id}/{component}')
-    prompt = sanitize_prompt(prompt)
+    prompt = sanitize_nb_prompt(prompt)
     frame_label = {'nb_first': 'first', 'nb_mid': 'mid', 'nb_last': 'last'}.get(component, component)
     print(f'''\n  --- Generating {frame_label} frame for {clip_id} (attempt {attempt}) ---''')
     print(f'''  Prompt: {prompt[:80]}...''')
@@ -2455,9 +3175,16 @@ def _generate_frame_review(page, clip_id, component = None, prompt = None, attem
             wait_time = SERVER_RETRY_WAITS[retry - 1]
             print(f'''  Server error — waiting {wait_time}s before retry {retry + 1}/3...''')
             time.sleep(wait_time + random.uniform(-5, 10))
-            print('  Reloading page for clean retry...')
-            page.goto(get_project_url(), timeout = PAGE_LOAD_TIMEOUT, wait_until = 'domcontentloaded')
-            wait_for_flow_ready(page)
+            if _cdp_port:
+                # In CDP mode, page.goto() and page.reload() kill the Flow SPA state.
+                # Just wait and retry without reloading — the page is still functional.
+                print('  CDP mode — skipping page reload, retrying in place...')
+                human_delay_long(3.0, 5.0)
+                _scroll_chat_to_bottom(page)
+            else:
+                print('  Reloading page for clean retry...')
+                page.goto(get_project_url(), timeout = PAGE_LOAD_TIMEOUT, wait_until = 'domcontentloaded')
+                wait_for_flow_ready(page)
             switch_mode(page, 'Создать изображение')
             if ingredients:
                 upload_ingredients(page, ingredients)
@@ -3157,8 +3884,8 @@ def do_build_scene(pw = None, clip_filter = None):
         print('Error: no generated clips found. Run --run first.')
         sys.exit(1)
     print(f'''Building scene from {len(ready_clips)} clips.\n''')
-    ctx = launch_browser(pw, headless = False)
-    page = ctx.new_page()
+    ctx = launch_browser(pw, headless = False, cdp_port = _cdp_port)
+    page = _get_or_create_flow_page(ctx)
     added = add_clips_to_scene(page, ready_clips)
     if added == 0:
         print('ERROR: no clips were added to scene')
@@ -3186,10 +3913,10 @@ def do_run(pw = None, clip_filter = None):
         sys.exit(1)
     clips = load_clips(PROMPTS_PATH, clip_filter)
     print(f'''Loaded {len(clips)} clips to process.\n''')
-    ctx = launch_browser(pw, headless = False)
-    page = ctx.new_page()
-    print("Navigating to project 'Автоматизация'...")
-    page.goto(get_project_url(), timeout = PAGE_LOAD_TIMEOUT, wait_until = 'domcontentloaded')
+    ctx = launch_browser(pw, headless = False, cdp_port = _cdp_port)
+    page = _get_or_create_flow_page(ctx)
+    print(f"Navigating to project...")
+    ensure_project(page)
     wait_for_flow_ready(page)
     results = {
         'ok': [],
@@ -3215,17 +3942,29 @@ def do_run(pw = None, clip_filter = None):
 
 
 def _switch_account(pw, ctx, page):
-    '''Account switching is disabled — each bot stays on its own account.
+    '''On consecutive errors: try creating a new project (old one may be broken).
 
-    Previously this would switch to the other account on consecutive errors.
-    Now each bot instance runs independently (bot 1 = account 1, bot 2 = account 2),
-    so switching would interfere with the other bot's session.
-
-    Always returns (None, None).
+    Account switching is disabled — each bot stays on its own account.
+    Instead, we try to create a fresh project within the same account.
+    Returns (new_ctx, new_page) if project was created, (None, None) otherwise.
     '''
-    print('  Account switching disabled — each bot uses its own account.')
-    print('  Continuing with current account.')
-    return (None, None)
+    old_url = ACCOUNTS[_current_account_idx].get('project_url', '')
+    print(f'  Too many consecutive errors — trying to create a new project...')
+    print(f'  (old project: {old_url})')
+    new_url = _create_project_from_main_page(page)
+    if new_url and new_url != old_url:
+        print(f'  Switched to new project: {new_url}')
+        # Stay on same context/page, just update the project URL
+        try:
+            page.goto(new_url, timeout = PAGE_LOAD_TIMEOUT, wait_until = 'domcontentloaded')
+            wait_for_flow_ready(page)
+            return (ctx, page)  # return same ctx/page — just new project
+        except Exception as e:
+            print(f'  Failed to navigate to new project: {e}')
+            return (None, None)
+    else:
+        print('  Could not create a new project — continuing with current.')
+        return (None, None)
 
 
 def do_review(pw = None, clip_filter = None):
@@ -3244,11 +3983,10 @@ def do_review(pw = None, clip_filter = None):
         sys.exit(1)
     clips = load_clips(PROMPTS_PATH, clip_filter)
     print(f'''Review mode: {len(clips)} clips to process.\n''')
-    ctx = launch_browser(pw, headless = False)
-    page = ctx.new_page()
-    project_url = get_project_url()
-    print("Navigating to project 'Автоматизация'...")
-    page.goto(project_url, timeout = PAGE_LOAD_TIMEOUT, wait_until = 'domcontentloaded')
+    ctx = launch_browser(pw, headless = False, cdp_port = _cdp_port)
+    page = _get_or_create_flow_page(ctx)
+    print(f"Navigating to project...")
+    ensure_project(page)
     wait_for_flow_ready(page)
     summary = {
         'generated': [],
@@ -3734,11 +4472,10 @@ def do_generate_refs(pw=None, task_filter=None, tasks_file=None):
     pending_tasks.sort(key=lambda t: t.get('priority', 99))
     print(f'Reference generation: {len(pending_tasks)} tasks to process.\n')
 
-    ctx = launch_browser(pw, headless=False)
-    page = ctx.new_page()
-    project_url = get_project_url()
+    ctx = launch_browser(pw, headless=False, cdp_port=_cdp_port)
+    page = _get_or_create_flow_page(ctx)
     print("Navigating to project...")
-    page.goto(project_url, timeout=PAGE_LOAD_TIMEOUT, wait_until='domcontentloaded')
+    ensure_project(page)
     wait_for_flow_ready(page)
 
     generated = []
@@ -3777,7 +4514,7 @@ def do_generate_refs(pw=None, task_filter=None, tasks_file=None):
 
         current_urls = get_gallery_urls(page)
         clear_prompt(page)
-        sanitized = sanitize_prompt(prompt)
+        sanitized = sanitize_nb_prompt(prompt)
         fill_prompt(page, sanitized)
         take_debug_screenshot(page, f'ref_{task_id}_before_gen')
         maybe_idle_movement(page)
@@ -3842,12 +4579,18 @@ def main():
     parser.add_argument('--batch', type = str, default = 'a', choices = ['a', 'b'], help = 'Batch slot for --select: a (default) or b')
     parser.add_argument('--ref-tasks-file', type = str, default = None, help = 'Path to ref tasks JSON file (default: output/prompts/ref_tasks.json)')
     parser.add_argument('--headless', action = 'store_true', help = 'Run in headless mode (not recommended for first run)')
+    parser.add_argument('--disable-gpu', action = 'store_true', help = 'Disable GPU acceleration (allows 4 bots simultaneously)')
     parser.add_argument('--account', type = int, default = 1, choices = [
         1, 2, 3, 4], help = 'Bot number (1-4). Bots 1-2 use account 1, bots 3-4 use account 2')
     parser.add_argument('--session-dir', type = str, default = None, help = 'Custom session directory (overrides --account session)')
     parser.add_argument('--project-url', type = str, default = None, help = 'Custom project URL (overrides --account project)')
+    parser.add_argument('--new-project', action = 'store_true', help = 'Force create a new project instead of using existing one')
+    parser.add_argument('--cdp-port', type = int, default = None, help = 'Connect to existing Chrome via CDP (e.g. 9222). Launch Chrome first with ./scripts/launch_chrome.sh')
     args = parser.parse_args()
     _current_account_idx = args.account - 1
+    global _disable_gpu, _cdp_port
+    _disable_gpu = args.disable_gpu
+    _cdp_port = args.cdp_port
     # Override session dir and project URL if provided
     if args.session_dir:
         custom_session = Path(args.session_dir)
@@ -3856,6 +4599,9 @@ def main():
         ACCOUNTS[_current_account_idx]['session_dir'] = custom_session
     if args.project_url:
         ACCOUNTS[_current_account_idx]['project_url'] = args.project_url
+    if args.new_project:
+        ACCOUNTS[_current_account_idx]['project_url'] = ''
+        print(f'  --new-project: will create a new project on launch')
     ensure_dirs()
     if args.select:
         if not all([args.clip, args.component, args.attempt, args.variant is not None, args.scores]):
@@ -3876,13 +4622,16 @@ def main():
     elif args.status:
         do_status(args.clip)
     else:
-        # Set global timeout to prevent infinite hangs
+        # Set global timeout to prevent infinite hangs (0 = no timeout)
         timeout = GLOBAL_TIMEOUT_SEC
         if args.login:
             timeout = 600  # 10 min for login (manual interaction)
-        signal.signal(signal.SIGALRM, _global_timeout_handler)
-        signal.alarm(timeout)
-        print(f'  Global timeout: {timeout}s ({timeout // 60}m)')
+        if timeout > 0:
+            signal.signal(signal.SIGALRM, _global_timeout_handler)
+            signal.alarm(timeout)
+            print(f'  Global timeout: {timeout}s ({timeout // 60}m)')
+        else:
+            print(f'  No timeout — bot runs until task completion')
 
         with sync_playwright() as pw:
             global _active_pw

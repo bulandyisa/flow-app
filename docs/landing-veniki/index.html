@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Пихтовые веники Братска — Сила сибирской тайги</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --forest: #1a3c2a;
+    --forest-deep: #0d2618;
+    --pine: #2d5a3f;
+    --sage: #7a9e7e;
+    --gold: #c8a45c;
+    --gold-light: #e8d5a3;
+    --cream: #f5f0e8;
+    --warm: #faf7f2;
+    --bark: #5c3d2e;
+    --text: #2a2a2a;
+    --text-light: #6b6b6b;
+    --steam: rgba(255,255,255,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: var(--text);
+    background: var(--warm);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ============================================
+     ANIMATIONS
+     ============================================ */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+  @keyframes steamRise {
+    0% { opacity: 0; transform: translateY(0) scale(1); }
+    50% { opacity: 0.6; }
+    100% { opacity: 0; transform: translateY(-120px) scale(1.8); }
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(200,164,92,0.4); }
+    50% { box-shadow: 0 0 0 20px rgba(200,164,92,0); }
+  }
+  @keyframes needleFall {
+    0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+    100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.85); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .reveal-delay-1 { transition-delay: 0.15s; }
+  .reveal-delay-2 { transition-delay: 0.3s; }
+  .reveal-delay-3 { transition-delay: 0.45s; }
+  .reveal-delay-4 { transition-delay: 0.6s; }
+
+  /* ============================================
+     HEADER / NAV
+     ============================================ */
+  .nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    padding: 18px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.4s ease;
+  }
+  .nav.scrolled {
+    background: rgba(26,60,42,0.95);
+    backdrop-filter: blur(20px);
+    padding: 12px 40px;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.15);
+  }
+  .nav-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #fff;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .nav-logo .icon {
+    font-size: 1.6rem;
+  }
+  .nav-links {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+  }
+  .nav-links a {
+    color: rgba(255,255,255,0.85);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    transition: color 0.3s;
+    position: relative;
+  }
+  .nav-links a:hover { color: var(--gold-light); }
+  .nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--gold);
+    transition: width 0.3s;
+  }
+  .nav-links a:hover::after { width: 100%; }
+  .nav-cta {
+    background: var(--gold);
+    color: var(--forest-deep) !important;
+    padding: 10px 24px;
+    border-radius: 50px;
+    font-weight: 600 !important;
+    transition: all 0.3s !important;
+  }
+  .nav-cta:hover {
+    background: var(--gold-light) !important;
+    transform: scale(1.05);
+  }
+  .nav-cta::after { display: none !important; }
+
+  /* Mobile menu */
+  .burger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    z-index: 1001;
+  }
+  .burger span {
+    width: 26px;
+    height: 2px;
+    background: #fff;
+    transition: all 0.3s;
+    border-radius: 2px;
+  }
+
+  /* ============================================
+     HERO
+     ============================================ */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    overflow: hidden;
+    background:
+      linear-gradient(135deg,
+        var(--forest-deep) 0%,
+        var(--forest) 30%,
+        var(--pine) 60%,
+        #3a6b4f 100%
+      );
+  }
+
+  /* Texture overlay */
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 80%, rgba(200,164,92,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(122,158,126,0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0.15) 0%, transparent 70%);
+    z-index: 1;
+  }
+
+  /* Steam particles */
+  .steam-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60%;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .steam {
+    position: absolute;
+    bottom: -20px;
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: steamRise 4s ease-in infinite;
+  }
+  .steam:nth-child(1) { left: 10%; animation-delay: 0s; animation-duration: 5s; }
+  .steam:nth-child(2) { left: 25%; animation-delay: 1.2s; animation-duration: 4.5s; width: 60px; height: 60px; }
+  .steam:nth-child(3) { left: 45%; animation-delay: 0.5s; animation-duration: 5.5s; width: 100px; height: 100px; }
+  .steam:nth-child(4) { left: 65%; animation-delay: 2s; animation-duration: 4s; }
+  .steam:nth-child(5) { left: 80%; animation-delay: 0.8s; animation-duration: 6s; width: 70px; height: 70px; }
+  .steam:nth-child(6) { left: 35%; animation-delay: 3s; animation-duration: 4.8s; width: 50px; height: 50px; }
+
+  /* Decorative needles */
+  .needle {
+    position: absolute;
+    z-index: 1;
+    font-size: 1.2rem;
+    opacity: 0.15;
+    pointer-events: none;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 800px;
+    padding: 0 24px;
+    animation: fadeUp 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    padding: 8px 20px;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    color: var(--gold-light);
+    margin-bottom: 28px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    font-weight: 900;
+    color: #fff;
+    line-height: 1.1;
+    margin-bottom: 24px;
+    text-shadow: 0 4px 40px rgba(0,0,0,0.3);
+  }
+  .hero h1 .accent {
+    color: var(--gold);
+    position: relative;
+  }
+  .hero h1 .accent::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--gold);
+    opacity: 0.3;
+    border-radius: 2px;
+  }
+
+  .hero-sub {
+    font-size: clamp(1.05rem, 2vw, 1.3rem);
+    color: rgba(255,255,255,0.8);
+    line-height: 1.7;
+    margin-bottom: 40px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    font-weight: 300;
+  }
+
+  .hero-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 36px;
+    border-radius: 60px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    cursor: pointer;
+    border: none;
+    letter-spacing: 0.01em;
+  }
+  .btn-primary {
+    background: var(--gold);
+    color: var(--forest-deep);
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+  .btn-primary:hover {
+    background: var(--gold-light);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(200,164,92,0.35);
+  }
+  .btn-secondary {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    border: 1.5px solid rgba(255,255,255,0.25);
+    backdrop-filter: blur(10px);
+  }
+  .btn-secondary:hover {
+    background: rgba(255,255,255,0.18);
+    border-color: rgba(255,255,255,0.4);
+    transform: translateY(-3px);
+  }
+
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    margin-top: 56px;
+    padding-top: 32px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  .hero-stat {
+    text-align: center;
+  }
+  .hero-stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--gold);
+  }
+  .hero-stat-label {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.6);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    animation: float 3s ease-in-out infinite;
+  }
+  .scroll-hint span {
+    display: block;
+    width: 24px;
+    height: 40px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 12px;
+    position: relative;
+  }
+  .scroll-hint span::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 8px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 2px;
+    animation: fadeUp 1.5s ease-in-out infinite;
+  }
+
+  /* ============================================
+     SECTIONS COMMON
+     ============================================ */
+  section {
+    padding: 100px 24px;
+  }
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--gold);
+    margin-bottom: 16px;
+  }
+  .section-label::before {
+    content: '';
+    display: block;
+    width: 32px;
+    height: 2px;
+    background: var(--gold);
+  }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 20px;
+    color: var(--forest-deep);
+  }
+  .section-desc {
+    font-size: 1.1rem;
+    color: var(--text-light);
+    line-height: 1.7;
+    max-width: 600px;
+  }
+
+  /* ============================================
+     JTBD SECTION — "Зачем вам пихтовый веник?"
+     ============================================ */
+  .jtbd {
+    background: var(--warm);
+  }
+  .jtbd-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 24px;
+    margin-top: 56px;
+  }
+  .jtbd-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 40px 32px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    border: 1px solid rgba(0,0,0,0.04);
+    cursor: default;
+  }
+  .jtbd-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 24px 60px rgba(26,60,42,0.1);
+    border-color: var(--sage);
+  }
+  .jtbd-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--pine), var(--sage));
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .jtbd-card:hover::before { opacity: 1; }
+
+  .jtbd-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    margin-bottom: 24px;
+    background: linear-gradient(135deg, rgba(45,90,63,0.08), rgba(122,158,126,0.12));
+  }
+  .jtbd-when {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--sage);
+    margin-bottom: 10px;
+  }
+  .jtbd-card h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--forest);
+    line-height: 1.3;
+  }
+  .jtbd-card p {
+    color: var(--text-light);
+    line-height: 1.7;
+    font-size: 0.95rem;
+  }
+  .jtbd-result {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 20px;
+    padding: 8px 16px;
+    background: rgba(45,90,63,0.06);
+    border-radius: 50px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--pine);
+  }
+
+  /* ============================================
+     BENEFITS — Горизонтальная лента
+     ============================================ */
+  .benefits {
+    background: var(--forest-deep);
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .benefits::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 10% 90%, rgba(200,164,92,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 90% 10%, rgba(122,158,126,0.08) 0%, transparent 50%);
+  }
+  .benefits .section-title { color: #fff; }
+  .benefits .section-desc { color: rgba(255,255,255,0.6); }
+
+  .benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    margin-top: 56px;
+    position: relative;
+  }
+
+  .benefit-item {
+    padding: 36px 28px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 20px;
+    transition: all 0.4s;
+    position: relative;
+  }
+  .benefit-item:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(200,164,92,0.2);
+    transform: translateY(-4px);
+  }
+  .benefit-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--gold);
+    opacity: 0.2;
+    position: absolute;
+    top: 16px;
+    right: 24px;
+  }
+  .benefit-icon {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    display: block;
+  }
+  .benefit-item h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    color: var(--gold-light);
+  }
+  .benefit-item p {
+    color: rgba(255,255,255,0.6);
+    line-height: 1.7;
+    font-size: 0.92rem;
+  }
+
+  /* ============================================
+     PRODUCT CARDS
+     ============================================ */
+  .products {
+    background: var(--cream);
+  }
+  .products-header {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .products-header .section-label { justify-content: center; }
+  .products-header .section-desc { margin: 0 auto; }
+
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 28px;
+  }
+
+  .product-card {
+    background: #fff;
+    border-radius: 24px;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    border: 1px solid rgba(0,0,0,0.04);
+    position: relative;
+  }
+  .product-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 60px rgba(26,60,42,0.12);
+  }
+  .product-card.popular {
+    border: 2px solid var(--gold);
+  }
+  .product-badge {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: var(--gold);
+    color: var(--forest-deep);
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    z-index: 2;
+  }
+
+  .product-visual {
+    height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .product-visual-bg {
+    position: absolute;
+    inset: 0;
+  }
+  .pv-1 {
+    background: linear-gradient(135deg, #e8f0e4 0%, #d4e4d1 50%, #c5d9bf 100%);
+  }
+  .pv-2 {
+    background: linear-gradient(135deg, #e4ebe8 0%, #c5d9c9 50%, #a8c9ad 100%);
+  }
+  .pv-3 {
+    background: linear-gradient(135deg, #f0ebe4 0%, #e4d9c5 50%, #d9ccb0 100%);
+  }
+
+  .product-emoji {
+    font-size: 6rem;
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 8px 20px rgba(0,0,0,0.1));
+    transition: transform 0.4s;
+  }
+  .product-card:hover .product-emoji {
+    transform: scale(1.1) rotate(-5deg);
+  }
+
+  .product-body {
+    padding: 32px;
+  }
+  .product-body h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--forest);
+    margin-bottom: 8px;
+  }
+  .product-body .desc {
+    color: var(--text-light);
+    font-size: 0.92rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+  .product-features {
+    list-style: none;
+    margin-bottom: 24px;
+  }
+  .product-features li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+  .product-features li .check {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(45,90,63,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    color: var(--pine);
+    flex-shrink: 0;
+  }
+
+  .product-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 20px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+  }
+  .product-price {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--forest);
+  }
+  .product-price small {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--text-light);
+  }
+  .btn-product {
+    padding: 12px 28px;
+    background: var(--forest);
+    color: #fff;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-product:hover {
+    background: var(--pine);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(26,60,42,0.2);
+  }
+
+  /* ============================================
+     PROCESS — "Как мы работаем"
+     ============================================ */
+  .process {
+    background: var(--warm);
+  }
+
+  .process-steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+    margin-top: 56px;
+    position: relative;
+  }
+  .process-steps::before {
+    content: '';
+    position: absolute;
+    top: 40px;
+    left: 60px;
+    right: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--gold) 0%, var(--sage) 50%, var(--gold) 100%);
+    opacity: 0.3;
+  }
+
+  .step {
+    text-align: center;
+    position: relative;
+  }
+  .step-num {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--sage);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--forest);
+    position: relative;
+    z-index: 1;
+    transition: all 0.4s;
+  }
+  .step:hover .step-num {
+    background: var(--forest);
+    color: #fff;
+    border-color: var(--forest);
+    transform: scale(1.1);
+  }
+  .step h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--forest);
+    margin-bottom: 8px;
+  }
+  .step p {
+    font-size: 0.88rem;
+    color: var(--text-light);
+    line-height: 1.6;
+  }
+
+  /* ============================================
+     TESTIMONIALS
+     ============================================ */
+  .testimonials {
+    background: var(--cream);
+  }
+  .testimonials-header {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .testimonials-header .section-label { justify-content: center; }
+  .testimonials-header .section-desc { margin: 0 auto; }
+
+  .testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+  }
+
+  .testimonial-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 36px;
+    position: relative;
+    border: 1px solid rgba(0,0,0,0.04);
+    transition: all 0.4s;
+  }
+  .testimonial-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 48px rgba(26,60,42,0.08);
+  }
+  .testimonial-quote {
+    font-size: 3rem;
+    font-family: 'Playfair Display', serif;
+    color: var(--gold);
+    opacity: 0.3;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .testimonial-text {
+    font-size: 1rem;
+    color: var(--text);
+    line-height: 1.7;
+    margin-bottom: 24px;
+    font-style: italic;
+  }
+  .testimonial-author {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .testimonial-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--sage), var(--pine));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: #fff;
+    font-weight: 700;
+  }
+  .testimonial-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--forest);
+  }
+  .testimonial-role {
+    font-size: 0.82rem;
+    color: var(--text-light);
+  }
+  .testimonial-stars {
+    color: var(--gold);
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+  }
+
+  /* ============================================
+     GEOGRAPHY — Братск
+     ============================================ */
+  .geography {
+    background: var(--forest);
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .geography::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 80% 80%, rgba(200,164,92,0.05) 0%, transparent 40%);
+  }
+  .geo-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+  }
+  .geo-text .section-title { color: #fff; }
+  .geo-text p {
+    color: rgba(255,255,255,0.7);
+    line-height: 1.8;
+    font-size: 1.05rem;
+    margin-bottom: 24px;
+  }
+  .geo-features {
+    list-style: none;
+    display: grid;
+    gap: 16px;
+  }
+  .geo-feature {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 20px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: all 0.3s;
+  }
+  .geo-feature:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(200,164,92,0.15);
+  }
+  .geo-feature-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .geo-feature h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--gold-light);
+    margin-bottom: 4px;
+  }
+  .geo-feature p {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.5);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .geo-visual {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+  }
+  .geo-map-placeholder {
+    width: 100%;
+    aspect-ratio: 4/3;
+    border-radius: 20px;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.08));
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .geo-map-placeholder .coords {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.4);
+    margin-top: 16px;
+    letter-spacing: 0.05em;
+  }
+  .geo-map-pin {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--gold);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  /* ============================================
+     CTA SECTION
+     ============================================ */
+  .cta {
+    background: linear-gradient(135deg, var(--forest-deep) 0%, var(--pine) 100%);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 30% 50%, rgba(200,164,92,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 50%, rgba(122,158,126,0.06) 0%, transparent 50%);
+  }
+  .cta-content {
+    position: relative;
+    z-index: 1;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  .cta .section-label { justify-content: center; color: var(--gold-light); }
+  .cta .section-label::before { background: var(--gold-light); }
+  .cta .section-title { color: #fff; font-size: clamp(2rem, 4vw, 3.2rem); }
+  .cta-desc {
+    color: rgba(255,255,255,0.7);
+    font-size: 1.1rem;
+    line-height: 1.7;
+    margin-bottom: 40px;
+  }
+  .cta-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+
+  .cta-trust {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-top: 40px;
+    padding-top: 32px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .cta-trust-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.5);
+  }
+  .cta-trust-item span {
+    font-size: 1.1rem;
+  }
+
+  /* ============================================
+     FAQ
+     ============================================ */
+  .faq { background: var(--warm); }
+  .faq-header { text-align: center; margin-bottom: 48px; }
+  .faq-header .section-label { justify-content: center; }
+  .faq-header .section-desc { margin: 0 auto; }
+
+  .faq-list {
+    max-width: 760px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .faq-item {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid rgba(0,0,0,0.04);
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+  .faq-item:hover {
+    border-color: var(--sage);
+  }
+  .faq-question {
+    width: 100%;
+    text-align: left;
+    padding: 22px 28px;
+    background: none;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--forest);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    font-family: 'Inter', sans-serif;
+  }
+  .faq-question .arrow {
+    font-size: 1.2rem;
+    color: var(--sage);
+    transition: transform 0.3s;
+    flex-shrink: 0;
+  }
+  .faq-item.open .faq-question .arrow {
+    transform: rotate(180deg);
+  }
+  .faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .faq-item.open .faq-answer {
+    max-height: 300px;
+  }
+  .faq-answer-inner {
+    padding: 0 28px 22px;
+    color: var(--text-light);
+    line-height: 1.7;
+    font-size: 0.95rem;
+  }
+
+  /* ============================================
+     FOOTER
+     ============================================ */
+  footer {
+    background: var(--forest-deep);
+    color: #fff;
+    padding: 64px 24px 32px;
+  }
+  .footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 40px;
+    margin-bottom: 48px;
+  }
+  .footer-brand .nav-logo {
+    margin-bottom: 16px;
+    font-size: 1.2rem;
+  }
+  .footer-brand p {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.88rem;
+    line-height: 1.6;
+    max-width: 280px;
+  }
+  .footer-col h4 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    margin-bottom: 16px;
+    color: var(--gold-light);
+  }
+  .footer-col ul {
+    list-style: none;
+  }
+  .footer-col li {
+    margin-bottom: 10px;
+  }
+  .footer-col a {
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    font-size: 0.88rem;
+    transition: color 0.3s;
+  }
+  .footer-col a:hover { color: var(--gold-light); }
+
+  .footer-bottom {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.35);
+  }
+  .footer-social {
+    display: flex;
+    gap: 12px;
+  }
+  .footer-social a {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.5);
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: all 0.3s;
+  }
+  .footer-social a:hover {
+    background: var(--gold);
+    color: var(--forest-deep);
+  }
+
+  /* ============================================
+     FLOATING WHATSAPP BUTTON
+     ============================================ */
+  .whatsapp-float {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 999;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #25D366;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    color: #fff;
+    text-decoration: none;
+    box-shadow: 0 4px 20px rgba(37,211,102,0.35);
+    transition: all 0.3s;
+    animation: pulse 3s ease-in-out infinite;
+  }
+  .whatsapp-float:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 28px rgba(37,211,102,0.45);
+  }
+
+  /* ============================================
+     RESPONSIVE
+     ============================================ */
+  @media (max-width: 1024px) {
+    .benefits-grid { grid-template-columns: repeat(2, 1fr); }
+    .process-steps { grid-template-columns: repeat(2, 1fr); gap: 40px; }
+    .process-steps::before { display: none; }
+    .geo-content { grid-template-columns: 1fr; gap: 40px; }
+    .footer-content { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 768px) {
+    .nav-links { display: none; }
+    .burger { display: flex; }
+    .nav-links.open {
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      inset: 0;
+      background: var(--forest-deep);
+      justify-content: center;
+      align-items: center;
+      gap: 28px;
+      z-index: 1000;
+    }
+    .nav-links.open a { font-size: 1.3rem; }
+
+    section { padding: 64px 20px; }
+
+    .hero-stats { gap: 24px; flex-wrap: wrap; }
+    .hero-stat-num { font-size: 1.5rem; }
+
+    .jtbd-grid { grid-template-columns: 1fr; }
+    .benefits-grid { grid-template-columns: 1fr; }
+    .products-grid { grid-template-columns: 1fr; }
+    .process-steps { grid-template-columns: 1fr; }
+    .testimonials-grid { grid-template-columns: 1fr; }
+
+    .cta-trust { flex-direction: column; align-items: center; gap: 16px; }
+    .footer-content { grid-template-columns: 1fr; gap: 28px; }
+    .footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
+  }
+
+  @media (max-width: 480px) {
+    .hero h1 { font-size: 2.2rem; }
+    .hero-buttons { flex-direction: column; align-items: center; }
+    .btn { width: 100%; justify-content: center; }
+    .product-footer { flex-direction: column; gap: 16px; align-items: flex-start; }
+    .btn-product { width: 100%; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="nav" id="navbar">
+  <a href="#" class="nav-logo">
+    <span class="icon">🌲</span>
+    ТайгаВеник
+  </a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#jtbd">Зачем?</a></li>
+    <li><a href="#benefits">Польза</a></li>
+    <li><a href="#products">Каталог</a></li>
+    <li><a href="#process">Доставка</a></li>
+    <li><a href="#reviews">Отзывы</a></li>
+    <li><a href="#order" class="nav-cta">Заказать</a></li>
+  </ul>
+  <div class="burger" id="burger" onclick="toggleMenu()">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="steam-container">
+    <div class="steam"></div>
+    <div class="steam"></div>
+    <div class="steam"></div>
+    <div class="steam"></div>
+    <div class="steam"></div>
+    <div class="steam"></div>
+  </div>
+
+  <div class="hero-content">
+    <div class="hero-badge">
+      🌲 Братск &middot; Сибирская тайга
+    </div>
+    <h1>
+      Пихтовые веники<br>
+      <span class="accent">прямо из тайги</span>
+    </h1>
+    <p class="hero-sub">
+      Свежесрезанные веники из сибирской пихты. Собраны вручную в экологически
+      чистых лесах Братского района — и доставлены к вашей бане за 24&nbsp;часа.
+    </p>
+    <div class="hero-buttons">
+      <a href="#products" class="btn btn-primary">Выбрать веник</a>
+      <a href="#jtbd" class="btn btn-secondary">Узнать больше</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-num">2 500+</div>
+        <div class="hero-stat-label">Веников в сезон</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">12 лет</div>
+        <div class="hero-stat-label">Опыт заготовки</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">4.9</div>
+        <div class="hero-stat-label">Средняя оценка</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">24ч</div>
+        <div class="hero-stat-label">Доставка по городу</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-hint">
+    <span></span>
+  </div>
+</section>
+
+<!-- JTBD Section -->
+<section class="jtbd" id="jtbd">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-label">Сценарии использования</span>
+      <h2 class="section-title">Когда нужен пихтовый веник?</h2>
+      <p class="section-desc">У каждого свой путь к пихтовому венику. Мы знаем, зачем вы&nbsp;здесь.</p>
+    </div>
+
+    <div class="jtbd-grid">
+      <!-- Card 1 -->
+      <div class="jtbd-card reveal reveal-delay-1">
+        <div class="jtbd-icon">🧖</div>
+        <div class="jtbd-when">Когда хочется...</div>
+        <h3>Сбросить напряжение после тяжёлой недели</h3>
+        <p>Вы работаете на БЛПК, на стройке или за компьютером. К пятнице тело каменное, голова гудит. Вам нужен не просто «попариться» — а настоящая перезагрузка с ароматом хвои.</p>
+        <div class="jtbd-result">✓ Полное расслабление за 1 банный сеанс</div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="jtbd-card reveal reveal-delay-2">
+        <div class="jtbd-icon">💪</div>
+        <div class="jtbd-when">Когда хочется...</div>
+        <h3>Укрепить здоровье без таблеток</h3>
+        <p>Сибирская зима бьёт по иммунитету. Вместо аптечной химии — фитонциды пихты: природный антисептик, который прочищает лёгкие и убивает микробы. Наши деды знали, что делали.</p>
+        <div class="jtbd-result">✓ Профилактика простуды каждую неделю</div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="jtbd-card reveal reveal-delay-3">
+        <div class="jtbd-icon">🎁</div>
+        <div class="jtbd-when">Когда хочется...</div>
+        <h3>Подарить что-то настоящее</h3>
+        <p>Надоели банальные подарки. Друг / отец / коллега любит баню? Набор свежих пихтовых веников из тайги — это подарок, который запомнится. Особенно с пихтовым маслом в комплекте.</p>
+        <div class="jtbd-result">✓ Подарок, который реально используют</div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="jtbd-card reveal reveal-delay-4">
+        <div class="jtbd-icon">🏡</div>
+        <div class="jtbd-when">Когда хочется...</div>
+        <h3>Наконец обновить запас веников</h3>
+        <p>Старые веники высохли и осыпались. Ехать в лес самому — нет времени. Вам нужен надёжный поставщик: свежие, правильно связанные, с доставкой прямо к бане.</p>
+        <div class="jtbd-result">✓ Свежий запас без лишних хлопот</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Benefits -->
+<section class="benefits" id="benefits">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-label">Почему пихта</span>
+      <h2 class="section-title">6 причин выбрать пихтовый веник</h2>
+      <p class="section-desc">Пихта — королева сибирских банных традиций. Вот что она даёт.</p>
+    </div>
+
+    <div class="benefits-grid">
+      <div class="benefit-item reveal reveal-delay-1">
+        <span class="benefit-num">01</span>
+        <span class="benefit-icon">🫁</span>
+        <h3>Очищает дыхание</h3>
+        <p>Фитонциды пихты — природный ингалятор. Раскрывает бронхи, помогает при кашле и заложенности. Одна парка = часовая ингаляция.</p>
+      </div>
+      <div class="benefit-item reveal reveal-delay-2">
+        <span class="benefit-num">02</span>
+        <span class="benefit-icon">🦠</span>
+        <h3>Убивает микробы</h3>
+        <p>Пихтовая смола — мощный антисептик. Дезинфицирует кожу, очищает поры, убивает бактерии. Без химии, без побочных эффектов.</p>
+      </div>
+      <div class="benefit-item reveal reveal-delay-3">
+        <span class="benefit-num">03</span>
+        <span class="benefit-icon">😌</span>
+        <h3>Снимает стресс</h3>
+        <p>Аромат пихты воздействует на нервную систему. Снижает уровень кортизола, нормализует сон. После парки — как заново родился.</p>
+      </div>
+      <div class="benefit-item reveal reveal-delay-1">
+        <span class="benefit-num">04</span>
+        <span class="benefit-icon">🩹</span>
+        <h3>Лечит суставы</h3>
+        <p>Эфирные масла проникают через разогретую кожу. Снимают боль в спине и суставах — актуально для сибирского климата.</p>
+      </div>
+      <div class="benefit-item reveal reveal-delay-2">
+        <span class="benefit-num">05</span>
+        <span class="benefit-icon">🌿</span>
+        <h3>Мягче берёзы</h3>
+        <p>Пихтовые иголки плоские и мягкие — не колются и не царапают. Идеально для чувствительной кожи и первого знакомства с веником.</p>
+      </div>
+      <div class="benefit-item reveal reveal-delay-3">
+        <span class="benefit-num">06</span>
+        <span class="benefit-icon">🎄</span>
+        <h3>Невероятный аромат</h3>
+        <p>Запах свежей пихты в горячей парной — это отдельный уровень удовольствия. Ни один ароматизатор даже близко не стоит.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Products -->
+<section class="products" id="products">
+  <div class="container">
+    <div class="products-header reveal">
+      <span class="section-label">Каталог</span>
+      <h2 class="section-title">Выберите свой веник</h2>
+      <p class="section-desc">Каждый веник собран вручную в тайге Братского района и доставлен в течение 24 часов.</p>
+    </div>
+
+    <div class="products-grid">
+      <!-- Product 1 -->
+      <div class="product-card reveal reveal-delay-1">
+        <div class="product-visual">
+          <div class="product-visual-bg pv-1"></div>
+          <div class="product-emoji">🌲</div>
+        </div>
+        <div class="product-body">
+          <h3>Пихтовый классика</h3>
+          <p class="desc">Стандартный веник из молодых пихтовых веток. Универсальный вариант для еженедельной бани.</p>
+          <ul class="product-features">
+            <li><span class="check">✓</span> Длина 50-55 см</li>
+            <li><span class="check">✓</span> Свежесрезанный (до 48ч)</li>
+            <li><span class="check">✓</span> Ручная перевязка джутом</li>
+          </ul>
+          <div class="product-footer">
+            <div class="product-price">350 ₽ <small>/ шт</small></div>
+            <button class="btn-product" onclick="scrollToOrder()">Заказать</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Product 2 -->
+      <div class="product-card popular reveal reveal-delay-2">
+        <div class="product-badge">Хит продаж</div>
+        <div class="product-visual">
+          <div class="product-visual-bg pv-2"></div>
+          <div class="product-emoji">🌲🌲</div>
+        </div>
+        <div class="product-body">
+          <h3>Пихтовый королевский</h3>
+          <p class="desc">Большой пышный веник из отборных веток. Максимум аромата и хвойной силы на 2-3 парки.</p>
+          <ul class="product-features">
+            <li><span class="check">✓</span> Длина 60-65 см, двойная густота</li>
+            <li><span class="check">✓</span> Молодые верхушечные ветки</li>
+            <li><span class="check">✓</span> Перевязка + хлопковая ручка</li>
+            <li><span class="check">✓</span> Пакет для хранения в подарок</li>
+          </ul>
+          <div class="product-footer">
+            <div class="product-price">550 ₽ <small>/ шт</small></div>
+            <button class="btn-product" onclick="scrollToOrder()">Заказать</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Product 3 -->
+      <div class="product-card reveal reveal-delay-3">
+        <div class="product-visual">
+          <div class="product-visual-bg pv-3"></div>
+          <div class="product-emoji">🎁</div>
+        </div>
+        <div class="product-body">
+          <h3>Набор «Сибирский ритуал»</h3>
+          <p class="desc">Подарочный набор: 3 королевских веника + пихтовое масло 30мл + запарник из кедра.</p>
+          <ul class="product-features">
+            <li><span class="check">✓</span> 3 королевских веника</li>
+            <li><span class="check">✓</span> Пихтовое масло (Братск) 30мл</li>
+            <li><span class="check">✓</span> Кедровый запарник</li>
+            <li><span class="check">✓</span> Крафт-упаковка с биркой</li>
+          </ul>
+          <div class="product-footer">
+            <div class="product-price">2 200 ₽ <small>/ набор</small></div>
+            <button class="btn-product" onclick="scrollToOrder()">Заказать</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Process -->
+<section class="process" id="process">
+  <div class="container">
+    <div style="text-align:center;" class="reveal">
+      <span class="section-label" style="justify-content:center;">Доставка</span>
+      <h2 class="section-title">Из тайги — к вашей бане</h2>
+      <p class="section-desc" style="margin:0 auto;">4 простых шага от заказа до парки. Всё берём на себя.</p>
+    </div>
+
+    <div class="process-steps">
+      <div class="step reveal reveal-delay-1">
+        <div class="step-num">1</div>
+        <h3>Заказ</h3>
+        <p>Пишете в WhatsApp или звоните. Выбираете веники, количество, дату.</p>
+      </div>
+      <div class="step reveal reveal-delay-2">
+        <div class="step-num">2</div>
+        <h3>Заготовка</h3>
+        <p>Едем в тайгу и режем свежие ветки. Каждый веник вяжем вручную в тот же день.</p>
+      </div>
+      <div class="step reveal reveal-delay-3">
+        <div class="step-num">3</div>
+        <h3>Доставка</h3>
+        <p>Привозим к двери за 24 часа по Братску. Пригороды — по договорённости.</p>
+      </div>
+      <div class="step reveal reveal-delay-4">
+        <div class="step-num">4</div>
+        <h3>Парка!</h3>
+        <p>Запариваете 5 минут в горячей воде — и наслаждаетесь настоящей сибирской баней.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Testimonials -->
+<section class="testimonials" id="reviews">
+  <div class="container">
+    <div class="testimonials-header reveal">
+      <span class="section-label">Отзывы</span>
+      <h2 class="section-title">Что говорят наши клиенты</h2>
+      <p class="section-desc">Реальные отзывы жителей Братска и области.</p>
+    </div>
+
+    <div class="testimonials-grid">
+      <div class="testimonial-card reveal reveal-delay-1">
+        <div class="testimonial-quote">"</div>
+        <p class="testimonial-text">Заказываю уже второй год. Веники всегда свежие, ароматные. Жена говорит, что после парки я как другой человек — спокойный и добрый. Рекомендую всем мужикам!</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">А</div>
+          <div>
+            <div class="testimonial-name">Алексей К.</div>
+            <div class="testimonial-role">Энергетик, БЛПК</div>
+            <div class="testimonial-stars">★★★★★</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="testimonial-card reveal reveal-delay-2">
+        <div class="testimonial-quote">"</div>
+        <p class="testimonial-text">Брала набор «Сибирский ритуал» мужу на 23 февраля. Он был в восторге! Особенно масло понравилось — добавляет в горячую воду и дышит. Теперь буду брать регулярно.</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">М</div>
+          <div>
+            <div class="testimonial-name">Марина С.</div>
+            <div class="testimonial-role">Домохозяйка, Братск</div>
+            <div class="testimonial-stars">★★★★★</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="testimonial-card reveal reveal-delay-3">
+        <div class="testimonial-quote">"</div>
+        <p class="testimonial-text">Перепробовал все — берёзовые, дубовые, эвкалиптовые. Пихта — это космос. Мягкая, не царапает, аромат на всю парную. И суставы после неё прямо отпускает.</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">В</div>
+          <div>
+            <div class="testimonial-name">Виктор П.</div>
+            <div class="testimonial-role">Строитель, стаж бани 20 лет</div>
+            <div class="testimonial-stars">★★★★★</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Geography -->
+<section class="geography" id="bratsk">
+  <div class="container">
+    <div class="geo-content">
+      <div class="geo-text reveal">
+        <span class="section-label">Братск, Иркутская область</span>
+        <h2 class="section-title">Наша тайга — наше преимущество</h2>
+        <p>Братск окружён миллионами гектаров нетронутой тайги. Наши пихты растут далеко от дорог и промзон — в экологически чистых лесах вдоль Братского водохранилища.</p>
+
+        <ul class="geo-features">
+          <li class="geo-feature">
+            <span class="geo-feature-icon">🏔️</span>
+            <div>
+              <h4>Чистая экология</h4>
+              <p>Заготовка в 40+ км от города, в глубокой тайге</p>
+            </div>
+          </li>
+          <li class="geo-feature">
+            <span class="geo-feature-icon">❄️</span>
+            <div>
+              <h4>Сибирская закалка</h4>
+              <p>Пихта при -40°C набирает максимум эфирных масел</p>
+            </div>
+          </li>
+          <li class="geo-feature">
+            <span class="geo-feature-icon">🌊</span>
+            <div>
+              <h4>Братское море</h4>
+              <p>Влажность от водохранилища делает хвою особенно мягкой</p>
+            </div>
+          </li>
+          <li class="geo-feature">
+            <span class="geo-feature-icon">👨‍🌾</span>
+            <div>
+              <h4>Семейное дело</h4>
+              <p>Заготовители в третьем поколении — знаем каждую делянку</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="geo-visual reveal reveal-delay-2">
+        <div class="geo-map-placeholder">
+          🗺️
+          <div class="geo-map-pin" style="top:45%;left:55%;"></div>
+          <div class="coords">56°07′ N, 101°36′ E</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta" id="order">
+  <div class="container">
+    <div class="cta-content reveal">
+      <span class="section-label">Готовы к настоящей парке?</span>
+      <h2 class="section-title">Закажите пихтовые веники прямо сейчас</h2>
+      <p class="cta-desc">Оставьте заявку — мы свяжемся в течение 30 минут. Доставка по Братску бесплатно от 3 штук.</p>
+
+      <div class="cta-buttons">
+        <a href="https://wa.me/79001234567?text=%D0%97%D0%B4%D1%80%D0%B0%D0%B2%D1%81%D1%82%D0%B2%D1%83%D0%B9%D1%82%D0%B5!%20%D0%A5%D0%BE%D1%87%D1%83%20%D0%B7%D0%B0%D0%BA%D0%B0%D0%B7%D0%B0%D1%82%D1%8C%20%D0%BF%D0%B8%D1%85%D1%82%D0%BE%D0%B2%D1%8B%D0%B5%20%D0%B2%D0%B5%D0%BD%D0%B8%D0%BA%D0%B8" class="btn btn-primary" target="_blank">
+          📱 Написать в WhatsApp
+        </a>
+        <a href="tel:+79001234567" class="btn btn-secondary" style="border-color:rgba(255,255,255,0.3);color:#fff;">
+          📞 Позвонить
+        </a>
+      </div>
+
+      <div class="cta-trust">
+        <div class="cta-trust-item"><span>🚚</span> Бесплатная доставка от 3 шт</div>
+        <div class="cta-trust-item"><span>⏰</span> Доставка за 24 часа</div>
+        <div class="cta-trust-item"><span>💯</span> Гарантия свежести</div>
+        <div class="cta-trust-item"><span>🔄</span> Замена при браке</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq" id="faq">
+  <div class="container">
+    <div class="faq-header reveal">
+      <span class="section-label">Вопросы</span>
+      <h2 class="section-title">Часто задаваемые вопросы</h2>
+      <p class="section-desc">Всё, что нужно знать о пихтовых вениках.</p>
+    </div>
+
+    <div class="faq-list">
+      <div class="faq-item reveal">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          Как запарить пихтовый веник?
+          <span class="arrow">▼</span>
+        </button>
+        <div class="faq-answer">
+          <div class="faq-answer-inner">
+            Залейте веник горячей водой (70-80°C) на 5-10 минут. Не кипятком! Иголки станут мягкими, а аромат раскроется. Воду из запарника можно плеснуть на камни — аромат заполнит всю парную.
+          </div>
+        </div>
+      </div>
+
+      <div class="faq-item reveal reveal-delay-1">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          Сколько раз можно использовать один веник?
+          <span class="arrow">▼</span>
+        </button>
+        <div class="faq-answer">
+          <div class="faq-answer-inner">
+            Классический — 1-2 парки. Королевский — 2-3 парки. После использования сполосните и повесьте сушиться. Аромат при повторном запаривании будет менее интенсивным, но целебные свойства сохраняются.
+          </div>
+        </div>
+      </div>
+
+      <div class="faq-item reveal reveal-delay-2">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          Можно ли заказать зимой?
+          <span class="arrow">▼</span>
+        </button>
+        <div class="faq-answer">
+          <div class="faq-answer-inner">
+            Да! Зимняя пихта даже лучше — в морозы дерево накапливает максимум эфирных масел. Мы заготавливаем круглый год. Зимние веники считаются самыми ароматными.
+          </div>
+        </div>
+      </div>
+
+      <div class="faq-item reveal reveal-delay-3">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          Есть доставка за пределы Братска?
+          <span class="arrow">▼</span>
+        </button>
+        <div class="faq-answer">
+          <div class="faq-answer-inner">
+            По Братску — бесплатно от 3 штук. Энергетик, Падун, Гидростроитель, Центральный — все районы. Пригород (до 30 км) — 200 ₽. Отправка по области — обсуждаем индивидуально.
+          </div>
+        </div>
+      </div>
+
+      <div class="faq-item reveal reveal-delay-4">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          Пихта не колется? У меня чувствительная кожа.
+          <span class="arrow">▼</span>
+        </button>
+        <div class="faq-answer">
+          <div class="faq-answer-inner">
+            Нет! В отличие от ели, иголки пихты плоские и мягкие. После запаривания они становятся ещё нежнее. Пихтовый веник — лучший выбор для людей с чувствительной кожей и для тех, кто только начинает знакомство с банными вениками.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-content">
+    <div class="footer-brand">
+      <a href="#" class="nav-logo">
+        <span class="icon">🌲</span>
+        ТайгаВеник
+      </a>
+      <p>Свежие пихтовые веники из сибирской тайги. Братск, Иркутская область. Заготовка и доставка круглый год.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Каталог</h4>
+      <ul>
+        <li><a href="#products">Классический</a></li>
+        <li><a href="#products">Королевский</a></li>
+        <li><a href="#products">Набор «Ритуал»</a></li>
+        <li><a href="#products">Пихтовое масло</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Информация</h4>
+      <ul>
+        <li><a href="#benefits">Польза пихты</a></li>
+        <li><a href="#process">Доставка</a></li>
+        <li><a href="#faq">Вопросы</a></li>
+        <li><a href="#reviews">Отзывы</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Контакты</h4>
+      <ul>
+        <li><a href="tel:+79001234567">+7 (900) 123-45-67</a></li>
+        <li><a href="https://wa.me/79001234567" target="_blank">WhatsApp</a></li>
+        <li><a href="#">г. Братск</a></li>
+        <li><a href="#">Ежедневно 8:00–20:00</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>&copy; 2026 ТайгаВеник. Все права защищены.</span>
+    <div class="footer-social">
+      <a href="#" title="WhatsApp">💬</a>
+      <a href="#" title="VK">🔵</a>
+      <a href="#" title="Telegram">✈️</a>
+    </div>
+  </div>
+</footer>
+
+<!-- WhatsApp Float -->
+<a href="https://wa.me/79001234567?text=%D0%97%D0%B4%D1%80%D0%B0%D0%B2%D1%81%D1%82%D0%B2%D1%83%D0%B9%D1%82%D0%B5!%20%D0%A5%D0%BE%D1%87%D1%83%20%D0%B7%D0%B0%D0%BA%D0%B0%D0%B7%D0%B0%D1%82%D1%8C%20%D0%BF%D0%B8%D1%85%D1%82%D0%BE%D0%B2%D1%8B%D0%B5%20%D0%B2%D0%B5%D0%BD%D0%B8%D0%BA%D0%B8" class="whatsapp-float" target="_blank" title="Написать в WhatsApp">
+  💬
+</a>
+
+<script>
+  // Scroll-based nav styling
+  const navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    navbar.classList.toggle('scrolled', window.scrollY > 60);
+  });
+
+  // Mobile menu
+  function toggleMenu() {
+    document.getElementById('navLinks').classList.toggle('open');
+  }
+
+  // Intersection Observer for reveal animations
+  const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -40px 0px'
+  };
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, observerOptions);
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // FAQ toggle
+  function toggleFaq(btn) {
+    const item = btn.parentElement;
+    const wasOpen = item.classList.contains('open');
+    // Close all
+    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+    // Toggle current
+    if (!wasOpen) item.classList.add('open');
+  }
+
+  // Scroll to order
+  function scrollToOrder() {
+    document.getElementById('order').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // Close mobile menu on link click
+  document.querySelectorAll('.nav-links a').forEach(link => {
+    link.addEventListener('click', () => {
+      document.getElementById('navLinks').classList.remove('open');
+    });
+  });
+
+  // Smooth scroll for anchor links
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+  // Add random needles to hero for decoration
+  const hero = document.querySelector('.hero');
+  const needleSymbols = ['🍃', '✦', '·'];
+  for (let i = 0; i < 15; i++) {
+    const needle = document.createElement('div');
+    needle.className = 'needle';
+    needle.textContent = needleSymbols[Math.floor(Math.random() * needleSymbols.length)];
+    needle.style.left = Math.random() * 100 + '%';
+    needle.style.top = Math.random() * 100 + '%';
+    needle.style.fontSize = (0.5 + Math.random() * 1.5) + 'rem';
+    needle.style.animationDelay = Math.random() * 5 + 's';
+    hero.appendChild(needle);
+  }
+
+  // Counter animation for hero stats
+  function animateCounter(el, target, suffix = '') {
+    const duration = 2000;
+    const start = performance.now();
+    const startVal = 0;
+
+    function update(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.floor(startVal + (target - startVal) * eased);
+      el.textContent = current.toLocaleString('ru-RU') + suffix;
+      if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+  }
+
+  // Observe hero stats
+  const statsObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const nums = entry.target.querySelectorAll('.hero-stat-num');
+        const data = [
+          { target: 2500, suffix: '+' },
+          { target: 12, suffix: ' лет' },
+          { target: 4.9, suffix: '' },
+          { target: 24, suffix: 'ч' }
+        ];
+        nums.forEach((num, i) => {
+          if (data[i].target === 4.9) {
+            // Special handling for decimal
+            const duration = 2000;
+            const start = performance.now();
+            function update(now) {
+              const progress = Math.min((now - start) / duration, 1);
+              const eased = 1 - Math.pow(1 - progress, 3);
+              num.textContent = (eased * 4.9).toFixed(1);
+              if (progress < 1) requestAnimationFrame(update);
+            }
+            requestAnimationFrame(update);
+          } else {
+            animateCounter(num, data[i].target, data[i].suffix);
+          }
+        });
+        statsObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  const heroStats = document.querySelector('.hero-stats');
+  if (heroStats) statsObserver.observe(heroStats);
+</script>
+
+</body>
+</html>

@@ -70,7 +70,15 @@
       "status": "pending"
     },
     "nb_last": {
-      "attempts": [],
+      "attempts": [
+        {
+          "attempt": 1,
+          "prompt": "First, the exact character in a red-and-white striped shirt and red cap from Image 3, preserving identical facial features and proportions, stands at the base of the water tower, neck craned all the way back looking up, expression of comedic dread mixed with reluctant bravery. Then, the exact character in a grey hoodie from Image 1, preserving identical facial features, stands beside, looking at the rusty ladder, assessing it practically. Then, the exact character in a black hoodie from Image 2, preserving identical facial features, examines the lower section where rungs are missing. Base of a brick water tower, rusty metal ladder with missing lower rungs. Use Image 4 as the exact background location. Medium shot, dramatic low angle looking up the tower. Morning light, the tower looming above. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic. Maintain exact visual continuity with Image 5.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
+        }
+      ],
       "selected_variant_a": null,
       "selected_variant_b": null,
       "status": "pending"

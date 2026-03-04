@@ -10,7 +10,12 @@
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-PYTHON="$PROJECT_DIR/venv/bin/python3"
+# Use /tmp venv if available (avoids iCloud-evicted main venv)
+if [ -x "/tmp/pw_venv/bin/python3" ]; then
+    PYTHON="/tmp/pw_venv/bin/python3"
+else
+    PYTHON="$PROJECT_DIR/venv/bin/python3"
+fi
 BOT="$SCRIPT_DIR/flow_bot_v2.py"
 TIMEOUT="${FLOW_TIMEOUT:-1200}"
 

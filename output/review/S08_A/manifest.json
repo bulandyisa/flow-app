@@ -9,6 +9,13 @@
           "variants": [],
           "best_variant": null,
           "best_avg": null
+        },
+        {
+          "attempt": 2,
+          "prompt": "First, the exact character in a grey hoodie from Image 1, preserving identical facial features and proportions, crouches behind a low wall on a wasteland, peering cautiously at a warehouse building ahead, whispering to stop, expression tense and alert. Then, the exact character in a black hoodie from Image 2, preserving identical facial features, crouches beside, eyes scanning the scene. Then, the exact character in a red-and-white striped shirt and red cap from Image 3, preserving identical facial features, presses against the wall, peeking over with wide frightened eyes. Use Image 4 as the exact background location. Medium-wide shot, eye-level from behind the wall. Harsh late afternoon light, industrial outskirts atmosphere. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.",
+          "variants": [],
+          "best_variant": null,
+          "best_avg": null
         }
       ],
       "selected_variant_a": null,
