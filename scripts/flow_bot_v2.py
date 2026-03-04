@@ -26,6 +26,8 @@ import time
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
+import r2_storage
+
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
@@ -2051,6 +2053,7 @@ def download_via_fetch(page, url, save_path, retries=2, min_size=1024):
         save_path.parent.mkdir(parents=True, exist_ok=True)
         save_path.write_bytes(data)
         print(f'  Saved: {save_path.name} ({len(data)} bytes, type={result.get("type","")})')
+        _r2_sync_upload(save_path)
         return True
     print(f'    Failed to download after {retries} attempts')
     return False
@@ -2255,31 +2258,53 @@ def download_all_videos(page, dest_dir, expected_count=4):
 
 # ── Manifest (review state) ─────────────────────────────────────────────────
 
+def _r2_key(local_path):
+    """Convert local path to R2 key relative to PROJECT_ROOT."""
+    try:
+        return str(Path(local_path).relative_to(PROJECT_ROOT))
+    except ValueError:
+        return str(local_path)
+
+
+def _r2_sync_upload(local_path):
+    """Upload a local file to R2 (non-blocking, best-effort)."""
+    if r2_storage.is_configured():
+        r2_storage.upload_file(local_path, _r2_key(local_path))
+
+
 def load_manifest(clip_id):
-    path = REVIEW_DIR / clip_id / 'manifest.json'
-    if path.exists():
-        with open(path) as f:
-            m = json.load(f)
-        for c in ('nb_first','nb_mid','nb_last','veo'):
-            comp = m['components'].get(c, {})
-            # Migration: selected_variant → selected_variant_a
-            if 'selected_variant' in comp and comp['selected_variant'] is not None:
-                if not comp.get('selected_variant_a'):
-                    comp['selected_variant_a'] = comp['selected_variant']
-                del comp['selected_variant']
-            comp.setdefault('selected_variant_a', None)
-            comp.setdefault('selected_variant_b', None)
-            m['components'][c] = comp
-        if 'nb_mid' not in m['components']:
-            m['components']['nb_mid'] = {'attempts':[], 'selected_variant_a':None, 'selected_variant_b':None, 'status':'pending'}
-        return m
-    return {
+    default = {
         'clip_id': clip_id,
         'components': {
             c: {'attempts':[], 'selected_variant_a':None, 'selected_variant_b':None, 'status':'pending'}
             for c in ('nb_first','nb_mid','nb_last','veo')
         }
     }
+    # Try R2 first (source of truth), then local fallback
+    m = None
+    if r2_storage.is_configured():
+        r2_key = _r2_key(REVIEW_DIR / clip_id / 'manifest.json')
+        m = r2_storage.read_json(r2_key)
+    if m is None:
+        path = REVIEW_DIR / clip_id / 'manifest.json'
+        if path.exists():
+            with open(path) as f:
+                m = json.load(f)
+    if m is None:
+        return default
+    for c in ('nb_first','nb_mid','nb_last','veo'):
+        comp = m['components'].get(c, {})
+        # Migration: selected_variant → selected_variant_a
+        if 'selected_variant' in comp and comp['selected_variant'] is not None:
+            if not comp.get('selected_variant_a'):
+                comp['selected_variant_a'] = comp['selected_variant']
+            del comp['selected_variant']
+        comp.setdefault('selected_variant_a', None)
+        comp.setdefault('selected_variant_b', None)
+        m['components'][c] = comp
+    if 'nb_mid' not in m['components']:
+        m['components']['nb_mid'] = {'attempts':[], 'selected_variant_a':None, 'selected_variant_b':None, 'status':'pending'}
+    return m
 
 
 def save_manifest(clip_id, manifest):
@@ -2287,6 +2312,9 @@ def save_manifest(clip_id, manifest):
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, 'w') as f:
         json.dump(manifest, f, indent=2, ensure_ascii=False)
+    # Sync to R2
+    if r2_storage.is_configured():
+        r2_storage.write_json(_r2_key(path), manifest)
 
 
 def get_next_attempt(manifest, component):
@@ -2350,6 +2378,7 @@ def copy_selected_to_output(clip_id, manifest, trim_start=None, trim_end=None):
                     FRAMES_DIR.mkdir(parents=True, exist_ok=True)
                     dest = FRAMES_DIR / f'{clip_id}_{suffix}{ext}.png'
                     shutil.copy2(src, dest)
+                    _r2_sync_upload(dest)
                     print(f'  Copied → {dest.name}')
         elif comp_name == 'veo':
             sel = comp.get('selected_variant_a')
@@ -2366,6 +2395,7 @@ def copy_selected_to_output(clip_id, manifest, trim_start=None, trim_end=None):
                                    capture_output=True)
                 else:
                     shutil.copy2(src, dest)
+                _r2_sync_upload(dest)
                 print(f'  Copied → {dest.name}')
 
 
@@ -3060,6 +3090,12 @@ def find_scene_ref(current_clip_id):
     if not prev_clip_id: return None
     frame = FRAMES_DIR / f'{prev_clip_id}_last.png'
     if frame.exists(): return frame
+    # Try downloading from R2 (dashboard may have accepted it)
+    if r2_storage.is_configured():
+        r2_key = _r2_key(frame)
+        if r2_storage.download_file(r2_key, frame):
+            print(f'    Downloaded ref from R2: {frame.name}')
+            return frame
     return None
 
 
@@ -3613,6 +3649,8 @@ def do_chain(pw, scenes_filter=None, use_builtin_chromium=False):
                     variants = review_nano_banana(page, clip, manifest, component, attempt,
                                                   first_frame_ref=first_frame_ref)
                     if variants:
+                        manifest['components'][component]['status'] = 'generated'
+                        save_manifest(cid, manifest)
                         summary['generated'].append(f'{cid}/{component}/a{attempt}')
                         total_generated += 1
                         progress_this_pass += 1

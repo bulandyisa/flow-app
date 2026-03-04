@@ -6,11 +6,16 @@ v3.0 — interactive review page with phase workflow
 
 import json
 import os
+import sys
 import shutil
 from datetime import datetime
 from pathlib import Path
 
 import streamlit as st
+
+# Add scripts/ to path for r2_storage import
+sys.path.insert(0, str(Path(__file__).parent / "scripts"))
+import r2_storage
 
 # ---------------------------------------------------------------------------
 # Config
@@ -159,6 +164,24 @@ COMMANDS_FILE = BASE_DIR / "output" / "commands.json"
 SCENE_COLORS: dict = {}
 SCENE_LABELS: dict = {}
 CHAR_DISPLAY: dict = {}
+
+# R2 state
+_R2_OK = r2_storage.is_configured()
+
+
+def _r2_key(local_path) -> str:
+    """Convert local path to R2 key relative to BASE_DIR."""
+    try:
+        return str(Path(local_path).relative_to(BASE_DIR))
+    except ValueError:
+        return str(local_path)
+
+
+def _r2_image_url(local_path) -> str | None:
+    """Get R2 public URL for an image/video file. Returns None if R2 not configured."""
+    if not _R2_OK:
+        return None
+    return r2_storage.public_url(_r2_key(local_path))
 
 
 def _apply_series():
@@ -341,32 +364,55 @@ def get_review_variants(clip_id: str, component: str) -> list[Path]:
     return result
 
 
-def get_all_attempt_variants(clip_id: str, component: str) -> list[tuple[int, list[Path]]]:
-    """Get variants for ALL attempts, not just latest. Returns [(attempt_num, [paths]), ...]."""
+def get_all_attempt_variants(clip_id: str, component: str) -> list[tuple[int, list]]:
+    """Get variants for ALL attempts. Returns [(attempt_num, [path_or_url]), ...].
+
+    On Railway (R2 mode): builds URLs from manifest data.
+    Locally: scans filesystem as before.
+    """
+    # Try local filesystem first
     comp_dir = REVIEW_DIR / clip_id / component
-    if not comp_dir.exists():
-        return []
+    has_local = comp_dir.exists()
 
-    result = []
-    for attempt_dir in sorted(comp_dir.glob("attempt_*")):
-        try:
-            attempt_num = int(attempt_dir.name.replace("attempt_", ""))
-        except ValueError:
-            continue
+    if has_local:
+        result = []
+        for attempt_dir in sorted(comp_dir.glob("attempt_*")):
+            try:
+                attempt_num = int(attempt_dir.name.replace("attempt_", ""))
+            except ValueError:
+                continue
+            ext = "*.mp4" if component == "veo" else "*.png"
+            files = sorted(attempt_dir.glob(ext))
+            if not files:
+                pa = attempt_dir / "prompt_a"
+                if pa.exists():
+                    files = sorted(pa.glob(ext))
+            if files:
+                result.append((attempt_num, files))
+        if result:
+            return result
 
-        ext = "*.mp4" if component == "veo" else "*.png"
+    # R2 mode: build paths from manifest
+    if _R2_OK:
+        manifest = _load_manifest(clip_id)
+        comp_data = manifest.get("components", {}).get(component, {})
+        result = []
+        for att in comp_data.get("attempts", []):
+            attempt_num = att.get("attempt", 0)
+            variants = att.get("variants", [])
+            urls = []
+            for v in variants:
+                vfile = v.get("file", "")
+                # Build the R2 key from the review directory structure
+                local_path = REVIEW_DIR / clip_id / component / f"attempt_{attempt_num}" / vfile
+                url = r2_storage.public_url(_r2_key(local_path))
+                if url:
+                    urls.append(url)
+            if urls:
+                result.append((attempt_num, urls))
+        return result
 
-        # Flat format
-        files = sorted(attempt_dir.glob(ext))
-        if not files:
-            # Fallback: prompt_a/ subdirectory
-            pa = attempt_dir / "prompt_a"
-            if pa.exists():
-                files = sorted(pa.glob(ext))
-
-        if files:
-            result.append((attempt_num, files))
-    return result
+    return []
 
 
 def do_local_select(phase: str, selections: dict):
@@ -836,30 +882,40 @@ def page_review():
 
 
 def _load_manifest(clip_id: str) -> dict:
-    """Load manifest.json for a clip from review directory."""
-    path = REVIEW_DIR / clip_id / "manifest.json"
-    if path.exists():
-        with open(path) as f:
-            m = json.load(f)
-        for c in ("nb_first", "nb_mid", "nb_last", "veo"):
-            comp = m.get("components", {}).get(c, {})
-            comp.setdefault("selected_variant_a", None)
-            comp.setdefault("selected_variant_b", None)
-            comp.setdefault("attempts", [])
-            comp.setdefault("status", "pending")
-            m.setdefault("components", {})[c] = comp
-        return m
-    return {
+    """Load manifest.json for a clip — from R2 (primary) or local fallback."""
+    default = {
         "clip_id": clip_id,
         "components": {
             c: {"attempts": [], "selected_variant_a": None, "selected_variant_b": None, "status": "pending"}
             for c in ("nb_first", "nb_mid", "nb_last", "veo")
         },
     }
+    m = None
+    if _R2_OK:
+        r2_key = _r2_key(REVIEW_DIR / clip_id / "manifest.json")
+        m = r2_storage.read_json(r2_key)
+    if m is None:
+        path = REVIEW_DIR / clip_id / "manifest.json"
+        if path.exists():
+            with open(path) as f:
+                m = json.load(f)
+    if m is None:
+        return default
+    for c in ("nb_first", "nb_mid", "nb_last", "veo"):
+        comp = m.get("components", {}).get(c, {})
+        comp.setdefault("selected_variant_a", None)
+        comp.setdefault("selected_variant_b", None)
+        comp.setdefault("attempts", [])
+        comp.setdefault("status", "pending")
+        m.setdefault("components", {})[c] = comp
+    return m
 
 
 def _save_manifest(clip_id: str, manifest: dict):
-    """Save manifest.json for a clip."""
+    """Save manifest.json — to R2 (primary) and local."""
+    if _R2_OK:
+        r2_key = _r2_key(REVIEW_DIR / clip_id / "manifest.json")
+        r2_storage.write_json(r2_key, manifest)
     path = REVIEW_DIR / clip_id / "manifest.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
@@ -867,28 +923,35 @@ def _save_manifest(clip_id: str, manifest: dict):
 
 
 def _chain_select_variant(clip_id: str, component: str, attempt: int, variant_idx: int):
-    """Accept a variant: update manifest + copy to frames/clips."""
+    """Accept a variant: update manifest + copy to frames/clips (local + R2)."""
     suffixes = {"nb_first": "first", "nb_mid": "mid", "nb_last": "last"}
     manifest = _load_manifest(clip_id)
 
-    # Find the variant file
+    # Determine source and destination paths
     attempt_dir = REVIEW_DIR / clip_id / component / f"attempt_{attempt}"
     if component in suffixes:
-        variant_file = attempt_dir / f"variant_{variant_idx + 1}.png"
-        if not variant_file.exists():
-            variant_file = attempt_dir / "prompt_a" / f"variant_{variant_idx + 1}.png"
-        if variant_file.exists():
-            FRAMES_DIR.mkdir(parents=True, exist_ok=True)
-            dest = FRAMES_DIR / f"{clip_id}_{suffixes[component]}.png"
-            shutil.copy2(variant_file, dest)
+        ext = ".png"
+        variant_file = attempt_dir / f"variant_{variant_idx + 1}{ext}"
+        if not variant_file.exists() and not _R2_OK:
+            variant_file = attempt_dir / "prompt_a" / f"variant_{variant_idx + 1}{ext}"
+        dest = FRAMES_DIR / f"{clip_id}_{suffixes[component]}{ext}"
     elif component == "veo":
-        variant_file = attempt_dir / f"variant_{variant_idx + 1}.mp4"
-        if not variant_file.exists():
-            variant_file = attempt_dir / "prompt_a" / f"variant_{variant_idx + 1}.mp4"
-        if variant_file.exists():
-            CLIPS_DIR.mkdir(parents=True, exist_ok=True)
-            dest = CLIPS_DIR / f"{clip_id}_clip.mp4"
-            shutil.copy2(variant_file, dest)
+        ext = ".mp4"
+        variant_file = attempt_dir / f"variant_{variant_idx + 1}{ext}"
+        if not variant_file.exists() and not _R2_OK:
+            variant_file = attempt_dir / "prompt_a" / f"variant_{variant_idx + 1}{ext}"
+        dest = CLIPS_DIR / f"{clip_id}_clip{ext}"
+    else:
+        dest = None
+
+    # Copy: R2-to-R2 (on Railway) or local copy
+    if dest and _R2_OK:
+        src_key = _r2_key(variant_file)
+        dest_key = _r2_key(dest)
+        r2_storage.copy_object(src_key, dest_key)
+    elif dest and variant_file.exists():
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(variant_file, dest)
 
     # Update manifest
     manifest["components"][component]["status"] = "accepted"
@@ -1069,15 +1132,17 @@ def page_chain_review():
         # Show accepted frames as thumbnails
         if first_status == "accepted":
             first_frame = FRAMES_DIR / f"{cid}_first.png"
-            if first_frame.exists():
+            first_src = _r2_image_url(first_frame) or (str(first_frame) if first_frame.exists() else None)
+            if first_src:
                 fc1, fc2 = st.columns([1, 5])
                 with fc1:
-                    st.image(str(first_frame), width=150, caption="First (принято)")
+                    st.image(first_src, width=150, caption="First (принято)")
                 if last_status == "accepted":
                     last_frame = FRAMES_DIR / f"{cid}_last.png"
-                    if last_frame.exists():
+                    last_src = _r2_image_url(last_frame) or (str(last_frame) if last_frame.exists() else None)
+                    if last_src:
                         with fc2:
-                            st.image(str(last_frame), width=150, caption="Last (принято)")
+                            st.image(last_src, width=150, caption="Last (принято)")
 
         # Show review items (variants awaiting selection)
         review_items = item.get("review_items", [])
@@ -1087,14 +1152,15 @@ def page_chain_review():
 
             st.markdown(f"**{comp_label}** — попытка {latest_attempt_num} ({len(variants)} вариантов)")
 
-            # Show variant images
+            # Show variant images (vpath can be Path or URL string)
             cols = st.columns(min(len(variants), 4))
             for vi, vpath in enumerate(variants):
                 with cols[vi % 4]:
-                    if vpath.suffix == ".mp4":
-                        st.video(str(vpath))
+                    src = str(vpath)
+                    if src.endswith(".mp4"):
+                        st.video(src)
                     else:
-                        st.image(str(vpath), use_container_width=True)
+                        st.image(src, use_container_width=True)
                     st.caption(f"Вариант {vi + 1}")
 
             # Selection controls
