@@ -210,7 +210,11 @@ def _apply_series():
 
 @st.cache_data(ttl=60)
 def load_clips() -> list[dict]:
-    """Load clip data from all_prompts.json."""
+    """Load clip data from all_prompts.json — R2 first, local fallback."""
+    if _R2_OK:
+        data = r2_storage.read_json(_r2_key(PROMPTS_FILE))
+        if data is not None:
+            return data
     with open(PROMPTS_FILE, encoding="utf-8") as f:
         return json.load(f)
 
