@@ -918,8 +918,21 @@ _r2_manifest_cache: dict = {}
 _r2_cache_loaded: bool = False
 
 
+@st.cache_data(ttl=30, show_spinner="Загрузка манифестов из R2...")
+def _fetch_all_manifests_r2(prefix: str) -> dict:
+    """Fetch all manifests from R2 (cached 30s by Streamlit)."""
+    keys = r2_storage.list_prefix(prefix)
+    manifest_keys = [k for k in keys if k.endswith("/manifest.json")]
+    result = {}
+    for mk in manifest_keys:
+        m = r2_storage.read_json(mk)
+        if m and "clip_id" in m:
+            result[m["clip_id"]] = _normalize_manifest(m)
+    return result
+
+
 def _load_all_manifests_r2():
-    """Bulk-load all manifests from R2 into cache (one list + N reads)."""
+    """Bulk-load all manifests from R2 into cache."""
     global _r2_manifest_cache, _r2_cache_loaded
     if _r2_cache_loaded:
         return
@@ -927,12 +940,7 @@ def _load_all_manifests_r2():
     if not _R2_OK:
         return
     prefix = _r2_key(REVIEW_DIR) + "/"
-    keys = r2_storage.list_prefix(prefix)
-    manifest_keys = [k for k in keys if k.endswith("/manifest.json")]
-    for mk in manifest_keys:
-        m = r2_storage.read_json(mk)
-        if m and "clip_id" in m:
-            _r2_manifest_cache[m["clip_id"]] = _normalize_manifest(m)
+    _r2_manifest_cache = _fetch_all_manifests_r2(prefix)
 
 
 def _load_manifest(clip_id: str) -> dict:
@@ -963,6 +971,7 @@ def _save_manifest(clip_id: str, manifest: dict):
         r2_key = _r2_key(REVIEW_DIR / clip_id / "manifest.json")
         r2_storage.write_json(r2_key, manifest)
         _r2_manifest_cache[clip_id] = manifest
+        _fetch_all_manifests_r2.clear()  # invalidate Streamlit cache
     path = REVIEW_DIR / clip_id / "manifest.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
