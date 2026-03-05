@@ -1119,7 +1119,7 @@ def page_chain_review():
     st.header("Chain Ревью")
 
     # Debug info
-    with st.expander("Debug R2", expanded=True):
+    with st.expander("Debug R2", expanded=False):
         st.write(f"HAS_BOTO3: {r2_storage.HAS_BOTO3}")
         st.write(f"_ACCOUNT_ID len: {len(r2_storage._ACCOUNT_ID)}, val: {r2_storage._ACCOUNT_ID[:8]}...")
         st.write(f"_ACCESS_KEY len: {len(r2_storage._ACCESS_KEY)}")

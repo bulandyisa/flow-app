@@ -146,11 +146,19 @@ def file_exists(r2_key: str) -> bool:
         return False
 
 
-def public_url(r2_key: str) -> str:
-    """Get the public URL for an R2 object."""
-    if _PUBLIC_URL:
-        return f'{_PUBLIC_URL}/{r2_key}'
-    return ''
+def public_url(r2_key: str, expires_in: int = 3600) -> str:
+    """Get a presigned URL for an R2 object (valid for expires_in seconds)."""
+    client = get_client()
+    if not client:
+        return ''
+    try:
+        return client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': _BUCKET, 'Key': r2_key},
+            ExpiresIn=expires_in,
+        )
+    except Exception:
+        return ''
 
 
 def copy_object(src_key: str, dest_key: str) -> bool:
