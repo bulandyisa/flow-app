@@ -885,26 +885,17 @@ def page_review():
             st.rerun()
 
 
-def _load_manifest(clip_id: str) -> dict:
-    """Load manifest.json for a clip — from R2 (primary) or local fallback."""
-    default = {
+def _default_manifest(clip_id: str) -> dict:
+    return {
         "clip_id": clip_id,
         "components": {
             c: {"attempts": [], "selected_variant_a": None, "selected_variant_b": None, "status": "pending"}
             for c in ("nb_first", "nb_mid", "nb_last", "veo")
         },
     }
-    m = None
-    if _R2_OK:
-        r2_key = _r2_key(REVIEW_DIR / clip_id / "manifest.json")
-        m = r2_storage.read_json(r2_key)
-    if m is None:
-        path = REVIEW_DIR / clip_id / "manifest.json"
-        if path.exists():
-            with open(path) as f:
-                m = json.load(f)
-    if m is None:
-        return default
+
+
+def _normalize_manifest(m: dict) -> dict:
     for c in ("nb_first", "nb_mid", "nb_last", "veo"):
         comp = m.get("components", {}).get(c, {})
         comp.setdefault("selected_variant_a", None)
@@ -915,11 +906,56 @@ def _load_manifest(clip_id: str) -> dict:
     return m
 
 
+# Cache for R2 manifests — avoids per-clip requests
+_r2_manifest_cache: dict = {}
+_r2_cache_loaded: bool = False
+
+
+def _load_all_manifests_r2():
+    """Bulk-load all manifests from R2 into cache (one list + N reads)."""
+    global _r2_manifest_cache, _r2_cache_loaded
+    if _r2_cache_loaded:
+        return
+    _r2_cache_loaded = True
+    if not _R2_OK:
+        return
+    prefix = _r2_key(REVIEW_DIR) + "/"
+    keys = r2_storage.list_prefix(prefix)
+    manifest_keys = [k for k in keys if k.endswith("/manifest.json")]
+    for mk in manifest_keys:
+        m = r2_storage.read_json(mk)
+        if m and "clip_id" in m:
+            _r2_manifest_cache[m["clip_id"]] = _normalize_manifest(m)
+
+
+def _load_manifest(clip_id: str) -> dict:
+    """Load manifest.json for a clip — from R2 cache (primary) or local fallback."""
+    # Try R2 cache
+    if _R2_OK:
+        if not _r2_cache_loaded:
+            _load_all_manifests_r2()
+        if clip_id in _r2_manifest_cache:
+            return _r2_manifest_cache[clip_id]
+        # Single fetch fallback
+        r2_key = _r2_key(REVIEW_DIR / clip_id / "manifest.json")
+        m = r2_storage.read_json(r2_key)
+        if m:
+            return _normalize_manifest(m)
+    # Local fallback
+    path = REVIEW_DIR / clip_id / "manifest.json"
+    if path.exists():
+        with open(path) as f:
+            m = json.load(f)
+        return _normalize_manifest(m)
+    return _default_manifest(clip_id)
+
+
 def _save_manifest(clip_id: str, manifest: dict):
     """Save manifest.json — to R2 (primary) and local."""
     if _R2_OK:
         r2_key = _r2_key(REVIEW_DIR / clip_id / "manifest.json")
         r2_storage.write_json(r2_key, manifest)
+        _r2_manifest_cache[clip_id] = manifest
     path = REVIEW_DIR / clip_id / "manifest.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
@@ -1977,6 +2013,9 @@ def main():
     )
     if selected_series != st.session_state.current_series:
         st.session_state.current_series = selected_series
+        global _r2_cache_loaded, _r2_manifest_cache
+        _r2_cache_loaded = False
+        _r2_manifest_cache = {}
         st.rerun()
 
     # Apply series config to globals
