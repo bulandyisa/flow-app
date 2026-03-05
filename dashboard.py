@@ -1164,141 +1164,133 @@ def page_chain_review():
     else:
         display_items = needs_review + accepted_clips + blocked_clips
 
-    # --- Render clips ---
+    # --- Render clips (inside form to prevent rerun on every click) ---
     current_scene = None
-    has_decisions = False
+    # Collect review keys for processing after submit
+    _review_keys = []
 
-    for item in display_items:
-        clip = item["clip"]
-        cid = clip["clip_id"]
-        manifest = item["manifest"]
+    with st.form("chain_review_form"):
+        for item in display_items:
+            clip = item["clip"]
+            cid = clip["clip_id"]
+            manifest = item["manifest"]
 
-        # Scene header
-        if clip["scene_id"] != current_scene:
-            current_scene = clip["scene_id"]
-            color = SCENE_COLORS.get(current_scene, "#49B6E8")
-            label = SCENE_LABELS.get(current_scene, current_scene)
-            st.markdown(
-                f'<h4 style="border-left:4px solid {color};padding-left:12px;'
-                f'margin-top:24px;margin-bottom:8px;">{label}</h4>',
-                unsafe_allow_html=True,
-            )
-
-        # Component status badges
-        first_status = manifest["components"]["nb_first"].get("status", "pending")
-        last_status = manifest["components"]["nb_last"].get("status", "pending")
-
-        status_icons = {"accepted": "🟢", "pending": "⚪", "rejected": "🔴", "generated": "🟡"}
-        status_labels = {"accepted": "Принято", "pending": "Ожидание", "rejected": "Отклонено", "generated": "На ревью"}
-
-        desc = clip.get("scene_description_ru", "")[:120]
-        st.markdown(
-            f"**{cid}** — {desc} &nbsp; "
-            f"`first:` {status_icons.get(first_status, '⚪')} {status_labels.get(first_status, first_status)} &nbsp; "
-            f"`last:` {status_icons.get(last_status, '⚪')} {status_labels.get(last_status, last_status)}"
-        )
-
-        # Show accepted frames as thumbnails
-        if first_status == "accepted":
-            first_frame = FRAMES_DIR / f"{cid}_first.png"
-            first_src = _r2_image_url(first_frame) or (str(first_frame) if first_frame.exists() else None)
-            if first_src:
-                fc1, fc2 = st.columns([1, 5])
-                with fc1:
-                    st.image(first_src, width=150, caption="First (принято)")
-                if last_status == "accepted":
-                    last_frame = FRAMES_DIR / f"{cid}_last.png"
-                    last_src = _r2_image_url(last_frame) or (str(last_frame) if last_frame.exists() else None)
-                    if last_src:
-                        with fc2:
-                            st.image(last_src, width=150, caption="Last (принято)")
-
-        # Show review items (variants awaiting selection)
-        review_items = item.get("review_items", [])
-        for comp, all_attempts in review_items:
-            comp_label = {"nb_first": "Первый кадр", "nb_last": "Последний кадр"}.get(comp, comp)
-            latest_attempt_num, variants = all_attempts[-1]
-
-            st.markdown(f"**{comp_label}** — попытка {latest_attempt_num} ({len(variants)} вариантов)")
-
-            # Show variant images (vpath can be Path or URL string)
-            cols = st.columns(min(len(variants), 4))
-            for vi, vpath in enumerate(variants):
-                with cols[vi % 4]:
-                    src = str(vpath)
-                    if src.endswith(".mp4"):
-                        st.video(src)
-                    else:
-                        st.image(src, use_container_width=True)
-                    st.caption(f"Вариант {vi + 1}")
-
-            # Selection controls
-            sel_col, rej_col = st.columns([3, 1])
-            with sel_col:
-                options = [f"Вариант {i+1}" for i in range(len(variants))] + ["Не выбрано"]
-                default_idx = len(options) - 1
-                prev = st.session_state.get(f"chain_decision_{cid}_{comp}")
-                if isinstance(prev, tuple) and prev[0] == "selected":
-                    if prev[1] < len(variants):
-                        default_idx = prev[1]
-
-                choice = st.radio(
-                    f"Выбор для {cid}/{comp}", options, index=default_idx,
-                    key=f"chain_radio_{cid}_{comp}", horizontal=True, label_visibility="collapsed",
+            # Scene header
+            if clip["scene_id"] != current_scene:
+                current_scene = clip["scene_id"]
+                color = SCENE_COLORS.get(current_scene, "#49B6E8")
+                label = SCENE_LABELS.get(current_scene, current_scene)
+                st.markdown(
+                    f'<h4 style="border-left:4px solid {color};padding-left:12px;'
+                    f'margin-top:24px;margin-bottom:8px;">{label}</h4>',
+                    unsafe_allow_html=True,
                 )
 
-            with rej_col:
-                reject = st.checkbox("Отклонить", key=f"chain_rej_{cid}_{comp}")
+            # Component status badges
+            first_status = manifest["components"]["nb_first"].get("status", "pending")
+            last_status = manifest["components"]["nb_last"].get("status", "pending")
 
-            if reject:
-                feedback = st.text_area(
+            status_icons = {"accepted": "🟢", "pending": "⚪", "rejected": "🔴", "generated": "🟡"}
+            status_labels = {"accepted": "Принято", "pending": "Ожидание", "rejected": "Отклонено", "generated": "На ревью"}
+
+            desc = clip.get("scene_description_ru", "")[:120]
+            st.markdown(
+                f"**{cid}** — {desc} &nbsp; "
+                f"`first:` {status_icons.get(first_status, '⚪')} {status_labels.get(first_status, first_status)} &nbsp; "
+                f"`last:` {status_icons.get(last_status, '⚪')} {status_labels.get(last_status, last_status)}"
+            )
+
+            # Show accepted frames as thumbnails
+            if first_status == "accepted":
+                first_frame = FRAMES_DIR / f"{cid}_first.png"
+                first_src = _r2_image_url(first_frame) or (str(first_frame) if first_frame.exists() else None)
+                if first_src:
+                    fc1, fc2 = st.columns([1, 5])
+                    with fc1:
+                        st.image(first_src, width=150, caption="First (принято)")
+                    if last_status == "accepted":
+                        last_frame = FRAMES_DIR / f"{cid}_last.png"
+                        last_src = _r2_image_url(last_frame) or (str(last_frame) if last_frame.exists() else None)
+                        if last_src:
+                            with fc2:
+                                st.image(last_src, width=150, caption="Last (принято)")
+
+            # Show review items (variants awaiting selection)
+            review_items = item.get("review_items", [])
+            for comp, all_attempts in review_items:
+                comp_label = {"nb_first": "Первый кадр", "nb_last": "Последний кадр"}.get(comp, comp)
+                latest_attempt_num, variants = all_attempts[-1]
+
+                st.markdown(f"**{comp_label}** — попытка {latest_attempt_num} ({len(variants)} вариантов)")
+
+                # Show variant images
+                cols = st.columns(min(len(variants), 4))
+                for vi, vpath in enumerate(variants):
+                    with cols[vi % 4]:
+                        src = str(vpath)
+                        if src.endswith(".mp4"):
+                            st.video(src)
+                        else:
+                            st.image(src, use_container_width=True)
+                        st.caption(f"Вариант {vi + 1}")
+
+                # Selection controls
+                sel_col, rej_col = st.columns([3, 1])
+                with sel_col:
+                    options = ["Не выбрано"] + [f"Вариант {i+1}" for i in range(len(variants))]
+                    st.radio(
+                        f"Выбор для {cid}/{comp}", options, index=0,
+                        key=f"chain_radio_{cid}_{comp}", horizontal=True, label_visibility="collapsed",
+                    )
+
+                with rej_col:
+                    st.checkbox("Отклонить", key=f"chain_rej_{cid}_{comp}")
+
+                st.text_area(
                     f"Что исправить в {cid}/{comp}?",
                     placeholder="Опишите проблему...",
                     key=f"chain_feedback_{cid}_{comp}",
                     height=68,
+                    label_visibility="collapsed",
                 )
-                st.session_state[f"chain_decision_{cid}_{comp}"] = ("rejected", feedback)
-                has_decisions = True
+
+                _review_keys.append((cid, comp, latest_attempt_num, len(variants)))
+
+            if review_items:
+                st.divider()
+
+        # Submit button inside form
+        submitted = st.form_submit_button(
+            "Отправить решения", type="primary", use_container_width=True,
+        )
+
+    # --- Process decisions after form submit ---
+    if submitted:
+        selected_count = 0
+        rejected_count = 0
+
+        for cid, comp, attempt_num, n_variants in _review_keys:
+            reject = st.session_state.get(f"chain_rej_{cid}_{comp}", False)
+            choice = st.session_state.get(f"chain_radio_{cid}_{comp}", "Не выбрано")
+
+            if reject:
+                feedback = st.session_state.get(f"chain_feedback_{cid}_{comp}", "")
+                _chain_reject_variant(cid, comp, feedback)
+                rejected_count += 1
             elif choice != "Не выбрано":
                 variant_idx = int(choice.split()[-1]) - 1
-                st.session_state[f"chain_decision_{cid}_{comp}"] = ("selected", variant_idx, latest_attempt_num)
-                has_decisions = True
+                _chain_select_variant(cid, comp, attempt_num, variant_idx)
+                selected_count += 1
 
-        if review_items:
-            st.divider()
+        msg_parts = []
+        if selected_count:
+            msg_parts.append(f"Принято: {selected_count}")
+        if rejected_count:
+            msg_parts.append(f"Отклонено: {rejected_count}")
+        if msg_parts:
+            st.success(" | ".join(msg_parts))
 
-    # --- Submit decisions ---
-    if has_decisions:
-        st.markdown("---")
-        if st.button("Отправить решения", type="primary", key="chain_btn_submit", use_container_width=True):
-            selected_count = 0
-            rejected_count = 0
-
-            for item in display_items:
-                cid = item["clip"]["clip_id"]
-                for comp, all_attempts in item.get("review_items", []):
-                    decision = st.session_state.get(f"chain_decision_{cid}_{comp}")
-                    if isinstance(decision, tuple):
-                        if decision[0] == "selected":
-                            _chain_select_variant(cid, comp, decision[2], decision[1])
-                            selected_count += 1
-                        elif decision[0] == "rejected":
-                            feedback = decision[1] if len(decision) > 1 else ""
-                            _chain_reject_variant(cid, comp, feedback)
-                            rejected_count += 1
-
-                    # Clear decision
-                    st.session_state.pop(f"chain_decision_{cid}_{comp}", None)
-
-            msg_parts = []
-            if selected_count:
-                msg_parts.append(f"Принято: {selected_count}")
-            if rejected_count:
-                msg_parts.append(f"Отклонено: {rejected_count}")
-            if msg_parts:
-                st.success(" | ".join(msg_parts))
-
-            st.rerun()
+        st.rerun()
 
 
 def page_clips():
