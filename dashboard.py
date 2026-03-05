@@ -918,7 +918,7 @@ _r2_manifest_cache: dict = {}
 _r2_cache_loaded: bool = False
 
 
-@st.cache_data(ttl=30, show_spinner="Загрузка манифестов из R2...")
+@st.cache_data(ttl=300, show_spinner="Загрузка манифестов из R2...")
 def _fetch_all_manifests_r2(prefix: str) -> dict:
     """Fetch all manifests from R2 (cached 30s by Streamlit)."""
     keys = r2_storage.list_prefix(prefix)
@@ -1266,8 +1266,10 @@ def page_chain_review():
 
     # --- Process decisions after form submit ---
     if submitted:
+        import concurrent.futures
         selected_count = 0
         rejected_count = 0
+        tasks = []
 
         for cid, comp, attempt_num, n_variants in _review_keys:
             reject = st.session_state.get(f"chain_rej_{cid}_{comp}", False)
@@ -1275,12 +1277,28 @@ def page_chain_review():
 
             if reject:
                 feedback = st.session_state.get(f"chain_feedback_{cid}_{comp}", "")
-                _chain_reject_variant(cid, comp, feedback)
+                tasks.append(("reject", cid, comp, feedback, 0, 0))
                 rejected_count += 1
             elif choice != "Не выбрано":
                 variant_idx = int(choice.split()[-1]) - 1
-                _chain_select_variant(cid, comp, attempt_num, variant_idx)
+                tasks.append(("select", cid, comp, "", attempt_num, variant_idx))
                 selected_count += 1
+
+        # Execute all R2 operations in parallel
+        def _do_task(t):
+            if t[0] == "reject":
+                _chain_reject_variant(t[1], t[2], t[3])
+            else:
+                _chain_select_variant(t[1], t[2], t[4], t[5])
+
+        if tasks:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+                list(pool.map(_do_task, tasks))
+
+        # Invalidate manifest cache so rerun shows fresh data
+        _fetch_all_manifests_r2.clear()
+        global _r2_cache_loaded
+        _r2_cache_loaded = False
 
         msg_parts = []
         if selected_count:
