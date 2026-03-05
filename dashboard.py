@@ -1074,13 +1074,19 @@ def page_chain_review():
         # Check each component
         clip_info = {"clip": clip, "manifest": manifest, "review_items": []}
 
-        for comp in ("nb_first", "nb_last"):
+        for comp in ("nb_first", "nb_last", "veo"):
             comp_data = manifest["components"].get(comp, {})
             status = comp_data.get("status", "pending")
-            attempts = comp_data.get("attempts", [])
 
             if status == "accepted":
                 continue
+
+            # VEO only reviewable when both frames are accepted
+            if comp == "veo":
+                first_ok = manifest["components"]["nb_first"].get("status") == "accepted"
+                last_ok = manifest["components"]["nb_last"].get("status") == "accepted"
+                if not (first_ok and last_ok):
+                    continue
 
             # Has generated variants waiting for review?
             all_attempts = get_all_attempt_variants(cid, comp)
@@ -1093,7 +1099,8 @@ def page_chain_review():
             # Check if all components are accepted
             first_ok = manifest["components"]["nb_first"].get("status") == "accepted"
             last_ok = manifest["components"]["nb_last"].get("status") == "accepted"
-            if first_ok and last_ok:
+            veo_ok = manifest["components"].get("veo", {}).get("status") == "accepted"
+            if first_ok and last_ok and veo_ok:
                 accepted_clips.append(clip_info)
             elif first_ok:
                 accepted_clips.append(clip_info)
@@ -1189,15 +1196,20 @@ def page_chain_review():
             # Component status badges
             first_status = manifest["components"]["nb_first"].get("status", "pending")
             last_status = manifest["components"]["nb_last"].get("status", "pending")
+            veo_status = manifest["components"].get("veo", {}).get("status", "pending")
 
             status_icons = {"accepted": "🟢", "pending": "⚪", "rejected": "🔴", "generated": "🟡"}
             status_labels = {"accepted": "Принято", "pending": "Ожидание", "rejected": "Отклонено", "generated": "На ревью"}
 
             desc = clip.get("scene_description_ru", "")[:120]
+            veo_badge = ""
+            if first_status == "accepted" and last_status == "accepted":
+                veo_badge = f" &nbsp; `veo:` {status_icons.get(veo_status, '⚪')} {status_labels.get(veo_status, veo_status)}"
             st.markdown(
                 f"**{cid}** — {desc} &nbsp; "
                 f"`first:` {status_icons.get(first_status, '⚪')} {status_labels.get(first_status, first_status)} &nbsp; "
                 f"`last:` {status_icons.get(last_status, '⚪')} {status_labels.get(last_status, last_status)}"
+                f"{veo_badge}"
             )
 
             # Show accepted frames as thumbnails
@@ -1218,7 +1230,7 @@ def page_chain_review():
             # Show review items (variants awaiting selection)
             review_items = item.get("review_items", [])
             for comp, all_attempts in review_items:
-                comp_label = {"nb_first": "Первый кадр", "nb_last": "Последний кадр"}.get(comp, comp)
+                comp_label = {"nb_first": "Первый кадр", "nb_last": "Последний кадр", "veo": "Видео"}.get(comp, comp)
                 latest_attempt_num, variants = all_attempts[-1]
 
                 st.markdown(f"**{comp_label}** — попытка {latest_attempt_num} ({len(variants)} вариантов)")
