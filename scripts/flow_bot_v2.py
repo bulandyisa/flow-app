@@ -2801,6 +2801,7 @@ def _download_video_by_media_id(page, media_id, dest_path):
     dest_path.write_bytes(data)
     md5 = hashlib.md5(data).hexdigest()[:8]
     print(f'  Saved: {dest_path.name} ({len(data)} bytes, md5={md5}, type={result.get("type","")})')
+    _r2_sync_upload(dest_path)
     return True
 
 
@@ -3598,16 +3599,18 @@ def do_chain(pw, scenes_filter=None, use_builtin_chromium=False):
                 _ensure_chat_view(page)
                 manifest = load_manifest(cid)
 
-                for component in ('nb_first', 'nb_last'):
+                for component in ('nb_first', 'nb_last', 'veo'):
                     # Skip mid for now (most clips don't use it)
                     if component == 'nb_last' and not clip.get('nano_banana_prompt_last'):
+                        continue
+                    if component == 'veo' and not clip.get('veo_prompt'):
                         continue
 
                     status = manifest['components'][component].get('status', 'pending')
                     if status in ('accepted', 'needs_manual_work'):
                         continue
 
-                    # Check if already generated (waiting for selection by Claude Code)
+                    # Check if already generated (waiting for selection)
                     attempts = manifest['components'][component].get('attempts', [])
                     if attempts and status == 'generated':
                         continue
@@ -3621,12 +3624,17 @@ def do_chain(pw, scenes_filter=None, use_builtin_chromium=False):
                             prev_manifest = load_manifest(prev_cid)
                             prev_last_status = prev_manifest['components']['nb_last'].get('status', 'pending')
                             if prev_last_status != 'accepted':
-                                # Blocked — previous clip not done yet
                                 continue
                     elif component == 'nb_last':
                         # Need this clip's first frame to be accepted
                         ref = _resolve_ref_frame(manifest, cid, component)
                         if not ref:
+                            continue
+                    elif component == 'veo':
+                        # Need both first and last frames to be accepted
+                        first_st = manifest['components']['nb_first'].get('status', 'pending')
+                        last_st = manifest['components']['nb_last'].get('status', 'pending')
+                        if first_st != 'accepted' or last_st != 'accepted':
                             continue
 
                     # Ready to generate
@@ -3636,26 +3644,54 @@ def do_chain(pw, scenes_filter=None, use_builtin_chromium=False):
                         save_manifest(cid, manifest)
                         continue
 
-                    first_frame_ref = None
-                    if component == 'nb_first':
-                        first_frame_ref = find_scene_ref(cid)  # may be None for first clip
-                    else:
-                        first_frame_ref = _resolve_ref_frame(manifest, cid, component)
+                    if component == 'veo':
+                        # VEO: use accepted first + last frames
+                        first_frame = FRAMES_DIR / f'{cid}_first.png'
+                        last_frame = FRAMES_DIR / f'{cid}_last.png'
+                        if not first_frame.exists():
+                            r2_key = _r2_key(first_frame)
+                            if r2_storage.is_configured():
+                                r2_storage.download_file(r2_key, first_frame)
+                        if not last_frame.exists():
+                            r2_key = _r2_key(last_frame)
+                            if r2_storage.is_configured():
+                                r2_storage.download_file(r2_key, last_frame)
+                        if not first_frame.exists() or not last_frame.exists():
+                            summary['blocked'].append(f'{cid}/veo (missing frames)')
+                            continue
 
-                    print(f'\n  [{sid}] {cid} / {component} / attempt_{attempt}')
-                    if first_frame_ref:
-                        print(f'    ref: {first_frame_ref.name}')
-
-                    variants = review_nano_banana(page, clip, manifest, component, attempt,
-                                                  first_frame_ref=first_frame_ref)
-                    if variants:
-                        manifest['components'][component]['status'] = 'generated'
-                        save_manifest(cid, manifest)
-                        summary['generated'].append(f'{cid}/{component}/a{attempt}')
-                        total_generated += 1
-                        progress_this_pass += 1
+                        print(f'\n  [{sid}] {cid} / veo / attempt_{attempt}')
+                        variants = review_veo(page, clip, manifest, attempt,
+                                              first_frame, last_frame)
+                        if variants:
+                            manifest['components']['veo']['status'] = 'generated'
+                            save_manifest(cid, manifest)
+                            summary['generated'].append(f'{cid}/veo/a{attempt}')
+                            total_generated += 1
+                            progress_this_pass += 1
+                        else:
+                            summary['blocked'].append(f'{cid}/veo/a{attempt}')
                     else:
-                        summary['blocked'].append(f'{cid}/{component}/a{attempt}')
+                        first_frame_ref = None
+                        if component == 'nb_first':
+                            first_frame_ref = find_scene_ref(cid)  # may be None for first clip
+                        else:
+                            first_frame_ref = _resolve_ref_frame(manifest, cid, component)
+
+                        print(f'\n  [{sid}] {cid} / {component} / attempt_{attempt}')
+                        if first_frame_ref:
+                            print(f'    ref: {first_frame_ref.name}')
+
+                        variants = review_nano_banana(page, clip, manifest, component, attempt,
+                                                      first_frame_ref=first_frame_ref)
+                        if variants:
+                            manifest['components'][component]['status'] = 'generated'
+                            save_manifest(cid, manifest)
+                            summary['generated'].append(f'{cid}/{component}/a{attempt}')
+                            total_generated += 1
+                            progress_this_pass += 1
+                        else:
+                            summary['blocked'].append(f'{cid}/{component}/a{attempt}')
 
                     human_pause_between_generations()
 

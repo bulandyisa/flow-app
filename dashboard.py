@@ -1247,9 +1247,7 @@ def page_chain_review():
                     with cols[vi % 4]:
                         src = str(vpath)
                         if is_video:
-                            # Videos: show placeholder + download link (form blocks playback)
-                            st.markdown(f"**Video {vi+1}**")
-                            st.markdown(f"[**Открыть видео**]({src})")
+                            st.video(src)
                         else:
                             st.markdown(
                                 f'<img src="{src}" loading="lazy" style="width:100%;border-radius:4px;" />',
