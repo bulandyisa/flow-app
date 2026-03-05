@@ -1245,11 +1245,15 @@ def page_chain_review():
                     with cols[vi % 4]:
                         src = str(vpath)
                         if is_video:
-                            st.video(src)
+                            st.markdown(
+                                f'<video controls playsinline preload="metadata" style="width:100%;border-radius:8px;">'
+                                f'<source src="{src}" type="video/mp4"></video>',
+                                unsafe_allow_html=True,
+                            )
                         else:
                             st.image(src, use_container_width=True)
                         st.caption(f"Вариант {vi + 1}")
-                        st.markdown(f"[Скачать]({src})", unsafe_allow_html=True)
+                        st.markdown(f"[⬇ Скачать]({src})", unsafe_allow_html=True)
 
                 # Selection controls
                 sel_col, rej_col = st.columns([3, 1])
