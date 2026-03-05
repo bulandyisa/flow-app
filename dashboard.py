@@ -1220,13 +1220,13 @@ def page_chain_review():
             if first_src:
                 fc1, fc2 = st.columns([1, 5])
                 with fc1:
-                    st.image(first_src, width=150, caption="First (принято)")
+                    st.markdown(f'<img src="{first_src}" loading="lazy" style="width:150px;border-radius:4px;" /><br><small>First (принято)</small>', unsafe_allow_html=True)
                 if last_status == "accepted":
                     last_frame = FRAMES_DIR / f"{cid}_last.png"
                     last_src = _r2_image_url(last_frame) or (str(last_frame) if last_frame.exists() else None)
                     if last_src:
                         with fc2:
-                            st.image(last_src, width=150, caption="Last (принято)")
+                            st.markdown(f'<img src="{last_src}" loading="lazy" style="width:150px;border-radius:4px;" /><br><small>Last (принято)</small>', unsafe_allow_html=True)
 
         # Show review items (variants awaiting selection)
         review_items = item.get("review_items", [])
@@ -1244,12 +1244,15 @@ def page_chain_review():
                     src = str(vpath)
                     if is_video:
                         st.markdown(
-                            f'<video controls playsinline preload="metadata" style="width:100%;border-radius:8px;">'
+                            f'<video controls playsinline preload="none" style="width:100%;border-radius:8px;">'
                             f'<source src="{src}" type="video/mp4"></video>',
                             unsafe_allow_html=True,
                         )
                     else:
-                        st.image(src, use_container_width=True)
+                        st.markdown(
+                            f'<img src="{src}" loading="lazy" style="width:100%;border-radius:4px;" />',
+                            unsafe_allow_html=True,
+                        )
                     st.caption(f"Вариант {vi + 1}")
                     st.markdown(f"[⬇ Скачать]({src})", unsafe_allow_html=True)
 
