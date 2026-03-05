@@ -1110,6 +1110,20 @@ def page_chain_review():
 
     st.header("Chain Ревью")
 
+    # Debug info
+    with st.expander("Debug R2", expanded=False):
+        st.write(f"R2 configured: {_R2_OK}")
+        st.write(f"R2 cache loaded: {_r2_cache_loaded}")
+        st.write(f"Cached manifests: {len(_r2_manifest_cache)}")
+        st.write(f"REVIEW_DIR: {REVIEW_DIR}")
+        st.write(f"R2 prefix: {_r2_key(REVIEW_DIR)}/")
+        # Show first few cached manifests
+        for cid in sorted(_r2_manifest_cache.keys())[:3]:
+            m = _r2_manifest_cache[cid]
+            st.write(f"  {cid}: nb_first={m['components']['nb_first'].get('status')}, attempts={len(m['components']['nb_first'].get('attempts', []))}")
+        # Check needs_review count
+        st.write(f"needs_review: {len(needs_review)}, accepted: {len(accepted_clips)}, blocked: {len(blocked_clips)}")
+
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Всего клипов", total)
