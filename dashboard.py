@@ -1111,18 +1111,18 @@ def page_chain_review():
     st.header("Chain Ревью")
 
     # Debug info
-    with st.expander("Debug R2", expanded=False):
-        st.write(f"R2 configured: {_R2_OK}")
-        st.write(f"R2 cache loaded: {_r2_cache_loaded}")
-        st.write(f"Cached manifests: {len(_r2_manifest_cache)}")
-        st.write(f"REVIEW_DIR: {REVIEW_DIR}")
-        st.write(f"R2 prefix: {_r2_key(REVIEW_DIR)}/")
-        # Show first few cached manifests
-        for cid in sorted(_r2_manifest_cache.keys())[:3]:
-            m = _r2_manifest_cache[cid]
-            st.write(f"  {cid}: nb_first={m['components']['nb_first'].get('status')}, attempts={len(m['components']['nb_first'].get('attempts', []))}")
-        # Check needs_review count
-        st.write(f"needs_review: {len(needs_review)}, accepted: {len(accepted_clips)}, blocked: {len(blocked_clips)}")
+    with st.expander("Debug R2", expanded=True):
+        st.write(f"HAS_BOTO3: {r2_storage.HAS_BOTO3}")
+        st.write(f"_ACCOUNT_ID len: {len(r2_storage._ACCOUNT_ID)}, val: {r2_storage._ACCOUNT_ID[:8]}...")
+        st.write(f"_ACCESS_KEY len: {len(r2_storage._ACCESS_KEY)}")
+        st.write(f"_SECRET_KEY len: {len(r2_storage._SECRET_KEY)}")
+        st.write(f"_BUCKET: {r2_storage._BUCKET}")
+        st.write(f"_PUBLIC_URL: {r2_storage._PUBLIC_URL}")
+        st.write(f"is_configured(): {r2_storage.is_configured()}")
+        st.write(f"_R2_OK (module): {_R2_OK}")
+        st.write(f"ENV keys with R2: {[k for k in os.environ if 'R2' in k]}")
+        st.write(f"Cache: loaded={_r2_cache_loaded}, manifests={len(_r2_manifest_cache)}")
+        st.write(f"needs_review={len(needs_review)}, accepted={len(accepted_clips)}, blocked={len(blocked_clips)}")
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:

@@ -18,12 +18,12 @@ try:
 except ImportError:
     HAS_BOTO3 = False
 
-# Config from environment
-_ACCOUNT_ID = os.environ.get('R2_ACCOUNT_ID', '')
-_ACCESS_KEY = os.environ.get('R2_ACCESS_KEY_ID', '')
-_SECRET_KEY = os.environ.get('R2_SECRET_ACCESS_KEY', '')
-_BUCKET = os.environ.get('R2_BUCKET', 'flow-automation')
-_PUBLIC_URL = os.environ.get('R2_PUBLIC_URL', '').rstrip('/')
+# Config from environment (strip whitespace for safety)
+_ACCOUNT_ID = os.environ.get('R2_ACCOUNT_ID', '').strip()
+_ACCESS_KEY = os.environ.get('R2_ACCESS_KEY_ID', '').strip()
+_SECRET_KEY = os.environ.get('R2_SECRET_ACCESS_KEY', '').strip()
+_BUCKET = os.environ.get('R2_BUCKET', 'flow-automation').strip()
+_PUBLIC_URL = os.environ.get('R2_PUBLIC_URL', '').strip().rstrip('/')
 
 _client = None
 
