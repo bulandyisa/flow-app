@@ -25,6 +25,21 @@ _SECRET_KEY = os.environ.get('R2_SECRET_ACCESS_KEY', '').strip()
 _BUCKET = os.environ.get('R2_BUCKET', 'flow-automation').strip()
 _PUBLIC_URL = os.environ.get('R2_PUBLIC_URL', '').strip().rstrip('/')
 
+# Fallback: read from .env.railway if env vars are missing
+if not _ACCOUNT_ID:
+    _env_file = Path(__file__).resolve().parent.parent / '.env.railway'
+    if _env_file.exists():
+        for _line in _env_file.read_text().splitlines():
+            _line = _line.strip()
+            if '=' in _line and not _line.startswith('#'):
+                _k, _v = _line.split('=', 1)
+                _k, _v = _k.strip(), _v.strip()
+                if _k == 'R2_ACCOUNT_ID': _ACCOUNT_ID = _v
+                elif _k == 'R2_ACCESS_KEY_ID': _ACCESS_KEY = _v
+                elif _k == 'R2_SECRET_ACCESS_KEY': _SECRET_KEY = _v
+                elif _k == 'R2_BUCKET': _BUCKET = _v
+                elif _k == 'R2_PUBLIC_URL': _PUBLIC_URL = _v.rstrip('/')
+
 _client = None
 
 
