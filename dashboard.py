@@ -1297,8 +1297,6 @@ def page_chain_review():
 
         # Invalidate manifest cache so rerun shows fresh data
         _fetch_all_manifests_r2.clear()
-        global _r2_cache_loaded
-        _r2_cache_loaded = False
 
         msg_parts = []
         if selected_count:
