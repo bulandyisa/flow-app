@@ -971,7 +971,6 @@ def _save_manifest(clip_id: str, manifest: dict):
         r2_key = _r2_key(REVIEW_DIR / clip_id / "manifest.json")
         r2_storage.write_json(r2_key, manifest)
         _r2_manifest_cache[clip_id] = manifest
-        _fetch_all_manifests_r2.clear()  # invalidate Streamlit cache
     path = REVIEW_DIR / clip_id / "manifest.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
