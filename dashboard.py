@@ -1255,14 +1255,12 @@ def page_chain_review():
                             )
                         st.caption(f"Вариант {vi + 1}")
 
-                # Selection controls
-                options = ["Не выбрано"] + [f"Вариант {i+1}" for i in range(len(variants))]
+                # Selection controls — single radio with reject option
+                options = ["Не выбрано"] + [f"Вариант {i+1}" for i in range(len(variants))] + ["Отклонить все"]
                 st.radio(
                     f"Выбор для {cid}/{comp}", options, index=0,
                     key=f"chain_radio_{cid}_{comp}", horizontal=True, label_visibility="collapsed",
                 )
-
-                st.checkbox("Отклонить все", key=f"chain_rej_{cid}_{comp}")
                 st.text_area(
                     "Причина отклонения (заполните если отклоняете)",
                     placeholder="Что исправить?",
@@ -1289,14 +1287,13 @@ def page_chain_review():
         tasks = []
 
         for cid, comp, attempt_num, n_variants in _review_keys:
-            reject = st.session_state.get(f"chain_rej_{cid}_{comp}", False)
             choice = st.session_state.get(f"chain_radio_{cid}_{comp}", "Не выбрано")
 
-            if reject:
+            if choice == "Отклонить все":
                 feedback = st.session_state.get(f"chain_feedback_{cid}_{comp}", "")
                 tasks.append(("reject", cid, comp, feedback, 0, 0))
                 rejected_count += 1
-            elif choice != "Не выбрано":
+            elif choice not in ("Не выбрано", "Отклонить все"):
                 variant_idx = int(choice.split()[-1]) - 1
                 tasks.append(("select", cid, comp, "", attempt_num, variant_idx))
                 selected_count += 1
