@@ -1174,99 +1174,98 @@ def page_chain_review():
     else:
         display_items = needs_review + accepted_clips + blocked_clips
 
-    # --- Render clips (inside form to prevent rerun on every click) ---
+    # --- Render clips ---
     current_scene = None
-    # Collect review keys for processing after submit
     _review_keys = []
 
-    with st.form("chain_review_form"):
-        for item in display_items:
-            clip = item["clip"]
-            cid = clip["clip_id"]
-            manifest = item["manifest"]
+    for item in display_items:
+        clip = item["clip"]
+        cid = clip["clip_id"]
+        manifest = item["manifest"]
 
-            # Scene header
-            if clip["scene_id"] != current_scene:
-                current_scene = clip["scene_id"]
-                color = SCENE_COLORS.get(current_scene, "#49B6E8")
-                label = SCENE_LABELS.get(current_scene, current_scene)
-                st.markdown(
-                    f'<h4 style="border-left:4px solid {color};padding-left:12px;'
-                    f'margin-top:24px;margin-bottom:8px;">{label}</h4>',
-                    unsafe_allow_html=True,
-                )
-
-            # Component status badges
-            first_status = manifest["components"]["nb_first"].get("status", "pending")
-            last_status = manifest["components"]["nb_last"].get("status", "pending")
-            veo_status = manifest["components"].get("veo", {}).get("status", "pending")
-
-            status_icons = {"accepted": "🟢", "pending": "⚪", "rejected": "🔴", "generated": "🟡"}
-            status_labels = {"accepted": "Принято", "pending": "Ожидание", "rejected": "Отклонено", "generated": "На ревью"}
-
-            desc = clip.get("scene_description_ru", "")[:120]
-            veo_badge = ""
-            if first_status == "accepted" and last_status == "accepted":
-                veo_badge = f" &nbsp; `veo:` {status_icons.get(veo_status, '⚪')} {status_labels.get(veo_status, veo_status)}"
+        # Scene header
+        if clip["scene_id"] != current_scene:
+            current_scene = clip["scene_id"]
+            color = SCENE_COLORS.get(current_scene, "#49B6E8")
+            label = SCENE_LABELS.get(current_scene, current_scene)
             st.markdown(
-                f"**{cid}** — {desc} &nbsp; "
-                f"`first:` {status_icons.get(first_status, '⚪')} {status_labels.get(first_status, first_status)} &nbsp; "
-                f"`last:` {status_icons.get(last_status, '⚪')} {status_labels.get(last_status, last_status)}"
-                f"{veo_badge}"
+                f'<h4 style="border-left:4px solid {color};padding-left:12px;'
+                f'margin-top:24px;margin-bottom:8px;">{label}</h4>',
+                unsafe_allow_html=True,
             )
 
-            # Show accepted frames as thumbnails
-            if first_status == "accepted":
-                first_frame = FRAMES_DIR / f"{cid}_first.png"
-                first_src = _r2_image_url(first_frame) or (str(first_frame) if first_frame.exists() else None)
-                if first_src:
-                    fc1, fc2 = st.columns([1, 5])
-                    with fc1:
-                        st.image(first_src, width=150, caption="First (принято)")
-                    if last_status == "accepted":
-                        last_frame = FRAMES_DIR / f"{cid}_last.png"
-                        last_src = _r2_image_url(last_frame) or (str(last_frame) if last_frame.exists() else None)
-                        if last_src:
-                            with fc2:
-                                st.image(last_src, width=150, caption="Last (принято)")
+        # Component status badges
+        first_status = manifest["components"]["nb_first"].get("status", "pending")
+        last_status = manifest["components"]["nb_last"].get("status", "pending")
+        veo_status = manifest["components"].get("veo", {}).get("status", "pending")
 
-            # Show review items (variants awaiting selection)
-            review_items = item.get("review_items", [])
-            for comp, all_attempts in review_items:
-                comp_label = {"nb_first": "Первый кадр", "nb_last": "Последний кадр", "veo": "Видео"}.get(comp, comp)
-                latest_attempt_num, variants = all_attempts[-1]
+        status_icons = {"accepted": "🟢", "pending": "⚪", "rejected": "🔴", "generated": "🟡"}
+        status_labels = {"accepted": "Принято", "pending": "Ожидание", "rejected": "Отклонено", "generated": "На ревью"}
 
-                st.markdown(f"**{comp_label}** — попытка {latest_attempt_num} ({len(variants)} вариантов)")
+        desc = clip.get("scene_description_ru", "")[:120]
+        veo_badge = ""
+        if first_status == "accepted" and last_status == "accepted":
+            veo_badge = f" &nbsp; `veo:` {status_icons.get(veo_status, '⚪')} {status_labels.get(veo_status, veo_status)}"
+        st.markdown(
+            f"**{cid}** — {desc} &nbsp; "
+            f"`first:` {status_icons.get(first_status, '⚪')} {status_labels.get(first_status, first_status)} &nbsp; "
+            f"`last:` {status_icons.get(last_status, '⚪')} {status_labels.get(last_status, last_status)}"
+            f"{veo_badge}"
+        )
 
-                # Show variant images/videos
-                is_video = comp == "veo"
-                cols = st.columns(min(len(variants), 4))
-                for vi, vpath in enumerate(variants):
-                    with cols[vi % 4]:
-                        src = str(vpath)
-                        if is_video:
-                            st.markdown(
-                                f'<video controls playsinline preload="metadata" style="width:100%;border-radius:8px;">'
-                                f'<source src="{src}" type="video/mp4"></video>',
-                                unsafe_allow_html=True,
-                            )
-                        else:
-                            st.image(src, use_container_width=True)
-                        st.caption(f"Вариант {vi + 1}")
-                        st.markdown(f"[⬇ Скачать]({src})", unsafe_allow_html=True)
+        # Show accepted frames as thumbnails
+        if first_status == "accepted":
+            first_frame = FRAMES_DIR / f"{cid}_first.png"
+            first_src = _r2_image_url(first_frame) or (str(first_frame) if first_frame.exists() else None)
+            if first_src:
+                fc1, fc2 = st.columns([1, 5])
+                with fc1:
+                    st.image(first_src, width=150, caption="First (принято)")
+                if last_status == "accepted":
+                    last_frame = FRAMES_DIR / f"{cid}_last.png"
+                    last_src = _r2_image_url(last_frame) or (str(last_frame) if last_frame.exists() else None)
+                    if last_src:
+                        with fc2:
+                            st.image(last_src, width=150, caption="Last (принято)")
 
-                # Selection controls
-                sel_col, rej_col = st.columns([3, 1])
-                with sel_col:
-                    options = ["Не выбрано"] + [f"Вариант {i+1}" for i in range(len(variants))]
-                    st.radio(
-                        f"Выбор для {cid}/{comp}", options, index=0,
-                        key=f"chain_radio_{cid}_{comp}", horizontal=True, label_visibility="collapsed",
-                    )
+        # Show review items (variants awaiting selection)
+        review_items = item.get("review_items", [])
+        for comp, all_attempts in review_items:
+            comp_label = {"nb_first": "Первый кадр", "nb_last": "Последний кадр", "veo": "Видео"}.get(comp, comp)
+            latest_attempt_num, variants = all_attempts[-1]
 
-                with rej_col:
-                    st.checkbox("Отклонить", key=f"chain_rej_{cid}_{comp}")
+            st.markdown(f"**{comp_label}** — попытка {latest_attempt_num} ({len(variants)} вариантов)")
 
+            # Show variant images/videos
+            is_video = comp == "veo"
+            cols = st.columns(min(len(variants), 4))
+            for vi, vpath in enumerate(variants):
+                with cols[vi % 4]:
+                    src = str(vpath)
+                    if is_video:
+                        st.markdown(
+                            f'<video controls playsinline preload="metadata" style="width:100%;border-radius:8px;">'
+                            f'<source src="{src}" type="video/mp4"></video>',
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        st.image(src, use_container_width=True)
+                    st.caption(f"Вариант {vi + 1}")
+                    st.markdown(f"[⬇ Скачать]({src})", unsafe_allow_html=True)
+
+            # Selection controls
+            sel_col, rej_col = st.columns([3, 1])
+            with sel_col:
+                options = ["Не выбрано"] + [f"Вариант {i+1}" for i in range(len(variants))]
+                st.radio(
+                    f"Выбор для {cid}/{comp}", options, index=0,
+                    key=f"chain_radio_{cid}_{comp}", horizontal=True, label_visibility="collapsed",
+                )
+
+            with rej_col:
+                rejected = st.checkbox("Отклонить", key=f"chain_rej_{cid}_{comp}")
+
+            if rejected:
                 st.text_area(
                     f"Что исправить в {cid}/{comp}?",
                     placeholder="Опишите проблему...",
@@ -1275,17 +1274,18 @@ def page_chain_review():
                     label_visibility="collapsed",
                 )
 
-                _review_keys.append((cid, comp, latest_attempt_num, len(variants)))
+            _review_keys.append((cid, comp, latest_attempt_num, len(variants)))
 
-            if review_items:
-                st.divider()
+        if review_items:
+            st.divider()
 
-        # Submit button inside form
-        submitted = st.form_submit_button(
-            "Отправить решения", type="primary", use_container_width=True,
-        )
+    # Submit button
+    submitted = st.button(
+        "Отправить решения", type="primary", use_container_width=True,
+        key="btn_chain_submit",
+    )
 
-    # --- Process decisions after form submit ---
+    # --- Process decisions after submit ---
     if submitted:
         import concurrent.futures
         selected_count = 0
