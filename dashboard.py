@@ -1984,7 +1984,10 @@ def main():
     cfg = _get_series_config()
 
     # --- Check if series is configured ---
-    if not PROMPTS_FILE.exists():
+    prompts_available = PROMPTS_FILE.exists()
+    if not prompts_available and _R2_OK:
+        prompts_available = r2_storage.file_exists(_r2_key(PROMPTS_FILE))
+    if not prompts_available:
         st.sidebar.markdown("---")
         st.header(f'{cfg["icon"]} Серия: {cfg["title"]}')
         st.info(
