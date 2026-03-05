@@ -209,14 +209,21 @@ def _apply_series():
 # ---------------------------------------------------------------------------
 
 @st.cache_data(ttl=60)
-def load_clips() -> list[dict]:
-    """Load clip data from all_prompts.json — R2 first, local fallback."""
-    if _R2_OK:
-        data = r2_storage.read_json(_r2_key(PROMPTS_FILE))
+def _load_clips_cached(prompts_r2_key: str, prompts_local: str) -> list[dict]:
+    """Load clip data — R2 first, local fallback. Keyed by path for cache."""
+    if _R2_OK and prompts_r2_key:
+        data = r2_storage.read_json(prompts_r2_key)
         if data is not None:
             return data
-    with open(PROMPTS_FILE, encoding="utf-8") as f:
-        return json.load(f)
+    p = Path(prompts_local)
+    if p.exists():
+        with open(p, encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+
+def load_clips() -> list[dict]:
+    return _load_clips_cached(_r2_key(PROMPTS_FILE), str(PROMPTS_FILE))
 
 
 @st.cache_data(ttl=60)
