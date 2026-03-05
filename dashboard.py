@@ -920,14 +920,17 @@ _r2_cache_loaded: bool = False
 
 @st.cache_data(ttl=300, show_spinner="Загрузка манифестов из R2...")
 def _fetch_all_manifests_r2(prefix: str) -> dict:
-    """Fetch all manifests from R2 (cached 30s by Streamlit)."""
+    """Fetch all manifests from R2 in parallel (cached 5min by Streamlit)."""
+    import concurrent.futures
     keys = r2_storage.list_prefix(prefix)
     manifest_keys = [k for k in keys if k.endswith("/manifest.json")]
     result = {}
-    for mk in manifest_keys:
-        m = r2_storage.read_json(mk)
-        if m and "clip_id" in m:
-            result[m["clip_id"]] = _normalize_manifest(m)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=12) as pool:
+        futures = {pool.submit(r2_storage.read_json, mk): mk for mk in manifest_keys}
+        for fut in concurrent.futures.as_completed(futures):
+            m = fut.result()
+            if m and "clip_id" in m:
+                result[m["clip_id"]] = _normalize_manifest(m)
     return result
 
 
@@ -1235,16 +1238,18 @@ def page_chain_review():
 
                 st.markdown(f"**{comp_label}** — попытка {latest_attempt_num} ({len(variants)} вариантов)")
 
-                # Show variant images
+                # Show variant images/videos
+                is_video = comp == "veo"
                 cols = st.columns(min(len(variants), 4))
                 for vi, vpath in enumerate(variants):
                     with cols[vi % 4]:
                         src = str(vpath)
-                        if src.endswith(".mp4"):
+                        if is_video:
                             st.video(src)
                         else:
                             st.image(src, use_container_width=True)
                         st.caption(f"Вариант {vi + 1}")
+                        st.markdown(f"[Скачать]({src})", unsafe_allow_html=True)
 
                 # Selection controls
                 sel_col, rej_col = st.columns([3, 1])
