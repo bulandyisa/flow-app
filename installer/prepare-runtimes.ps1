@@ -78,18 +78,22 @@ if (-not (Test-Path (Join-Path $pythonDir "python.exe"))) {
         Write-Host "Enabled import site in $pthFile"
     }
 
-    # Install pip
+    # Install pip (allow stderr warnings)
     Write-Host "Installing pip..."
     $getPipUrl = "https://bootstrap.pypa.io/get-pip.py"
     $getPipPath = Join-Path $BuildDir "get-pip.py"
     Invoke-WebRequest -Uri $getPipUrl -OutFile $getPipPath -UseBasicParsing
+    $ErrorActionPreference = "Continue"
     & (Join-Path $pythonDir "python.exe") $getPipPath --no-warn-script-location 2>&1
+    $ErrorActionPreference = "Stop"
     Remove-Item $getPipPath -Force
 
     # Install bot dependencies
     Write-Host "Installing playwright..."
     $pythonExe = Join-Path $pythonDir "python.exe"
+    $ErrorActionPreference = "Continue"
     & $pythonExe -m pip install playwright boto3 --no-warn-script-location 2>&1
+    $ErrorActionPreference = "Stop"
 
     Write-Host "Python OK: $(& $pythonExe --version)"
 } else {
@@ -108,7 +112,10 @@ if (-not (Test-Path $chromiumDir) -or (Get-ChildItem $chromiumDir -ErrorAction S
     Write-Host "Installing Playwright Chromium..."
     $env:PLAYWRIGHT_BROWSERS_PATH = $chromiumDir
     $pythonExe = Join-Path $pythonDir "python.exe"
+    # Temporarily allow errors - playwright outputs deprecation warnings to stderr
+    $ErrorActionPreference = "Continue"
     & $pythonExe -m playwright install chromium 2>&1
+    $ErrorActionPreference = "Stop"
     Write-Host "Chromium OK"
 } else {
     Write-Host "Chromium already installed."
