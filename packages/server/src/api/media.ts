@@ -10,11 +10,19 @@ export function mediaRouter(config: AppConfig): Router {
   // Пример: /api/media/abc-123/review/SC001_A/nb_first/attempt_1/variant_1.png
   // Пример: /api/media/abc-123/references/locations/porch/angles/wide_front.png
   router.get('/:projectId/*', (req, res) => {
-    const projectDir = resolve(config.dataDir, 'projects', req.params.projectId);
+    const projectId = req.params.projectId;
     const wildcard = req.params[0 as unknown as keyof typeof req.params] as string;
+
+    // Block path traversal early — before any resolve/normalize
+    if (projectId.includes('..') || wildcard.includes('..')) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+
+    const projectDir = resolve(config.dataDir, 'projects', projectId);
     const filePath = resolve(projectDir, wildcard);
 
-    // Первичная проверка по нормализованному пути (до resolve symlinks)
+    // Verify resolved path is still within project dir
     const normalizedPath = normalize(filePath);
     const normalizedProjectDir = normalize(projectDir);
     if (!normalizedPath.startsWith(normalizedProjectDir)) {
