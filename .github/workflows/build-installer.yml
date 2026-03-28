@@ -40,6 +40,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build shared types
+        run: npm run build -w packages/shared
+
+      - name: Verify shared declarations
+        shell: bash
+        run: |
+          ls -la packages/shared/dist/*.d.ts || echo "ERROR: No declaration files!"
+          ls -la node_modules/@flow-app/shared/dist/*.d.ts 2>/dev/null || echo "Checking symlink..."
+          ls -la node_modules/@flow-app/ 2>/dev/null || echo "No @flow-app in node_modules"
+
       - name: Build application
         run: npm run build
 

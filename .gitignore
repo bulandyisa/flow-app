@@ -1,5 +1,6 @@
 node_modules/
 dist/
+*.tsbuildinfo
 # Runtime data directories (not source code)
 /data/
 packages/server/data/
