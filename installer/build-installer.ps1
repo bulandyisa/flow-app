@@ -1,7 +1,7 @@
 # ============================================
-# Flow App — Полная сборка установщика
-# Запускается в CI (GitHub Actions) на Windows
-# Предполагает что npm ci && npm run build уже выполнены
+# Flow App - Build installer
+# Runs in CI (GitHub Actions) on Windows
+# Expects: npm ci && npm run build already done
 # ============================================
 
 param(
@@ -20,9 +20,9 @@ Write-Host "Build: $BuildDir"
 Write-Host ""
 
 # ============================================
-# 1. Формируем app/ директорию из уже собранного проекта
+# 1. Prepare app/ directory from built project
 # ============================================
-Write-Host "=== Шаг 1: Формирование app/ ===" -ForegroundColor Yellow
+Write-Host "=== Step 1: Preparing app/ ===" -ForegroundColor Yellow
 
 $appDir = Join-Path $BuildDir "app"
 if (Test-Path $appDir) { Remove-Item -Recurse -Force $appDir }
@@ -40,16 +40,13 @@ New-Item -ItemType Directory -Force -Path "$serverDir\dist" | Out-Null
 Copy-Item -Recurse (Join-Path $ProjectRoot "packages\server\dist\*") "$serverDir\dist\"
 Copy-Item (Join-Path $ProjectRoot "packages\server\package.json") $serverDir
 
-Write-Host "Устанавливаю production зависимости сервера..."
-$nodeExe = Join-Path $BuildDir "node\node.exe"
+Write-Host "Installing server production dependencies..."
 $npmCmd = Join-Path $BuildDir "node\npm.cmd"
 
 if (Test-Path $npmCmd) {
-    # Используем portable Node.js из build/
     Push-Location $serverDir
     try { & $npmCmd install --omit=dev 2>&1 | Out-Null } finally { Pop-Location }
 } else {
-    # Fallback: системный npm
     Push-Location $serverDir
     try { & npm install --omit=dev 2>&1 | Out-Null } finally { Pop-Location }
 }
@@ -75,7 +72,7 @@ $rulesDir = Join-Path $appDir "rules"
 New-Item -ItemType Directory -Force -Path $rulesDir | Out-Null
 Copy-Item (Join-Path $ProjectRoot "rules\*") $rulesDir
 
-# package.json (для определения версии в dev mode)
+# package.json
 Copy-Item (Join-Path $ProjectRoot "package.json") $appDir
 
 # version.json
@@ -85,13 +82,13 @@ $versionJson = @{
 } | ConvertTo-Json
 Set-Content (Join-Path $appDir "version.json") $versionJson
 
-Write-Host "app/ сформирована"
+Write-Host "app/ ready"
 
 # ============================================
-# 2. Копируем лаунчер и update-checker
+# 2. Copy launcher and update-checker
 # ============================================
 Write-Host ""
-Write-Host "=== Шаг 2: Лаунчер ===" -ForegroundColor Yellow
+Write-Host "=== Step 2: Launcher ===" -ForegroundColor Yellow
 
 Copy-Item (Join-Path $InstallerDir "launcher.bat") $BuildDir
 Copy-Item (Join-Path $InstallerDir "update-checker.js") $BuildDir
@@ -100,14 +97,14 @@ $icoPath = Join-Path $InstallerDir "FlowApp.ico"
 if (Test-Path $icoPath) {
     Copy-Item $icoPath $BuildDir
 } else {
-    Write-Host "[!] FlowApp.ico не найден — установщик будет без иконки" -ForegroundColor Yellow
+    Write-Host "[!] FlowApp.ico not found - installer will have no icon" -ForegroundColor Yellow
 }
 
 # ============================================
-# 3. Создаём code-bundle.zip (для автообновлений)
+# 3. Create code-bundle.zip (for auto-updates)
 # ============================================
 Write-Host ""
-Write-Host "=== Шаг 3: code-bundle.zip ===" -ForegroundColor Yellow
+Write-Host "=== Step 3: code-bundle.zip ===" -ForegroundColor Yellow
 
 $bundleZip = Join-Path $InstallerDir "code-bundle.zip"
 if (Test-Path $bundleZip) { Remove-Item $bundleZip }
@@ -117,14 +114,13 @@ $bundleSize = (Get-Item $bundleZip).Length / 1MB
 Write-Host "code-bundle.zip: $([math]::Round($bundleSize, 1)) MB"
 
 # ============================================
-# 4. Компилируем Inno Setup (если доступен)
+# 4. Compile Inno Setup
 # ============================================
 Write-Host ""
-Write-Host "=== Шаг 4: Inno Setup ===" -ForegroundColor Yellow
+Write-Host "=== Step 4: Inno Setup ===" -ForegroundColor Yellow
 
 $issFile = Join-Path $InstallerDir "flow-app-setup.iss"
 
-# Ищем ISCC.exe
 $iscc = $null
 $isccPaths = @(
     "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
@@ -137,22 +133,21 @@ foreach ($p in $isccPaths) {
 
 if ($iscc) {
     Write-Host "Inno Setup: $iscc"
-    Write-Host "Компилирую установщик..."
+    Write-Host "Compiling installer..."
     & $iscc "/DAppVersion=$Version" "/DBuildDir=$BuildDir" "/DOutputDir=$InstallerDir" $issFile
 
     $setupExe = Get-ChildItem -Path $InstallerDir -Filter "FlowApp-Setup-*.exe" | Select-Object -First 1
     if ($setupExe) {
         $setupSize = $setupExe.Length / 1MB
         Write-Host ""
-        Write-Host "=== ГОТОВО ===" -ForegroundColor Green
-        Write-Host "Установщик: $($setupExe.Name)" -ForegroundColor Green
-        Write-Host "Размер: $([math]::Round($setupSize, 1)) MB" -ForegroundColor Green
+        Write-Host "=== DONE ===" -ForegroundColor Green
+        Write-Host "Installer: $($setupExe.Name)" -ForegroundColor Green
+        Write-Host "Size: $([math]::Round($setupSize, 1)) MB" -ForegroundColor Green
     } else {
-        Write-Host "[!] Установщик не создан" -ForegroundColor Red
+        Write-Host "[!] Installer not created" -ForegroundColor Red
         exit 1
     }
 } else {
-    Write-Host "[!] Inno Setup не найден — .exe не создан" -ForegroundColor Red
-    Write-Host "    code-bundle.zip создан для автообновлений."
+    Write-Host "[!] Inno Setup not found" -ForegroundColor Red
     exit 1
 }

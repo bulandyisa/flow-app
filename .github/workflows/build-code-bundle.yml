@@ -35,32 +35,36 @@ jobs:
 
       - name: Create code bundle
         run: |
-          mkdir -p bundle/packages/shared bundle/packages/server bundle/packages/client
+          mkdir -p bundle/packages/shared/dist bundle/packages/server/dist bundle/packages/client/dist
           mkdir -p bundle/bot bundle/rules
 
           # shared
-          cp -r packages/shared/dist bundle/packages/shared/
+          cp -r packages/shared/dist/* bundle/packages/shared/dist/
           cp packages/shared/package.json bundle/packages/shared/
 
-          # server dist + production deps
-          cp -r packages/server/dist bundle/packages/server/
+          # server dist
+          cp -r packages/server/dist/* bundle/packages/server/dist/
           cp packages/server/package.json bundle/packages/server/
-          cd bundle/packages/server && npm install --omit=dev 2>/dev/null && cd ../../..
+
+          # server production deps (need shared symlink for workspace resolution)
+          cd bundle/packages/server
+          npm install --omit=dev --install-links 2>/dev/null || true
+          cd ../../..
 
           # client
-          cp -r packages/client/dist bundle/packages/client/
+          cp -r packages/client/dist/* bundle/packages/client/dist/
 
           # bot
           cp bot/flow_bot.py bundle/bot/
-          [ -f bot/r2_storage.py ] && cp bot/r2_storage.py bundle/bot/
-          [ -f bot/run_safe.bat ] && cp bot/run_safe.bat bundle/bot/
+          [ -f bot/r2_storage.py ] && cp bot/r2_storage.py bundle/bot/ || true
+          [ -f bot/run_safe.bat ] && cp bot/run_safe.bat bundle/bot/ || true
 
           # rules
           cp rules/* bundle/rules/
 
           # meta
           cp package.json bundle/
-          echo '{"version":"${{ steps.version.outputs.version }}","builtAt":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' > bundle/version.json
+          echo "{\"version\":\"${{ steps.version.outputs.version }}\",\"builtAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > bundle/version.json
 
           # zip
           cd bundle && zip -r ../code-bundle.zip . && cd ..
