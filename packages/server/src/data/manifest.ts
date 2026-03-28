@@ -1,5 +1,6 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, renameSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
+import { randomBytes } from 'node:crypto';
 import type { Manifest, ComponentName, ComponentState } from '@flow-app/shared';
 
 /** Создаёт пустое состояние компонента */
@@ -30,11 +31,14 @@ export function loadManifest(reviewDir: string, clipId: string): Manifest | null
   return JSON.parse(readFileSync(file, 'utf-8'));
 }
 
-/** Сохраняет манифест */
+/** Сохраняет манифест (атомарно: write to temp → rename) */
 export function saveManifest(reviewDir: string, manifest: Manifest): void {
   const dir = resolve(reviewDir, manifest.clip_id);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  writeFileSync(resolve(dir, 'manifest.json'), JSON.stringify(manifest, null, 2), 'utf-8');
+  const target = resolve(dir, 'manifest.json');
+  const tmp = target + '.' + randomBytes(4).toString('hex') + '.tmp';
+  writeFileSync(tmp, JSON.stringify(manifest, null, 2), 'utf-8');
+  renameSync(tmp, target);
 }
 
 /** Отмечает вариант как принятый */
