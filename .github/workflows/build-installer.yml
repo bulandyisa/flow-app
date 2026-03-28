@@ -1,0 +1,74 @@
+name: Build Windows Installer
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Extract version from tag
+        id: version
+        shell: bash
+        run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Install Inno Setup
+        shell: powershell
+        run: choco install innosetup -y --no-progress
+
+      - name: Prepare runtimes (Node.js, Python, FFmpeg, Chromium)
+        shell: powershell
+        run: |
+          & .\installer\prepare-runtimes.ps1 -BuildDir .\installer\build
+        timeout-minutes: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Bundle app + create installer
+        shell: powershell
+        run: |
+          & .\installer\build-installer.ps1 -Version ${{ steps.version.outputs.version }}
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FlowApp-Setup-${{ steps.version.outputs.version }}
+          path: installer/FlowApp-Setup-*.exe
+          if-no-files-found: error
+
+      - name: Upload code bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-bundle-${{ steps.version.outputs.version }}
+          path: installer/code-bundle.zip
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Flow App v${{ steps.version.outputs.version }}
+          draft: true
+          generate_release_notes: true
+          files: |
+            installer/FlowApp-Setup-*.exe
+            installer/code-bundle.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

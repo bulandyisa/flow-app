@@ -1,0 +1,24 @@
+{
+  "name": "flow-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Локальное приложение для производства мультфильмов через Google Flow",
+  "workspaces": [
+    "packages/shared",
+    "packages/server",
+    "packages/client"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm run dev -w packages/server",
+    "dev:client": "npm run dev -w packages/client",
+    "build": "npm run build -w packages/shared && npm run build -w packages/server && npm run build -w packages/client",
+    "start": "npm run start -w packages/server",
+    "postinstall": "npm run build -w packages/shared",
+    "install:playwright": "npx playwright install chromium"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "typescript": "^5.7.0"
+  }
+}
