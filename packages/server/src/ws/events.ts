@@ -27,7 +27,11 @@ export function broadcast(event: WsEvent): void {
   const message = JSON.stringify(event);
   for (const client of wss.clients) {
     if (client.readyState === WebSocket.OPEN) {
-      client.send(message);
+      try {
+        client.send(message);
+      } catch {
+        // Dead connection — ignore, will be cleaned up on next close event
+      }
     }
   }
 }
