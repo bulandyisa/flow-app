@@ -3,7 +3,7 @@ import cors from 'cors';
 import { createServer } from 'node:http';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mkdirSync, existsSync } from 'node:fs';
+import { mkdirSync, existsSync, writeFileSync, unlinkSync } from 'node:fs';
 import { loadConfig } from './config.js';
 import { projectsRouter } from './api/projects.js';
 import { mediaRouter } from './api/media.js';
@@ -73,4 +73,12 @@ server.listen(config.port, () => {
   console.log(`\n  Flow App запущен: http://localhost:${config.port}`);
   console.log(`  Данные: ${config.dataDir}`);
   console.log(`  Claude API: ${config.anthropicApiKey ? '✓ настроен' : '✗ нет ключа'}\n`);
+
+  // Save PID for launcher cleanup
+  const pidFile = resolve(config.dataDir, 'server.pid');
+  writeFileSync(pidFile, String(process.pid));
+  const cleanup = () => { try { unlinkSync(pidFile); } catch {} };
+  process.on('exit', cleanup);
+  process.on('SIGTERM', () => { cleanup(); process.exit(0); });
+  process.on('SIGINT', () => { cleanup(); process.exit(0); });
 });
