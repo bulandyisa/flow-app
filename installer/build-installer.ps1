@@ -41,15 +41,25 @@ Copy-Item -Recurse (Join-Path $ProjectRoot "packages\server\dist\*") "$serverDir
 Copy-Item (Join-Path $ProjectRoot "packages\server\package.json") $serverDir
 
 Write-Host "Installing server production dependencies..."
-$npmCmd = Join-Path $BuildDir "node\npm.cmd"
 
-if (Test-Path $npmCmd) {
-    Push-Location $serverDir
-    try { & $npmCmd install --omit=dev 2>&1 | Out-Null } finally { Pop-Location }
-} else {
-    Push-Location $serverDir
-    try { & npm install --omit=dev 2>&1 | Out-Null } finally { Pop-Location }
+# Remove workspace dependency on @flow-app/shared (it's bundled, not from npm)
+$serverPkg = Join-Path $serverDir "package.json"
+$serverPkgJson = Get-Content $serverPkg -Raw | ConvertFrom-Json
+if ($serverPkgJson.dependencies.PSObject.Properties["@flow-app/shared"]) {
+    $serverPkgJson.dependencies.PSObject.Properties.Remove("@flow-app/shared")
+    $serverPkgJson | ConvertTo-Json -Depth 10 | Set-Content $serverPkg
+    Write-Host "Removed @flow-app/shared workspace dep from server package.json"
 }
+
+$ErrorActionPreference = "Continue"
+Push-Location $serverDir
+try { & npm install --omit=dev 2>&1 | Out-Null } finally { Pop-Location }
+$ErrorActionPreference = "Stop"
+
+# Link shared package manually (copy dist into node_modules)
+$sharedLink = Join-Path $serverDir "node_modules\@flow-app\shared"
+New-Item -ItemType Directory -Force -Path $sharedLink | Out-Null
+Copy-Item -Recurse "$appDir\packages\shared\*" $sharedLink
 
 # client/dist
 $clientDist = Join-Path $appDir "packages\client\dist"
