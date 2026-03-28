@@ -26,6 +26,8 @@ OutputBaseFilename=FlowApp-Setup-{#AppVersion}
 Compression=lzma2/ultra64
 SolidCompression=yes
 PrivilegesRequired=lowest
+SetupIconFile={#BuildDir}\FlowApp.ico
+UninstallDisplayIcon={app}\FlowApp.ico
 WizardStyle=modern
 WizardSizePercent=120
 
@@ -34,25 +36,26 @@ Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Messages]
-russian.WelcomeLabel2=Программа установит Flow App на ваш компьютер.%n%nFlow App — приложение для производства мультфильмов через Google Flow.
-russian.FinishedLabel=Установка завершена. Нажмите «Готово» для запуска приложения.
+russian.WelcomeLabel2=Flow App — production tool for animated films via Google Flow.%n%nThe installer will set up everything needed on your computer.
+russian.FinishedLabel=Installation complete. Click Finish to launch the application.
 
 [Files]
-; Рантаймы
+; Runtimes
 Source: "{#BuildDir}\node\*"; DestDir: "{app}\node"; Flags: recursesubdirs
 Source: "{#BuildDir}\python\*"; DestDir: "{app}\python"; Flags: recursesubdirs
 Source: "{#BuildDir}\chromium\*"; DestDir: "{app}\chromium"; Flags: recursesubdirs
 Source: "{#BuildDir}\ffmpeg\*"; DestDir: "{app}\ffmpeg"; Flags: recursesubdirs
 
-; Код приложения
+; Application code
 Source: "{#BuildDir}\app\*"; DestDir: "{app}\app"; Flags: recursesubdirs
 
-; Лаунчер и утилиты
+; Launcher, VBS wrapper, update checker
 Source: "{#BuildDir}\launcher.bat"; DestDir: "{app}"
+Source: "{#BuildDir}\FlowApp.vbs"; DestDir: "{app}"
 Source: "{#BuildDir}\update-checker.js"; DestDir: "{app}"
 
-; Иконка (опционально)
-Source: "{#BuildDir}\FlowApp.ico"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+; Icon
+Source: "{#BuildDir}\FlowApp.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Dirs]
 Name: "{app}\data"
@@ -60,12 +63,14 @@ Name: "{app}\data\projects"
 Name: "{app}\data\sessions"
 
 [Icons]
-Name: "{userdesktop}\Flow App"; Filename: "{app}\launcher.bat"; Comment: "Запустить Flow App"
-Name: "{userprograms}\Flow App\Flow App"; Filename: "{app}\launcher.bat"
-Name: "{userprograms}\Flow App\Удалить Flow App"; Filename: "{uninstallexe}"
+; Desktop and Start Menu shortcuts point to VBS (no console window)
+Name: "{userdesktop}\Flow App"; Filename: "wscript.exe"; Parameters: """{app}\FlowApp.vbs"""; IconFilename: "{app}\FlowApp.ico"; Comment: "Flow App"
+Name: "{userprograms}\Flow App\Flow App"; Filename: "wscript.exe"; Parameters: """{app}\FlowApp.vbs"""; IconFilename: "{app}\FlowApp.ico"
+Name: "{userprograms}\Flow App\Uninstall Flow App"; Filename: "{uninstallexe}"
 
 [Run]
-Filename: "{app}\launcher.bat"; Description: "Запустить Flow App"; Flags: postinstall nowait skipifsilent
+; Launch after install via VBS (no console window)
+Filename: "wscript.exe"; Parameters: """{app}\FlowApp.vbs"""; Description: "Launch Flow App"; Flags: postinstall nowait skipifsilent
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\_update_temp"

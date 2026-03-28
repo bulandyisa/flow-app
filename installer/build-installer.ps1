@@ -101,14 +101,9 @@ Write-Host ""
 Write-Host "=== Step 2: Launcher ===" -ForegroundColor Yellow
 
 Copy-Item (Join-Path $InstallerDir "launcher.bat") $BuildDir
+Copy-Item (Join-Path $InstallerDir "FlowApp.vbs") $BuildDir
 Copy-Item (Join-Path $InstallerDir "update-checker.js") $BuildDir
-
-$icoPath = Join-Path $InstallerDir "FlowApp.ico"
-if (Test-Path $icoPath) {
-    Copy-Item $icoPath $BuildDir
-} else {
-    Write-Host "[!] FlowApp.ico not found - installer will have no icon" -ForegroundColor Yellow
-}
+Copy-Item (Join-Path $InstallerDir "FlowApp.ico") $BuildDir
 
 # ============================================
 # 3. Create code-bundle.zip (for auto-updates)
