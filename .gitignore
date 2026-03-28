@@ -1,6 +1,8 @@
 node_modules/
 dist/
-data/
+# Runtime data directories (not source code)
+/data/
+packages/server/data/
 .env
 *.log
 .DS_Store
