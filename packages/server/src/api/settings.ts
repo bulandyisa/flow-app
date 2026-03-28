@@ -22,7 +22,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   defaultVariantCount: 4,
   accounts: [],
   githubToken: '',
-  updateRepo: 'genvid25/flow-app',
+  updateRepo: 'bulandyisa/flow-app',
 };
 
 export function settingsRouter(config: AppConfig): Router {

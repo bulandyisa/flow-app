@@ -41,7 +41,7 @@ export function loadConfig(): AppConfig {
     dataDir,
     anthropicApiKey: (process.env.ANTHROPIC_API_KEY || settings.claudeApiKey || '') as string,
     githubToken: (process.env.GITHUB_TOKEN || settings.githubToken || '') as string,
-    githubRepo: (process.env.GITHUB_REPO || settings.updateRepo || 'genvid25/flow-app') as string,
+    githubRepo: (process.env.GITHUB_REPO || settings.updateRepo || 'bulandyisa/flow-app') as string,
     nodeEnv: process.env.NODE_ENV || 'development',
     appRootDir,
   };

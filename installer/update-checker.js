@@ -18,7 +18,7 @@ const { execSync } = require('child_process');
 const APP_ROOT = process.argv[2] || path.dirname(__filename);
 const APP_DIR = path.join(APP_ROOT, 'app');
 const VERSION_FILE = path.join(APP_DIR, 'version.json');
-const GITHUB_REPO = 'genvid25/flow-app';
+const GITHUB_REPO = 'bulandyisa/flow-app';
 const TEMP_DIR = path.join(APP_ROOT, '_update_temp');
 
 function getCurrentVersion() {
