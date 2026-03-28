@@ -31,7 +31,8 @@ export const api = {
 
   // Клипы и ревью
   getClips: (projectId: string) => request<unknown[]>(`/projects/${projectId}/clips`),
-  getReview: (projectId: string) => request<unknown>(`/projects/${projectId}/review`),
+  getReview: (projectId: string, page = 1, limit = 40, filter = 'all', search = '') =>
+    request<unknown>(`/projects/${projectId}/review?page=${page}&limit=${limit}&filter=${encodeURIComponent(filter)}&search=${encodeURIComponent(search)}`),
   submitReview: (projectId: string, decisions: unknown[], model: 'sonnet' | 'opus' = 'sonnet') =>
     request<unknown>(`/projects/${projectId}/review/submit`, {
       method: 'POST',

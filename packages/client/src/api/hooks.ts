@@ -44,7 +44,7 @@ export function useSubmitReview(projectId: string) {
   return useMutation({
     mutationFn: ({ decisions, model }: { decisions: unknown[]; model: 'sonnet' | 'opus' }) =>
       api.submitReview(projectId, decisions, model),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['review', projectId] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['review'] }),
   });
 }
 

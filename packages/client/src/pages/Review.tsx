@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useReview, useSubmitReview } from '@/api/hooks';
+import { useSubmitReview } from '@/api/hooks';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { Image, Video, CheckCircle, Clock, Filter, Send, Loader2, Search, AlertTriangle, Lock } from 'lucide-react';
@@ -53,7 +53,16 @@ function isChainBlocked(manifest: ReviewManifest | undefined): boolean {
 
 export function Review() {
   const { id: projectId } = useParams<{ id: string }>();
-  const { data, isLoading } = useReview(projectId!);
+  const [viewMode, setViewMode] = useState<ViewMode>('review_photos');
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Fetch with server-side filter/search/pagination
+  const { data, isLoading } = useQuery({
+    queryKey: ['review', projectId, viewMode, page, searchQuery],
+    queryFn: () => api.getReview(projectId!, page, 40, viewMode, searchQuery),
+    refetchInterval: 30_000,
+  });
   const submitMutation = useSubmitReview(projectId!);
   const { data: botStatus } = useQuery({
     queryKey: ['bot-status'],
@@ -64,9 +73,6 @@ export function Review() {
   const { isFixingPrompts } = useGenerationStore();
   const canSubmit = !submitMutation.isPending && !isGenerating && !isFixingPrompts;
 
-  const [viewMode, setViewMode] = useState<ViewMode>('review_photos');
-  const [page, setPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState('');
   const [bulkFeedback, setBulkFeedback] = useState('');
 
   // Состояние решений: { clipId: { component: variantIndex } }
@@ -118,72 +124,20 @@ export function Review() {
     return () => window.removeEventListener('beforeunload', handler);
   }, [hasUnsavedDecisions]);
 
-  const reviewData = data as { clips: ReviewClip[]; manifests: Record<string, ReviewManifest> } | undefined;
-  const clips = reviewData?.clips || [];
+  const reviewData = data as {
+    clips: ReviewClip[];
+    manifests: Record<string, ReviewManifest>;
+    total: number;
+    totalAll: number;
+    page: number;
+    limit: number;
+    stats: { total: number; firstAccepted: number; veoAccepted: number; needsReview: number; pendingPhotos: number; pendingVideos: number; chainBlocked: number };
+  } | undefined;
+  const pageClips = reviewData?.clips || [];
   const manifests = reviewData?.manifests || {};
-
-  // Подсчёт chain-blocked клипов
-  const chainBlockedCount = useMemo(() => {
-    return clips.filter((clip) => isChainBlocked(manifests[clip.clip_id])).length;
-  }, [clips, manifests]);
-
-  // Поиск
-  const searchedClips = useMemo(() => {
-    if (!searchQuery.trim()) return clips;
-    const q = searchQuery.toLowerCase().trim();
-    return clips.filter((clip) =>
-      clip.clip_id.toLowerCase().includes(q) ||
-      clip.scene_id.toLowerCase().includes(q) ||
-      clip.scene_description_ru.toLowerCase().includes(q)
-    );
-  }, [clips, searchQuery]);
-
-  // Фильтрация клипов по view mode
-  const filteredClips = useMemo(() => {
-    return searchedClips.filter((clip) => {
-      const manifest = manifests[clip.clip_id];
-
-      switch (viewMode) {
-        case 'review_photos': {
-          if (!manifest) return false;
-          const firstStatus = manifest.components?.nb_first?.status || 'pending';
-          return firstStatus === 'generated';
-        }
-        case 'review_videos': {
-          if (!manifest) return false;
-          const veoStatus = manifest.components?.veo?.status || 'pending';
-          return veoStatus === 'generated';
-        }
-        case 'review_all': {
-          if (!manifest) return false;
-          const firstStatus = manifest.components?.nb_first?.status || 'pending';
-          const veoStatus = manifest.components?.veo?.status || 'pending';
-          return firstStatus === 'generated' || veoStatus === 'generated';
-        }
-        case 'all_photos':
-          return true; // покажем все, но только фото-компоненты
-        case 'all_videos': {
-          if (!manifest) return false;
-          const veoStatus = manifest.components?.veo?.status || 'pending';
-          return veoStatus !== 'pending'; // есть хотя бы попытка VEO
-        }
-        case 'accepted': {
-          if (!manifest) return false;
-          const firstStatus = manifest.components?.nb_first?.status || 'pending';
-          return firstStatus === 'accepted';
-        }
-        case 'blocked':
-          return isChainBlocked(manifest);
-        case 'all':
-        default:
-          return true;
-      }
-    });
-  }, [searchedClips, manifests, viewMode]);
-
-  // Пагинация
-  const totalPages = Math.max(1, Math.ceil(filteredClips.length / CLIPS_PER_PAGE));
-  const pageClips = filteredClips.slice((page - 1) * CLIPS_PER_PAGE, page * CLIPS_PER_PAGE);
+  const totalFiltered = reviewData?.total || 0;
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / CLIPS_PER_PAGE));
+  const chainBlockedCount = reviewData?.stats?.chainBlocked || 0;
 
   // Группировка по сценам
   const sceneGroups = useMemo(() => {
@@ -199,26 +153,7 @@ export function Review() {
     return groups;
   }, [pageClips]);
 
-  // Статистика
-  const stats = useMemo(() => {
-    let firstAccepted = 0;
-    let veoAccepted = 0;
-    let needsReview = 0;
-    let pendingPhotos = 0;
-    let pendingVideos = 0;
-    for (const clip of clips) {
-      const m = manifests[clip.clip_id];
-      if (!m) continue;
-      const firstSt = m.components?.nb_first?.status || 'pending';
-      const veoSt = m.components?.veo?.status || 'pending';
-      if (firstSt === 'accepted') firstAccepted++;
-      if (veoSt === 'accepted') veoAccepted++;
-      if (firstSt === 'generated' || veoSt === 'generated') needsReview++;
-      if (firstSt === 'pending') pendingPhotos++;
-      if (veoSt === 'pending' && firstSt === 'accepted') pendingVideos++;
-    }
-    return { total: clips.length, firstAccepted, veoAccepted, needsReview, pendingPhotos, pendingVideos };
-  }, [clips, manifests]);
+  const stats = reviewData?.stats || { total: 0, firstAccepted: 0, veoAccepted: 0, needsReview: 0, pendingPhotos: 0, pendingVideos: 0, chainBlocked: 0 };
 
   // Обновляем store для панели генерации в sidebar
   const setPending = useGenerationStore((s) => s.setPending);
@@ -533,7 +468,7 @@ export function Review() {
             ←
           </button>
           <span className="text-sm text-gray-400">
-            Страница {page} из {totalPages} ({filteredClips.length} клипов)
+            Страница {page} из {totalPages} ({totalFiltered} клипов)
           </span>
           <button
             onClick={() => setPage(Math.min(totalPages, page + 1))}

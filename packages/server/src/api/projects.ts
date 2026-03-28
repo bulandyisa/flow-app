@@ -66,7 +66,7 @@ export function projectsRouter(config: AppConfig): Router {
     res.json(clips);
   });
 
-  // GET /api/projects/:id/review — клипы на ревью с манифестами (с пагинацией)
+  // GET /api/projects/:id/review — клипы на ревью с манифестами (с пагинацией и фильтрацией)
   router.get('/:id/review', (req, res) => {
     const project = store.get(req.params.id);
     if (!project) {
@@ -76,35 +76,92 @@ export function projectsRouter(config: AppConfig): Router {
 
     const promptsFile = resolve(store.projectDir(project.id), 'prompts', 'all_prompts.json');
     if (!existsSync(promptsFile)) {
-      res.json({ clips: [], manifests: {}, total: 0, page: 1, limit: 40 });
+      res.json({ clips: [], manifests: {}, total: 0, totalAll: 0, page: 1, limit: 40, stats: { total: 0, firstAccepted: 0, veoAccepted: 0, needsReview: 0, pendingPhotos: 0, pendingVideos: 0, chainBlocked: 0 } });
       return;
     }
 
     const allClips: Clip[] = JSON.parse(readFileSync(promptsFile, 'utf-8'));
     const reviewDir = resolve(store.projectDir(project.id), 'review');
 
-    // Пагинация
-    const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
-    const limit = Math.max(1, Math.min(200, parseInt(req.query.limit as string, 10) || 40));
-    const start = (page - 1) * limit;
-    const pageClips = allClips.slice(start, start + limit);
-
-    const manifests: Record<string, unknown> = {};
-    for (const clip of pageClips) {
+    // Load all manifests for filtering and stats
+    const allManifests: Record<string, Record<string, unknown>> = {};
+    for (const clip of allClips) {
       const manifest = loadManifest(reviewDir, clip.clip_id);
       if (manifest) {
-        manifests[clip.clip_id] = manifest;
+        allManifests[clip.clip_id] = manifest as unknown as Record<string, unknown>;
+      }
+    }
+
+    // Stats
+    let firstAccepted = 0, veoAccepted = 0, needsReview = 0, pendingPhotos = 0, pendingVideos = 0, chainBlocked = 0;
+    for (const clip of allClips) {
+      const m = allManifests[clip.clip_id] as { components?: Record<string, { status?: string }> } | undefined;
+      const firstSt = m?.components?.nb_first?.status || 'pending';
+      const veoSt = m?.components?.veo?.status || 'pending';
+      if (firstSt === 'accepted') firstAccepted++;
+      if (veoSt === 'accepted') veoAccepted++;
+      if (firstSt === 'generated' || veoSt === 'generated') needsReview++;
+      if (firstSt === 'pending') pendingPhotos++;
+      if (veoSt === 'pending' && firstSt === 'accepted') pendingVideos++;
+      if (veoSt === 'pending' && firstSt !== 'accepted' && firstSt !== 'generated') chainBlocked++;
+    }
+
+    // Server-side filtering
+    const filter = (req.query.filter as string) || 'all';
+    const search = ((req.query.search as string) || '').toLowerCase().trim();
+
+    let filtered = allClips;
+
+    // Search
+    if (search) {
+      filtered = filtered.filter(clip =>
+        clip.clip_id.toLowerCase().includes(search) ||
+        clip.scene_id.toLowerCase().includes(search) ||
+        (clip.scene_description_ru || '').toLowerCase().includes(search)
+      );
+    }
+
+    // Filter by view mode
+    filtered = filtered.filter(clip => {
+      const m = allManifests[clip.clip_id] as { components?: Record<string, { status?: string }> } | undefined;
+      const firstSt = m?.components?.nb_first?.status || 'pending';
+      const veoSt = m?.components?.veo?.status || 'pending';
+
+      switch (filter) {
+        case 'review_photos': return firstSt === 'generated';
+        case 'review_videos': return veoSt === 'generated';
+        case 'review_all': return firstSt === 'generated' || veoSt === 'generated';
+        case 'all_photos': return true;
+        case 'all_videos': return veoSt !== 'pending';
+        case 'accepted': return firstSt === 'accepted';
+        case 'blocked': return veoSt === 'pending' && firstSt !== 'accepted' && firstSt !== 'generated';
+        case 'all': default: return true;
+      }
+    });
+
+    // Pagination
+    const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
+    const limit = Math.max(1, Math.min(200, parseInt(req.query.limit as string, 10) || 40));
+    const totalFiltered = filtered.length;
+    const start = (page - 1) * limit;
+    const pageClips = filtered.slice(start, start + limit);
+
+    // Return manifests only for current page
+    const manifests: Record<string, unknown> = {};
+    for (const clip of pageClips) {
+      if (allManifests[clip.clip_id]) {
+        manifests[clip.clip_id] = allManifests[clip.clip_id];
       }
     }
 
     res.json({
-      clips: allClips,  // Возвращаем все клипы для фильтрации на клиенте
+      clips: pageClips,
       manifests,
-      total: allClips.length,
+      total: totalFiltered,
+      totalAll: allClips.length,
       page,
       limit,
-      // Загружаем манифесты только для текущей страницы
-      manifestPage: pageClips.map((c) => c.clip_id),
+      stats: { total: allClips.length, firstAccepted, veoAccepted, needsReview, pendingPhotos, pendingVideos, chainBlocked },
     });
   });
 
