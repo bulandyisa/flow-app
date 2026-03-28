@@ -40,7 +40,7 @@ if (-not (Test-Path (Join-Path $nodeDir "node.exe"))) {
     $extracted = Get-ChildItem -Path $BuildDir -Directory -Filter "node-v*" | Select-Object -First 1
     if ($extracted) {
         if (Test-Path $nodeDir) { Remove-Item -Recurse -Force $nodeDir }
-        Rename-Item $extracted.FullName $nodeDir
+        Move-Item $extracted.FullName $nodeDir
     }
 
     Remove-Item $nodeZip -Force
