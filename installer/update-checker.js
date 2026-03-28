@@ -179,31 +179,46 @@ async function main() {
   try {
     await downloadFile(asset.browser_download_url, zipPath);
   } catch (e) {
-    console.log(`  Ошибка скачивания: ${e.message}`);
+    console.log(`  Download error: ${e.message}`);
     rmDir(TEMP_DIR);
     process.exit(1);
   }
 
-  // 5. Распаковываем
-  console.log(`  Распаковываю...`);
+  // 4b. Verify downloaded file size matches expected
+  const actualSize = fs.statSync(zipPath).size;
+  if (asset.size && Math.abs(actualSize - asset.size) > 1024) {
+    console.log(`  Incomplete download (${actualSize} vs ${asset.size} bytes). Skipping.`);
+    rmDir(TEMP_DIR);
+    process.exit(1);
+  }
+
+  // 5. Extract
+  console.log(`  Extracting...`);
 
   const extractDir = path.join(TEMP_DIR, 'extracted');
   fs.mkdirSync(extractDir, { recursive: true });
 
   try {
-    // Используем PowerShell для распаковки на Windows
     execSync(
       `powershell -NoProfile -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${extractDir}' -Force"`,
       { stdio: 'pipe', timeout: 60000 }
     );
   } catch (e) {
-    console.log(`  Ошибка распаковки: ${e.message}`);
+    console.log(`  Extract error: ${e.message}`);
     rmDir(TEMP_DIR);
     process.exit(1);
   }
 
-  // 6. Заменяем app/ директорию (атомарно)
-  console.log(`  Устанавливаю обновление...`);
+  // 5b. Verify extracted code has the critical server file
+  const serverEntry = path.join(extractDir, 'packages', 'server', 'dist', 'index.js');
+  if (!fs.existsSync(serverEntry)) {
+    console.log(`  Corrupted update: server entry point missing. Skipping.`);
+    rmDir(TEMP_DIR);
+    process.exit(1);
+  }
+
+  // 6. Replace app/ directory (atomic with rollback)
+  console.log(`  Installing update...`);
 
   const appOld = APP_DIR + '.old';
 
