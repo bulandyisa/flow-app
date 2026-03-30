@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/api/client';
 import { VariantGrid } from '@/components/review/VariantGrid';
+import { LOCATION_ANGLE_TYPES, CHARACTER_ANGLE_TYPES } from '@flow-app/shared';
 
 /** Русские названия ракурсов */
 const ANGLE_RU: Record<string, string> = {
@@ -803,53 +804,61 @@ export function ReferencesStep({
                           </div>
                         )}
 
-                        {/* Accepted angles grid */}
-                        {char.angles.length > 0 && (
-                          <div className="pt-2">
-                            <h4 className="text-sm text-gray-400 mb-2">
-                              Принятые ракурсы ({char.angles.filter((a) => a.status === 'accepted').length})
-                            </h4>
-                            <div className="grid grid-cols-5 gap-2">
-                              {char.angles.filter((a) => a.status === 'accepted').map((angle) => (
-                                <div key={angle.id} className="text-center">
-                                  <img
-                                    src={api.mediaUrl(projectId, angle.file)}
-                                    alt={angleRu(angle.id) || angle.description}
-                                    className="w-full aspect-square rounded object-cover border border-surface-lighter"
-                                    loading="lazy"
-                                  />
-                                  <span className="text-[10px] text-gray-500 mt-0.5 block truncate">
-                                    {angleRu(angle.id) || angle.description}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Upload angle manually */}
+                        {/* Angle upload list */}
                         {char.baseImage && (
-                          <div className="pt-2">
-                            <label
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 border border-surface-lighter hover:border-accent rounded-lg text-xs text-gray-400 hover:text-white cursor-pointer transition-colors"
-                            >
-                              <Upload size={12} />
-                              Загрузить ракурс
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={async (e) => {
-                                  const file = e.target.files?.[0];
-                                  if (!file) return;
-                                  const angleId = prompt('Название ракурса (например: full_front, face_closeup):');
-                                  if (!angleId) return;
-                                  await api.uploadCharacterAngle(projectId, char.id, angleId.trim(), file);
-                                  onUpdate();
-                                }}
-                              />
-                            </label>
+                          <div className="pt-3">
+                            <h4 className="text-sm text-gray-400 mb-2">
+                              Ракурсы ({char.angles.filter((a) => a.status === 'accepted').length}/{CHARACTER_ANGLE_TYPES.length})
+                            </h4>
+                            <div className="space-y-1.5">
+                              {(() => {
+                                const standardIds = CHARACTER_ANGLE_TYPES.map((a) => a.id);
+                                const extraAngles = char.angles
+                                  .filter((a) => a.status === 'accepted' && !standardIds.includes(a.id))
+                                  .map((a) => ({ id: a.id, isExtra: true }));
+                                const allAngles = [
+                                  ...extraAngles,
+                                  ...CHARACTER_ANGLE_TYPES.map((a) => ({ id: a.id, isExtra: false })),
+                                ];
+                                return allAngles.map((angle) => {
+                                  const accepted = char.angles.find((a) => a.id === angle.id && a.status === 'accepted');
+                                  return (
+                                    <div key={angle.id} className="flex items-center gap-3 py-1.5 px-2 rounded hover:bg-surface-light">
+                                      {accepted ? (
+                                        <img src={api.mediaUrl(projectId, accepted.file)} className="w-10 h-8 rounded object-cover flex-shrink-0" loading="lazy" />
+                                      ) : (
+                                        <div className="w-10 h-8 rounded bg-surface-lighter flex items-center justify-center flex-shrink-0">
+                                          <Image size={12} className="text-gray-600" />
+                                        </div>
+                                      )}
+                                      <span className="flex-1 text-sm">{angleRu(angle.id)}</span>
+                                      {angle.isExtra && (
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/40 text-amber-400">из промптов</span>
+                                      )}
+                                      {accepted ? (
+                                        <CheckCircle size={14} className="text-green-400 flex-shrink-0" />
+                                      ) : (
+                                        <label className="flex items-center gap-1.5 px-2 py-1 border border-surface-lighter hover:border-accent rounded text-xs text-gray-400 hover:text-white cursor-pointer transition-colors flex-shrink-0"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <Upload size={12} />
+                                          Загрузить
+                                          <input type="file" accept="image/*" className="hidden"
+                                            onChange={async (e) => {
+                                              const file = e.target.files?.[0];
+                                              if (file) {
+                                                await api.uploadCharacterAngle(projectId, char.id, angle.id, file);
+                                                onUpdate();
+                                              }
+                                            }}
+                                          />
+                                        </label>
+                                      )}
+                                    </div>
+                                  );
+                                });
+                              })()}
+                            </div>
                           </div>
                         )}
 
@@ -1060,53 +1069,61 @@ export function ReferencesStep({
                           </div>
                         )}
 
-                        {/* Accepted angles grid */}
-                        {loc.angles.length > 0 && (
-                          <div className="pt-2">
-                            <h4 className="text-sm text-gray-400 mb-2">
-                              Принятые ракурсы ({loc.angles.filter((a) => a.status === 'accepted').length}/15+)
-                            </h4>
-                            <div className="grid grid-cols-5 gap-2">
-                              {loc.angles.filter((a) => a.status === 'accepted').map((angle) => (
-                                <div key={angle.id} className="text-center">
-                                  <img
-                                    src={api.mediaUrl(projectId, angle.file)}
-                                    alt={angleRu(angle.id) || angle.description}
-                                    className="w-full aspect-video rounded object-cover border border-surface-lighter"
-                                    loading="lazy"
-                                  />
-                                  <span className="text-[10px] text-gray-500 mt-0.5 block truncate">
-                                    {angleRu(angle.id) || angle.description}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Upload angle manually */}
+                        {/* Angle upload list */}
                         {loc.baseImage && (
-                          <div className="pt-2">
-                            <label
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 border border-surface-lighter hover:border-accent rounded-lg text-xs text-gray-400 hover:text-white cursor-pointer transition-colors"
-                            >
-                              <Upload size={12} />
-                              Загрузить ракурс
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={async (e) => {
-                                  const file = e.target.files?.[0];
-                                  if (!file) return;
-                                  const angleId = prompt('Название ракурса (например: wide_front, from_door):');
-                                  if (!angleId) return;
-                                  await api.uploadLocationAngle(projectId, loc.id, angleId.trim(), file);
-                                  onUpdate();
-                                }}
-                              />
-                            </label>
+                          <div className="pt-3">
+                            <h4 className="text-sm text-gray-400 mb-2">
+                              Ракурсы ({loc.angles.filter((a) => a.status === 'accepted').length}/{LOCATION_ANGLE_TYPES.length})
+                            </h4>
+                            <div className="space-y-1.5">
+                              {(() => {
+                                const standardIds = LOCATION_ANGLE_TYPES.map((a) => a.id);
+                                const extraAngles = loc.angles
+                                  .filter((a) => a.status === 'accepted' && !standardIds.includes(a.id))
+                                  .map((a) => ({ id: a.id, isExtra: true }));
+                                const allAngles = [
+                                  ...extraAngles,
+                                  ...LOCATION_ANGLE_TYPES.map((a) => ({ id: a.id, isExtra: false })),
+                                ];
+                                return allAngles.map((angle) => {
+                                  const accepted = loc.angles.find((a) => a.id === angle.id && a.status === 'accepted');
+                                  return (
+                                    <div key={angle.id} className="flex items-center gap-3 py-1.5 px-2 rounded hover:bg-surface-light">
+                                      {accepted ? (
+                                        <img src={api.mediaUrl(projectId, accepted.file)} className="w-10 h-8 rounded object-cover flex-shrink-0" loading="lazy" />
+                                      ) : (
+                                        <div className="w-10 h-8 rounded bg-surface-lighter flex items-center justify-center flex-shrink-0">
+                                          <Image size={12} className="text-gray-600" />
+                                        </div>
+                                      )}
+                                      <span className="flex-1 text-sm">{angleRu(angle.id)}</span>
+                                      {angle.isExtra && (
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/40 text-amber-400">из промптов</span>
+                                      )}
+                                      {accepted ? (
+                                        <CheckCircle size={14} className="text-green-400 flex-shrink-0" />
+                                      ) : (
+                                        <label className="flex items-center gap-1.5 px-2 py-1 border border-surface-lighter hover:border-accent rounded text-xs text-gray-400 hover:text-white cursor-pointer transition-colors flex-shrink-0"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <Upload size={12} />
+                                          Загрузить
+                                          <input type="file" accept="image/*" className="hidden"
+                                            onChange={async (e) => {
+                                              const file = e.target.files?.[0];
+                                              if (file) {
+                                                await api.uploadLocationAngle(projectId, loc.id, angle.id, file);
+                                                onUpdate();
+                                              }
+                                            }}
+                                          />
+                                        </label>
+                                      )}
+                                    </div>
+                                  );
+                                });
+                              })()}
+                            </div>
                           </div>
                         )}
 

@@ -133,8 +133,17 @@ function rmDir(dir) {
   }
 }
 
+// Логирование в файл (для диагностики)
+const LOG_FILE = path.join(APP_ROOT, 'update.log');
+function log(msg) {
+  const line = `[${new Date().toISOString()}] ${msg}`;
+  process.stdout.write(line + '\n');
+  try { fs.appendFileSync(LOG_FILE, line + '\n'); } catch(e) {}
+}
+
 async function main() {
   const currentVersion = getCurrentVersion();
+  log(`Current version: ${currentVersion}, APP_ROOT: ${APP_ROOT}, APP_DIR: ${APP_DIR}`);
 
   // 1. Проверяем последний релиз на GitHub
   let release;
@@ -142,34 +151,34 @@ async function main() {
     const data = await httpsGet(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
     release = JSON.parse(data.toString());
   } catch (e) {
-    console.log(`  Нет подключения к серверу обновлений.`);
+    log(`Нет подключения к серверу обновлений: ${e.message}`);
     process.exit(1);
   }
 
   const latestVersion = (release.tag_name || '').replace(/^v/, '');
 
   if (!latestVersion) {
-    console.log(`  Релизы не найдены.`);
+    log(`  Релизы не найдены.`);
     process.exit(0);
   }
 
   // 2. Сравниваем версии
   if (compareVersions(latestVersion, currentVersion) <= 0) {
-    console.log(`  Текущая версия: ${currentVersion}`);
+    log(`  Текущая версия: ${currentVersion}`);
     process.exit(0);
   }
 
-  console.log(`  Доступно обновление: ${currentVersion} → ${latestVersion}`);
+  log(`  Доступно обновление: ${currentVersion} → ${latestVersion}`);
 
   // 3. Ищем code-bundle.zip в assets релиза
   const asset = (release.assets || []).find(a => a.name === 'code-bundle.zip');
   if (!asset) {
-    console.log(`  Файл обновления не найден в релизе.`);
+    log(`  Файл обновления не найден в релизе.`);
     process.exit(1);
   }
 
   // 4. Скачиваем
-  console.log(`  Скачиваю обновление (${(asset.size / 1024 / 1024).toFixed(1)} МБ)...`);
+  log(`  Скачиваю обновление (${(asset.size / 1024 / 1024).toFixed(1)} МБ)...`);
 
   rmDir(TEMP_DIR);
   fs.mkdirSync(TEMP_DIR, { recursive: true });
@@ -179,7 +188,7 @@ async function main() {
   try {
     await downloadFile(asset.browser_download_url, zipPath);
   } catch (e) {
-    console.log(`  Download error: ${e.message}`);
+    log(`  Download error: ${e.message}`);
     rmDir(TEMP_DIR);
     process.exit(1);
   }
@@ -187,13 +196,13 @@ async function main() {
   // 4b. Verify downloaded file size matches expected
   const actualSize = fs.statSync(zipPath).size;
   if (asset.size && Math.abs(actualSize - asset.size) > 1024) {
-    console.log(`  Incomplete download (${actualSize} vs ${asset.size} bytes). Skipping.`);
+    log(`  Incomplete download (${actualSize} vs ${asset.size} bytes). Skipping.`);
     rmDir(TEMP_DIR);
     process.exit(1);
   }
 
   // 5. Extract
-  console.log(`  Extracting...`);
+  log(`  Extracting...`);
 
   const extractDir = path.join(TEMP_DIR, 'extracted');
   fs.mkdirSync(extractDir, { recursive: true });
@@ -204,7 +213,7 @@ async function main() {
       { stdio: 'pipe', timeout: 60000 }
     );
   } catch (e) {
-    console.log(`  Extract error: ${e.message}`);
+    log(`  Extract error: ${e.message}`);
     rmDir(TEMP_DIR);
     process.exit(1);
   }
@@ -212,13 +221,13 @@ async function main() {
   // 5b. Verify extracted code has the critical server file
   const serverEntry = path.join(extractDir, 'packages', 'server', 'dist', 'index.js');
   if (!fs.existsSync(serverEntry)) {
-    console.log(`  Corrupted update: server entry point missing. Skipping.`);
+    log(`  Corrupted update: server entry point missing. Skipping.`);
     rmDir(TEMP_DIR);
     process.exit(1);
   }
 
   // 6. Replace app/ directory (atomic with rollback)
-  console.log(`  Installing update...`);
+  log(`  Installing update...`);
 
   const appOld = APP_DIR + '.old';
 
@@ -243,10 +252,10 @@ async function main() {
     // Удаляем старую версию
     rmDir(appOld);
 
-    console.log(`  ✓ Обновлено до версии ${latestVersion}`);
+    log(`  ✓ Обновлено до версии ${latestVersion}`);
   } catch (e) {
     // Откат: если не удалось — возвращаем старую версию
-    console.log(`  Ошибка установки: ${e.message}`);
+    log(`  Ошибка установки: ${e.message}`);
     if (!fs.existsSync(APP_DIR) && fs.existsSync(appOld)) {
       fs.renameSync(appOld, APP_DIR);
     }
@@ -261,6 +270,6 @@ async function main() {
 }
 
 main().catch((e) => {
-  console.log(`  Ошибка проверки обновлений: ${e.message}`);
+  log(`  Ошибка проверки обновлений: ${e.message}`);
   process.exit(1);
 });
