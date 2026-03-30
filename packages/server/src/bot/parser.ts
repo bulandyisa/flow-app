@@ -30,6 +30,11 @@ const PATTERNS = [
   { regex: /chain.?blocked|no pending/i, extract: (): BotProgress => ({ action: 'blocked', detail: 'chain-blocked' }) },
   // Закрытие
   { regex: /all.*done|closing|shutdown/i, extract: (): BotProgress => ({ action: 'finished' }) },
+  // Reference generation progress
+  { regex: /\[REF\]\s*\[(\d+)\/(\d+)\]\s*(OK)/i, extract: (m: RegExpMatchArray): BotProgress => ({ action: 'done', detail: `ref ${m[1]}/${m[2]}` }) },
+  { regex: /\[REF\]\s*\[(\d+)\/(\d+)\]\s*(FAIL|ERROR)/i, extract: (m: RegExpMatchArray): BotProgress => ({ action: 'error', detail: `ref ${m[1]}/${m[2]}` }) },
+  { regex: /\[REF\]\s*Generating\s+(.+)/i, extract: (m: RegExpMatchArray): BotProgress => ({ action: 'generating', detail: m[1].substring(0, 60) }) },
+  { regex: /\[REF\]\s*Done\.\s*Generated\s+(\d+)/i, extract: (m: RegExpMatchArray): BotProgress => ({ action: 'finished', detail: `${m[1]} items` }) },
 ];
 
 /** Парсит строку stdout бота и извлекает прогресс */

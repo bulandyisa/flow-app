@@ -239,6 +239,193 @@ export class BotManager {
     return { success: true };
   }
 
+  /** Запускает одного бота для генерации референсов */
+  private startSingleRefBot(
+    botId: number,
+    account: number,
+    projectDir: string,
+    botIndex: number,
+    botCount: number,
+  ): { success: boolean; error?: string } {
+    if (this.bots.has(botId)) {
+      const existing = this.bots.get(botId)!;
+      if (existing.runner.isRunning) {
+        return { success: false, error: `Bot ${botId} is already running` };
+      }
+    }
+
+    const pythonPath = this.findPython();
+    if (!pythonPath) return { success: false, error: 'Python not found' };
+
+    const botScript = this.findBotScript();
+    if (!botScript) return { success: false, error: 'Bot script not found' };
+
+    const runner = new BotRunner();
+    const managed: ManagedBot = {
+      id: botId,
+      account,
+      runner,
+      currentClip: null,
+      currentAction: null,
+      completedCount: 0,
+      errorCount: 0,
+    };
+
+    // Парсим вывод для статуса (REF-specific patterns)
+    runner.on('log', ({ text }: { stream: string; text: string }) => {
+      const progress = parseBotOutput(text);
+      if (progress) {
+        if (progress.action) managed.currentAction = progress.action;
+        if (progress.action === 'done') managed.completedCount++;
+        if (progress.action === 'error') managed.errorCount++;
+      }
+
+      // Parse [REF] lines for status
+      const refMatch = text.match(/\[REF\]\s*\[(\d+)\/(\d+)\]\s*(OK|FAIL|ERROR)/);
+      if (refMatch) {
+        const action = refMatch[3] === 'OK' ? 'done' : 'error';
+        if (action === 'done') managed.completedCount++;
+        if (action === 'error') managed.errorCount++;
+        managed.currentAction = action;
+      }
+
+      const refGenerating = text.match(/\[REF\].*Generating\s+(.+)/);
+      if (refGenerating) {
+        managed.currentClip = refGenerating[1].substring(0, 60);
+        managed.currentAction = 'generating';
+      }
+
+      broadcast({
+        type: 'bot_status',
+        data: {
+          botId,
+          action: managed.currentAction,
+          completedCount: managed.completedCount,
+          errorCount: managed.errorCount,
+        },
+      });
+
+      broadcast({
+        type: 'generation_progress',
+        data: { botId, text },
+      });
+    });
+
+    runner.on('exit', ({ code }: { code: number | null }) => {
+      managed.currentAction = code === 0 ? 'finished' : 'stopped';
+      broadcast({
+        type: 'bot_status',
+        data: {
+          botId,
+          action: managed.currentAction,
+          exitCode: code,
+          completedCount: managed.completedCount,
+        },
+      });
+    });
+
+    this.bots.set(botId, managed);
+
+    const args = [
+      '--generate-refs',
+      '--project-dir', projectDir,
+      '--account', String(account),
+      '--chromium',
+      '--bot-index', String(botIndex),
+      '--bot-count', String(botCount),
+    ];
+
+    // Формируем env для бота (installer mode: передаём пути к Chromium)
+    const botEnv: Record<string, string> = {};
+    if (this.config.appRootDir) {
+      const chromiumDir = resolve(this.config.appRootDir, 'chromium');
+      if (existsSync(chromiumDir)) {
+        botEnv.PLAYWRIGHT_BROWSERS_PATH = chromiumDir;
+      }
+    } else if (process.env.PLAYWRIGHT_BROWSERS_PATH) {
+      botEnv.PLAYWRIGHT_BROWSERS_PATH = process.env.PLAYWRIGHT_BROWSERS_PATH;
+    }
+
+    runner.start({
+      pythonPath,
+      botScript,
+      args,
+      cwd: resolve(botScript, '..', '..'),
+      env: botEnv,
+      timeoutMs: 3600_000, // 1 час
+    });
+
+    return { success: true };
+  }
+
+  /** Запускает бота для генерации референсов (обратная совместимость) */
+  startRefGeneration(
+    botId: number,
+    account: number,
+    projectDir: string,
+  ): { success: boolean; error?: string } {
+    return this.startSingleRefBot(botId, account, projectDir, 0, 1);
+  }
+
+  /** Запускает несколько ботов для генерации референсов */
+  startMultiRefGeneration(
+    botCount: number,
+    accounts: number[],
+    projectDir: string,
+  ): { success: boolean; botIds: number[]; errors: string[] } {
+    const REF_BOT_BASE_ID = 99;
+    const botIds: number[] = [];
+    const errors: string[] = [];
+
+    for (let i = 0; i < botCount; i++) {
+      const botId = REF_BOT_BASE_ID - i;
+      const account = accounts[i % accounts.length];
+      const result = this.startSingleRefBot(botId, account, projectDir, i, botCount);
+      if (result.success) {
+        botIds.push(botId);
+      } else {
+        errors.push(`Bot ${botId}: ${result.error}`);
+      }
+    }
+
+    return {
+      success: botIds.length > 0,
+      botIds,
+      errors,
+    };
+  }
+
+  /** Возвращает статус всех ref-ботов (IDs 90-99) */
+  getRefBotStatuses(): Array<{
+    botId: number;
+    running: boolean;
+    account: number;
+    currentAction: string | null;
+    currentClip: string | null;
+    completedCount: number;
+    errorCount: number;
+    startedAt: string | null;
+    exitCode: number | null;
+  }> {
+    const results = [];
+    for (const [, managed] of this.bots) {
+      if (managed.id >= 90 && managed.id <= 99) {
+        results.push({
+          botId: managed.id,
+          running: managed.runner.isRunning,
+          account: managed.account,
+          currentAction: managed.currentAction,
+          currentClip: managed.currentClip,
+          completedCount: managed.completedCount,
+          errorCount: managed.errorCount,
+          startedAt: managed.runner.startedAt,
+          exitCode: managed.runner.exitCode,
+        });
+      }
+    }
+    return results;
+  }
+
   /** Останавливает бота */
   stopBot(botId: number): void {
     const managed = this.bots.get(botId);

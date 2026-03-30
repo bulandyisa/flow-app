@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Sparkles, CheckCircle, AlertCircle, Plus, Trash2,
   User, Users, MapPin, Image, ChevronDown, ChevronRight,
-  Loader2, Camera, RefreshCw,
+  Loader2, Camera, RefreshCw, Upload, Square, Zap, Brain,
 } from 'lucide-react';
 import { api } from '@/api/client';
 import { VariantGrid } from '@/components/review/VariantGrid';
@@ -98,9 +98,23 @@ export function ReferencesStep({
   const [submitting, setSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
 
+  // AI model choice
+  const [aiModel, setAiModel] = useState<'sonnet' | 'opus'>('sonnet');
+
   // Generation state
   const [generating, setGenerating] = useState<Record<string, boolean>>({});
   const [genMessages, setGenMessages] = useState<Record<string, string>>({});
+
+  // Bot state
+  const [botRunning, setBotRunning] = useState(false);
+  const [botStatus, setBotStatus] = useState<string | null>(null);
+  const [botStarting, setBotStarting] = useState(false);
+  const [botCount, setBotCount] = useState(2);
+  const [botDetails, setBotDetails] = useState<Array<{
+    botId: number; running: boolean; account: number;
+    completedCount: number; errorCount: number;
+    currentAction: string | null; currentClip: string | null;
+  }>>([]);
 
   // ─── Load review items ─────────────────────────
   const loadReviewItems = useCallback(async () => {
@@ -115,6 +129,88 @@ export function ReferencesStep({
   useEffect(() => {
     loadReviewItems();
   }, [loadReviewItems]);
+
+  // ─── Bot status polling ──────────────────────
+  useEffect(() => {
+    if (!botRunning) return;
+    const interval = setInterval(async () => {
+      try {
+        const status = await api.getRefBotStatus(projectId);
+        if (status.bots) {
+          setBotDetails(status.bots);
+        }
+        if (!status.running && status.started) {
+          // All bots finished
+          setBotRunning(false);
+          const completed = status.totalCompleted || 0;
+          const errors = status.totalErrors || 0;
+          setBotStatus(`Генерация завершена. Успешно: ${completed}, ошибок: ${errors}`);
+          setBotDetails([]);
+          // Reload review items to show new variants
+          await loadReviewItems();
+          onUpdate();
+        } else if (status.running) {
+          const completed = status.totalCompleted || 0;
+          const runningCount = status.bots?.filter((b) => b.running).length || 0;
+          const totalBots = status.bots?.length || 0;
+          setBotStatus(`${runningCount}/${totalBots} бот(ов) работают (готово: ${completed})`);
+        }
+      } catch {
+        // Ignore polling errors
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [botRunning, projectId, loadReviewItems, onUpdate]);
+
+  const handleStartBot = async () => {
+    setBotStarting(true);
+    setBotStatus(null);
+    setBotDetails([]);
+    try {
+      // Map botCount to accounts: 1 bot = [1], 2 bots = [1,3], 4 bots = [1,2,3,4], 6 bots = [1,2,3,4,5,6]
+      const accountMap: Record<number, number[]> = {
+        1: [1],
+        2: [1, 3],
+        4: [1, 2, 3, 4],
+        6: [1, 2, 3, 4, 5, 6],
+      };
+      const accounts = accountMap[botCount] || [1];
+      const result = await api.startRefBot(projectId, botCount, accounts);
+      setBotRunning(true);
+      setBotStatus(result.message);
+    } catch (err) {
+      setBotStatus(`Ошибка запуска: ${err}`);
+    } finally {
+      setBotStarting(false);
+    }
+  };
+
+  const handleStopBot = async () => {
+    try {
+      await api.stopRefBot(projectId);
+      setBotRunning(false);
+      setBotStatus('Боты остановлены');
+      setBotDetails([]);
+    } catch (err) {
+      setBotStatus(`Ошибка остановки: ${err}`);
+    }
+  };
+
+  // Check bot status on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const status = await api.getRefBotStatus(projectId);
+        if (status.running) {
+          setBotRunning(true);
+          setBotStatus('Боты уже запущены');
+          if (status.bots) setBotDetails(status.bots);
+        }
+      } catch {
+        // Ignore
+      }
+    })();
+  }, [projectId]);
 
   // ─── CRUD characters ──────────────────────────
   const handleAddCharacter = async () => {
@@ -132,6 +228,11 @@ export function ReferencesStep({
 
   const handleCharacterImage = async (charId: string, file: File) => {
     await api.uploadCharacterImage(projectId, charId, file);
+    onUpdate();
+  };
+
+  const handleLocationImage = async (locId: string, file: File) => {
+    await api.uploadLocationImage(projectId, locId, file);
     onUpdate();
   };
 
@@ -160,7 +261,7 @@ export function ReferencesStep({
     setGenMessages((prev) => ({ ...prev, [key]: '' }));
 
     try {
-      const result = await api.generateReferences(projectId, type, itemId, target);
+      const result = await api.generateReferences(projectId, type, itemId, target, aiModel);
       setGenMessages((prev) => ({ ...prev, [key]: result.message }));
       onUpdate();
       await loadReviewItems();
@@ -250,8 +351,9 @@ export function ReferencesStep({
           action: 'reject',
           feedback,
         },
-      ]);
+      ], aiModel);
 
+      setSubmitMessage('Отклонено. Промпт переписан через Claude — бот сгенерирует новые варианты.');
       setFeedbackTexts((prev) => ({ ...prev, [key]: '' }));
       onUpdate();
       await loadReviewItems();
@@ -388,6 +490,38 @@ export function ReferencesStep({
 
   return (
     <div className="space-y-6">
+
+      {/* ─── AI Model selector ────────────────── */}
+      <div className="flex items-center gap-3 p-3 bg-surface rounded-lg border border-surface-lighter">
+        <span className="text-sm text-gray-400">Claude модель для промптов:</span>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setAiModel('sonnet')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-colors ${
+              aiModel === 'sonnet'
+                ? 'bg-accent text-white'
+                : 'bg-surface-light text-gray-400 hover:text-white'
+            }`}
+          >
+            <Zap size={12} />
+            Sonnet
+          </button>
+          <button
+            onClick={() => setAiModel('opus')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-colors ${
+              aiModel === 'opus'
+                ? 'bg-purple-700 text-white'
+                : 'bg-surface-light text-gray-400 hover:text-white'
+            }`}
+          >
+            <Brain size={12} />
+            Opus
+          </button>
+        </div>
+        <span className="text-xs text-gray-600">
+          {aiModel === 'sonnet' ? 'Быстрее и дешевле' : 'Качественнее, дороже'}
+        </span>
+      </div>
 
       {/* ─── All ready banner ─────────────────── */}
       {allRefsReady && (
@@ -562,9 +696,9 @@ export function ReferencesStep({
                     {/* Expanded: generate + review */}
                     {isExpanded && (
                       <div className="px-3 pb-3 border-t border-surface-lighter space-y-3">
-                        {/* Generate base button */}
+                        {/* Generate or upload base button */}
                         {!char.baseImage && !baseReview && (
-                          <div className="pt-3">
+                          <div className="pt-3 flex items-center gap-3">
                             <button
                               onClick={(e) => { e.stopPropagation(); handleGenerate('characters', char.id, 'base'); }}
                               disabled={generating[genKeyBase]}
@@ -573,6 +707,22 @@ export function ReferencesStep({
                               {generating[genKeyBase] ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
                               Сгенерировать базовый образ
                             </button>
+                            <label
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex items-center gap-2 px-3 py-2 border border-surface-lighter hover:border-accent rounded-lg text-sm text-gray-400 hover:text-white cursor-pointer transition-colors"
+                            >
+                              <Upload size={14} />
+                              Загрузить фото
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleCharacterImage(char.id, file);
+                                }}
+                              />
+                            </label>
                             {genMessages[genKeyBase] && (
                               <p className="text-xs text-gray-400 mt-1">{genMessages[genKeyBase]}</p>
                             )}
@@ -640,6 +790,32 @@ export function ReferencesStep({
                                 </div>
                               ))}
                             </div>
+                          </div>
+                        )}
+
+                        {/* Upload angle manually */}
+                        {char.baseImage && (
+                          <div className="pt-2">
+                            <label
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 border border-surface-lighter hover:border-accent rounded-lg text-xs text-gray-400 hover:text-white cursor-pointer transition-colors"
+                            >
+                              <Upload size={12} />
+                              Загрузить ракурс
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  const angleId = prompt('Название ракурса (например: full_front, face_closeup):');
+                                  if (!angleId) return;
+                                  await api.uploadCharacterAngle(projectId, char.id, angleId.trim(), file);
+                                  onUpdate();
+                                }}
+                              />
+                            </label>
                           </div>
                         )}
 
@@ -777,9 +953,9 @@ export function ReferencesStep({
                     {/* Expanded: generate + review */}
                     {isExpanded && (
                       <div className="px-3 pb-3 border-t border-surface-lighter space-y-3">
-                        {/* Generate base button */}
+                        {/* Generate or upload base button */}
                         {!loc.baseImage && !baseReview && (
-                          <div className="pt-3">
+                          <div className="pt-3 flex items-center gap-3">
                             <button
                               onClick={(e) => { e.stopPropagation(); handleGenerate('locations', loc.id, 'base'); }}
                               disabled={generating[genKeyBase]}
@@ -788,6 +964,22 @@ export function ReferencesStep({
                               {generating[genKeyBase] ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
                               Сгенерировать базовый образ
                             </button>
+                            <label
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex items-center gap-2 px-3 py-2 border border-surface-lighter hover:border-accent rounded-lg text-sm text-gray-400 hover:text-white cursor-pointer transition-colors"
+                            >
+                              <Upload size={14} />
+                              Загрузить фото
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleLocationImage(loc.id, file);
+                                }}
+                              />
+                            </label>
                             {genMessages[genKeyBase] && (
                               <p className="text-xs text-gray-400 mt-1">{genMessages[genKeyBase]}</p>
                             )}
@@ -858,6 +1050,32 @@ export function ReferencesStep({
                           </div>
                         )}
 
+                        {/* Upload angle manually */}
+                        {loc.baseImage && (
+                          <div className="pt-2">
+                            <label
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 border border-surface-lighter hover:border-accent rounded-lg text-xs text-gray-400 hover:text-white cursor-pointer transition-colors"
+                            >
+                              <Upload size={12} />
+                              Загрузить ракурс
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  const angleId = prompt('Название ракурса (например: wide_front, from_door):');
+                                  if (!angleId) return;
+                                  await api.uploadLocationAngle(projectId, loc.id, angleId.trim(), file);
+                                  onUpdate();
+                                }}
+                              />
+                            </label>
+                          </div>
+                        )}
+
                         {!loc.baseImage && !baseReview && !generating[genKeyBase] && (
                           <p className="text-sm text-gray-500 pt-3">
                             Загрузите фото или сгенерируйте базовый образ.
@@ -917,33 +1135,106 @@ export function ReferencesStep({
               )}
 
               {/* Запуск генерации */}
-              <div className="flex items-center justify-between p-4 bg-surface rounded-lg border border-surface-lighter">
-                <div>
-                  <p className="text-sm text-gray-300">Запуск генерации референсов</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    Бот сгенерирует варианты по созданным промптам
-                  </p>
+              <div className="p-4 bg-surface rounded-lg border border-surface-lighter space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-300">Запуск генерации референсов</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Бот(ы) сгенерируют варианты по созданным промптам
+                    </p>
+                    {botStatus && (
+                      <p className={`text-xs mt-1 ${botRunning ? 'text-blue-400' : botStatus.includes('Ошибка') ? 'text-red-400' : 'text-green-400'}`}>
+                        {botRunning && <Loader2 size={10} className="inline animate-spin mr-1" />}
+                        {botStatus}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {/* Bot count selector */}
+                    {!botRunning && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-gray-500">Ботов:</span>
+                        {[1, 2, 4, 6].map((n) => (
+                          <button
+                            key={n}
+                            onClick={() => setBotCount(n)}
+                            className={`px-2.5 py-1 text-xs rounded transition-colors ${
+                              botCount === n
+                                ? 'bg-accent text-white'
+                                : 'bg-surface-light text-gray-400 hover:text-white'
+                            }`}
+                          >
+                            {n}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {botRunning ? (
+                      <button
+                        className="flex items-center gap-2 px-4 py-2 bg-red-800 hover:bg-red-700 rounded-lg text-sm transition-colors"
+                        onClick={handleStopBot}
+                      >
+                        <Square size={14} />
+                        Остановить
+                      </button>
+                    ) : (
+                      <button
+                        className="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-600 rounded-lg text-sm transition-colors disabled:opacity-40"
+                        disabled={botStarting || Object.values(generating).some(Boolean)}
+                        onClick={handleStartBot}
+                      >
+                        {botStarting ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" />
+                            Запуск...
+                          </>
+                        ) : (
+                          <>
+                            <Camera size={14} />
+                            Запустить ({botCount} {botCount === 1 ? 'бот' : botCount < 5 ? 'бота' : 'ботов'})
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <button
-                  className="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-600 rounded-lg text-sm transition-colors disabled:opacity-40"
-                  disabled={Object.values(generating).some(Boolean)}
-                  onClick={() => {
-                    // TODO: запуск бота для генерации референсов
-                    alert('Бот для генерации референсов будет подключён');
-                  }}
-                >
-                  {Object.values(generating).some(Boolean) ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" />
-                      Идёт создание промптов...
-                    </>
-                  ) : (
-                    <>
-                      <Camera size={14} />
-                      Запустить генерацию
-                    </>
-                  )}
-                </button>
+
+                {/* Per-bot status details */}
+                {botDetails.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {botDetails.map((bot) => (
+                      <div
+                        key={bot.botId}
+                        className={`p-2 rounded text-xs border ${
+                          bot.running
+                            ? 'bg-blue-900/10 border-blue-800/30'
+                            : 'bg-surface-light border-surface-lighter'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">
+                            Бот #{bot.botId} (акк {bot.account})
+                          </span>
+                          {bot.running ? (
+                            <span className="text-blue-400 flex items-center gap-1">
+                              <Loader2 size={10} className="animate-spin" />
+                              работает
+                            </span>
+                          ) : (
+                            <span className="text-gray-500">завершен</span>
+                          )}
+                        </div>
+                        <div className="text-gray-500 mt-0.5">
+                          Готово: {bot.completedCount}, ошибок: {bot.errorCount}
+                          {bot.currentClip && (
+                            <span className="ml-1 text-gray-400">| {bot.currentClip}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

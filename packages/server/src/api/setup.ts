@@ -263,6 +263,72 @@ export function setupRouter(config: AppConfig): Router {
     res.json({ success: true, baseImage: loc.baseImage });
   });
 
+  // POST /api/projects/:id/characters/:charId/angles — загрузить ракурс персонажа
+  router.post('/:id/characters/:charId/angles', upload.single('image'), (req, res) => {
+    const project = store.get(req.params.id as string);
+    if (!project) { res.status(404).json({ error: 'Проект не найден' }); return; }
+    if (!req.file) { res.status(400).json({ error: 'Файл не загружен' }); return; }
+
+    const char = project.characters.find((c) => c.id === req.params.charId as string);
+    if (!char) { res.status(404).json({ error: 'Персонаж не найден' }); return; }
+
+    const angleId = req.body.angleId as string;
+    if (!angleId) { res.status(400).json({ error: 'angleId обязателен' }); return; }
+
+    const paths = projectPaths(config.dataDir, project.id);
+    const anglesDir = resolve(paths.characterDir(char.id), 'angles');
+    ensureDir(anglesDir);
+
+    const ext = extname(req.file.originalname) || '.png';
+    const destFile = `${angleId}${ext}`;
+    copyFileSync(req.file.path, resolve(anglesDir, destFile));
+
+    const anglePath = `references/characters/${char.id}/angles/${destFile}`;
+    const existing = char.angles.findIndex((a) => a.id === angleId);
+    if (existing >= 0) {
+      char.angles[existing].file = anglePath;
+      char.angles[existing].status = 'accepted';
+    } else {
+      char.angles.push({ id: angleId, file: anglePath, description: angleId, type: 'detail', status: 'accepted' });
+    }
+    store.save(project);
+
+    res.json({ success: true, anglePath });
+  });
+
+  // POST /api/projects/:id/locations/:locId/angles — загрузить ракурс локации
+  router.post('/:id/locations/:locId/angles', upload.single('image'), (req, res) => {
+    const project = store.get(req.params.id as string);
+    if (!project) { res.status(404).json({ error: 'Проект не найден' }); return; }
+    if (!req.file) { res.status(400).json({ error: 'Файл не загружен' }); return; }
+
+    const loc = project.locations.find((l) => l.id === req.params.locId as string);
+    if (!loc) { res.status(404).json({ error: 'Локация не найдена' }); return; }
+
+    const angleId = req.body.angleId as string;
+    if (!angleId) { res.status(400).json({ error: 'angleId обязателен' }); return; }
+
+    const paths = projectPaths(config.dataDir, project.id);
+    const anglesDir = resolve(paths.locationDir(loc.id), 'angles');
+    ensureDir(anglesDir);
+
+    const ext = extname(req.file.originalname) || '.png';
+    const destFile = `${angleId}${ext}`;
+    copyFileSync(req.file.path, resolve(anglesDir, destFile));
+
+    const anglePath = `references/locations/${loc.id}/angles/${destFile}`;
+    const existing = loc.angles.findIndex((a) => a.id === angleId);
+    if (existing >= 0) {
+      loc.angles[existing].file = anglePath;
+      loc.angles[existing].status = 'accepted';
+    } else {
+      loc.angles.push({ id: angleId, file: anglePath, description: angleId, type: 'detail', status: 'accepted' });
+    }
+    store.save(project);
+
+    res.json({ success: true, anglePath });
+  });
+
   // ─── АНАЛИЗ СЦЕНАРИЯ (Claude API) ───────────────────────
 
   // POST /api/setup/:id/analyze — Claude анализирует сценарий

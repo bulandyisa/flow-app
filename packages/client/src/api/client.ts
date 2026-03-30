@@ -88,6 +88,23 @@ export const api = {
     return res.json();
   },
 
+  uploadCharacterAngle: async (projectId: string, charId: string, angleId: string, image: File) => {
+    const form = new FormData();
+    form.append('image', image);
+    form.append('angleId', angleId);
+    const res = await fetch(`${BASE_URL}/setup/${projectId}/characters/${charId}/angles`, { method: 'POST', body: form });
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
+  uploadLocationAngle: async (projectId: string, locId: string, angleId: string, image: File) => {
+    const form = new FormData();
+    form.append('image', image);
+    form.append('angleId', angleId);
+    const res = await fetch(`${BASE_URL}/setup/${projectId}/locations/${locId}/angles`, { method: 'POST', body: form });
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
+
   addLocation: async (projectId: string, data: { name: string; nameRu: string; description: string }, image?: File) => {
     const form = new FormData();
     form.append('name', data.name);
@@ -102,6 +119,13 @@ export const api = {
     request<unknown>(`/setup/${projectId}/locations/${locId}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteLocation: (projectId: string, locId: string) =>
     request<unknown>(`/setup/${projectId}/locations/${locId}`, { method: 'DELETE' }),
+  uploadLocationImage: async (projectId: string, locId: string, image: File) => {
+    const form = new FormData();
+    form.append('image', image);
+    const res = await fetch(`${BASE_URL}/setup/${projectId}/locations/${locId}/image`, { method: 'POST', body: form });
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
 
   analyzeScreenplay: (projectId: string) =>
     request<{ success: boolean; analysis: unknown; characters: unknown[]; locations: unknown[] }>(
@@ -125,16 +149,19 @@ export const api = {
     type: 'characters' | 'locations',
     itemId: string,
     target: 'base' | 'angles',
+    model: 'sonnet' | 'opus' = 'sonnet',
   ) =>
     request<{
       success: boolean;
       message: string;
       botImplemented: boolean;
+      aiGenerated?: boolean;
+      model?: string;
       reviewDir?: string;
       angles?: string[];
     }>(`/references/${projectId}/references/generate`, {
       method: 'POST',
-      body: JSON.stringify({ type, itemId, target }),
+      body: JSON.stringify({ type, itemId, target, model }),
     }),
 
   getReferencesReview: (projectId: string) =>
@@ -164,6 +191,40 @@ export const api = {
       }>;
     }>(`/references/${projectId}/references/review`),
 
+  startRefBot: (projectId: string, botCount = 1, accounts: number[] = [1]) =>
+    request<{ success: boolean; botIds: number[]; message: string; errors?: string[] }>(
+      `/references/${projectId}/references/start-bot`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ botCount, accounts }),
+      },
+    ),
+
+  stopRefBot: (projectId: string) =>
+    request<{ success: boolean; stopped: number; message: string }>(
+      `/references/${projectId}/references/stop-bot`,
+      { method: 'POST' },
+    ),
+
+  getRefBotStatus: (projectId: string) =>
+    request<{
+      bots: Array<{
+        botId: number;
+        running: boolean;
+        account: number;
+        currentAction: string | null;
+        currentClip: string | null;
+        completedCount: number;
+        errorCount: number;
+        startedAt: string | null;
+        exitCode: number | null;
+      }>;
+      running: boolean;
+      started: boolean;
+      totalCompleted: number;
+      totalErrors: number;
+    }>(`/references/${projectId}/references/bot-status`),
+
   submitReferencesReview: (
     projectId: string,
     decisions: Array<{
@@ -176,6 +237,7 @@ export const api = {
       variant?: number;
       feedback?: string;
     }>,
+    model: 'sonnet' | 'opus' = 'sonnet',
   ) =>
     request<{
       results: Array<{ itemId: string; target: string; success: boolean; error?: string }>;
@@ -184,7 +246,7 @@ export const api = {
       allReady: boolean;
     }>(`/references/${projectId}/references/review/submit`, {
       method: 'POST',
-      body: JSON.stringify({ decisions }),
+      body: JSON.stringify({ decisions, model }),
     }),
 
   // Боты

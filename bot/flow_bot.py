@@ -4461,6 +4461,286 @@ def do_generate_locations_batch(pw, batch_file, use_builtin_chromium=False):
     return total_ok
 
 
+def do_generate_refs(pw, project_dir, use_builtin_chromium=False, bot_index=0, bot_count=1):
+    """Generate reference images (base and angles) from project manifests.
+
+    Reads manifests from <project_dir>/references/ and generates images
+    for each manifest with status 'generating'.
+
+    Outputs progress as [REF] lines for BotManager parsing.
+    """
+    global _active_context
+
+    project_dir = Path(project_dir)
+    refs_dir = project_dir / 'references'
+    project_json_path = project_dir / 'project.json'
+
+    if not project_json_path.exists():
+        print(f'[REF] ERROR: project.json not found at {project_json_path}')
+        return 0
+
+    with open(project_json_path) as f:
+        project = json.load(f)
+
+    # Collect all manifests with status 'generating'
+    tasks = []
+
+    for entity_type in ('characters', 'locations'):
+        items = project.get(entity_type, [])
+        for item in items:
+            item_id = item['id']
+            item_name = item.get('nameRu') or item.get('name') or item_id
+
+            # Check base manifest
+            base_manifest_path = refs_dir / entity_type / item_id / 'review' / 'base' / 'manifest.json'
+            if base_manifest_path.exists():
+                with open(base_manifest_path) as f:
+                    manifest = json.load(f)
+                if manifest.get('status') == 'generating' and manifest.get('attempts'):
+                    last_attempt = manifest['attempts'][-1]
+                    prompt = last_attempt.get('prompt', '')
+                    if prompt:
+                        tasks.append({
+                            'type': entity_type,
+                            'item_id': item_id,
+                            'item_name': item_name,
+                            'target': 'base',
+                            'angle_id': None,
+                            'prompt': prompt,
+                            'ingredients': [],
+                            'manifest_path': str(base_manifest_path),
+                            'attempt_num': last_attempt['attempt'],
+                            'review_dir': str(base_manifest_path.parent / f'attempt_{last_attempt["attempt"]}'),
+                        })
+
+            # Check angle manifests
+            angles_dir = refs_dir / entity_type / item_id / 'review' / 'angles'
+            if angles_dir.exists():
+                for angle_dir in sorted(angles_dir.iterdir()):
+                    if not angle_dir.is_dir():
+                        continue
+                    angle_id = angle_dir.name
+                    angle_manifest_path = angle_dir / 'manifest.json'
+                    if not angle_manifest_path.exists():
+                        continue
+                    with open(angle_manifest_path) as f:
+                        manifest = json.load(f)
+                    if manifest.get('status') == 'generating' and manifest.get('attempts'):
+                        last_attempt = manifest['attempts'][-1]
+                        prompt = last_attempt.get('prompt', '')
+                        if not prompt:
+                            continue
+                        # Base image is the ingredient for angles
+                        ingredients = []
+                        base_dir = refs_dir / entity_type / item_id
+                        for ext in ('png', 'jpg', 'jpeg', 'webp'):
+                            candidate = base_dir / f'base.{ext}'
+                            if candidate.exists():
+                                ingredients = [str(candidate)]
+                                break
+                        tasks.append({
+                            'type': entity_type,
+                            'item_id': item_id,
+                            'item_name': item_name,
+                            'target': 'angle',
+                            'angle_id': angle_id,
+                            'prompt': prompt,
+                            'ingredients': ingredients,
+                            'manifest_path': str(angle_manifest_path),
+                            'attempt_num': last_attempt['attempt'],
+                            'review_dir': str(angle_manifest_path.parent / f'attempt_{last_attempt["attempt"]}'),
+                        })
+
+    if not tasks:
+        print(f'[REF] No pending tasks found. Done.')
+        return 0
+
+    # Multi-bot distribution: each bot takes only its share of tasks
+    if bot_count > 1:
+        all_count = len(tasks)
+        tasks = [t for i, t in enumerate(tasks) if i % bot_count == bot_index]
+        print(f'[REF] Multi-bot: bot {bot_index}/{bot_count}, taking {len(tasks)}/{all_count} tasks')
+
+    if not tasks:
+        print(f'[REF] No tasks assigned to this bot. Done.')
+        return 0
+
+    print(f'\n{"="*60}')
+    print(f'[REF] REFERENCE GENERATION')
+    print(f'[REF] Project: {project_dir}')
+    print(f'[REF] Tasks: {len(tasks)}')
+    if bot_count > 1:
+        print(f'[REF] Bot: {bot_index}/{bot_count}')
+    print(f'{"="*60}')
+
+    ctx = launch_browser(pw, use_builtin_chromium=use_builtin_chromium)
+    _active_context = ctx
+    page = ctx.pages[0] if ctx.pages else ctx.new_page()
+    page.add_init_script(STEALTH_JS)
+    page.goto(FLOW_URL, timeout=60000, wait_until='domcontentloaded')
+    human_delay_long(3, 5)
+    dismiss_popups(page)
+    ensure_project(page)
+    wait_for_flow_ready(page)
+
+    total_ok = 0
+    total_fail = 0
+    _ref_current_model = 'Nano Banana Pro'
+
+    for idx, task in enumerate(tasks):
+        target_label = task['target']
+        if task['angle_id']:
+            target_label = f"angle:{task['angle_id']}"
+        label = f"{task['type']}/{task['item_name']}/{target_label}"
+
+        print(f'\n{"="*60}')
+        print(f'[REF] [{idx+1}/{len(tasks)}] Generating {label}')
+        print(f'[REF] Prompt: {task["prompt"][:80]}...')
+        if task['ingredients']:
+            print(f'[REF] Ingredients: {len(task["ingredients"])} files')
+        print(f'{"="*60}')
+
+        review_dir = Path(task['review_dir'])
+        review_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            _ensure_chat_view(page)
+            dismiss_popups(page)
+
+            switch_mode(page, 'Создать изображение')
+            set_image_model(page, _ref_current_model)
+            set_orientation(page, 'horizontal')
+            set_variant_count(page, 4)
+
+            # Upload ingredients (base image for angles)
+            if task['ingredients']:
+                clear_ingredients(page)
+                upload_ingredients(page, task['ingredients'])
+            elif idx == 0 or tasks[idx - 1].get('ingredients'):
+                clear_ingredients(page)
+
+            clean_prompt = sanitize_nb_prompt(task['prompt'])
+
+            capture = NbNetworkCapture()
+            capture.start(page)
+
+            clear_prompt(page)
+            fill_prompt(page, clean_prompt)
+
+            _scroll_chat_bottom(page)
+            time.sleep(1)
+            errors_before = _count_errors(page)
+            click_generate(page)
+            result = poll_generation(page, errors_before=errors_before)
+
+            if result == 'server_error':
+                print(f'[REF]   Server error -- retrying...')
+                time.sleep(2)
+                if _click_retry_on_error(page):
+                    time.sleep(3)
+                    errors_before = _count_errors(page)
+                    result = poll_generation(page, errors_before=errors_before)
+
+            if result == 'rate_limit':
+                print(f'[REF]   Rate limit on NB Pro -- switching to Nano Banana 2...')
+                time.sleep(2)
+                set_image_model(page, 'Nano Banana 2')
+                human_delay(1, 2)
+                capture.stop(page)
+                capture = NbNetworkCapture()
+                capture.start(page)
+                clear_prompt(page)
+                fill_prompt(page, clean_prompt)
+                _scroll_chat_bottom(page)
+                time.sleep(1)
+                errors_before = _count_errors(page)
+                click_generate(page)
+                result = poll_generation(page, errors_before=errors_before)
+                _ref_current_model = 'Nano Banana 2'
+
+            saved = []
+            if result == 'success':
+                time.sleep(3)
+                if capture.images:
+                    print(f'[REF]   Network captured {len(capture.images)} images')
+                    for vi, img in enumerate(capture.images):
+                        media_id = img['id']
+                        fife_url = img['url']
+                        dest_path = review_dir / f'variant_{vi}.png'
+                        ok = False
+                        if fife_url and download_via_fetch(page, fife_url, dest_path):
+                            saved.append(dest_path)
+                            print(f'[REF]   Saved variant_{vi}.png ({dest_path.stat().st_size} bytes)')
+                            ok = True
+                        if not ok:
+                            redirect_url = f'/fx/api/trpc/media.getMediaUrlRedirect?name={media_id}'
+                            if download_via_fetch(page, redirect_url, dest_path):
+                                saved.append(dest_path)
+                                print(f'[REF]   Saved variant_{vi}.png (redirect)')
+                                ok = True
+                        if not ok:
+                            print(f'[REF]   Failed to download variant_{vi}')
+                else:
+                    print(f'[REF]   No network capture -- DOM fallback...')
+                    _scroll_chat_bottom(page)
+                    time.sleep(2)
+                    new_url = _get_last_generated_image_url(page)
+                    if new_url:
+                        dest_path = review_dir / 'variant_0.png'
+                        if download_via_fetch(page, new_url, dest_path, min_size=200000):
+                            saved.append(dest_path)
+            else:
+                print(f'[REF]   Generation FAILED: {result}')
+
+            capture.stop(page)
+
+            # Update manifest with results
+            manifest_path = Path(task['manifest_path'])
+            with open(manifest_path) as f:
+                manifest = json.load(f)
+
+            if saved:
+                # Update last attempt variants
+                last_attempt = manifest['attempts'][-1]
+                last_attempt['variants'] = [
+                    {'file': f'variant_{vi}.png', 'scores': None, 'avg': None}
+                    for vi in range(len(saved))
+                ]
+                manifest['status'] = 'generated'
+                with open(manifest_path, 'w') as f:
+                    json.dump(manifest, f, indent=2, ensure_ascii=False)
+                print(f'[REF] [{idx+1}/{len(tasks)}] OK -- {len(saved)} variants saved')
+                total_ok += 1
+            else:
+                manifest['status'] = 'pending'
+                with open(manifest_path, 'w') as f:
+                    json.dump(manifest, f, indent=2, ensure_ascii=False)
+                print(f'[REF] [{idx+1}/{len(tasks)}] FAIL -- no variants saved')
+                total_fail += 1
+
+            human_delay(1, 2)
+
+        except Exception as e:
+            print(f'[REF] [{idx+1}/{len(tasks)}] ERROR: {e}')
+            total_fail += 1
+            try:
+                _ensure_chat_view(page)
+            except Exception:
+                pass
+
+    print(f'\n{"="*60}')
+    print(f'[REF] Done. Generated {total_ok}/{total_ok + total_fail} items.')
+    print(f'{"="*60}')
+
+    try:
+        ctx.close()
+    except Exception:
+        pass
+    _active_context = None
+
+    return total_ok
+
+
 def main():
     global _current_account_idx
 
@@ -4477,6 +4757,7 @@ def main():
     group.add_argument('--chain', action='store_true', help='Chain workflow: sequential first→last per scene')
     group.add_argument('--generate-location', action='store_true', help='Generate location image from prompt (no ingredients)')
     group.add_argument('--generate-locations-batch', action='store_true', help='Generate multiple locations from a JSON batch file (single browser session)')
+    group.add_argument('--generate-refs', action='store_true', help='Generate reference images from project manifests')
 
     parser.add_argument('--clip', type=str, default=None, help='Clip ID or comma-separated list: S02_B,S02_C,S02_D')
     parser.add_argument('--scenes', type=str, default=None, help='Scene filter: odd, even, or comma-separated list: S01,S03,S05')
@@ -4496,6 +4777,9 @@ def main():
     parser.add_argument('--loc-output', type=str, default=None, help='Output file path for --generate-location (e.g. sosed_локации_hq/loc_name.png)')
     parser.add_argument('--loc-variants', type=int, default=4, help='Number of variants to generate (default 4)')
     parser.add_argument('--loc-batch', type=str, default=None, help='JSON batch file for --generate-locations-batch')
+    parser.add_argument('--project-dir', type=str, default=None, help='Project directory for --generate-refs mode')
+    parser.add_argument('--bot-index', type=int, default=0, help='Bot index for multi-bot distribution (0-based)')
+    parser.add_argument('--bot-count', type=int, default=1, help='Total number of bots for task distribution')
 
     args = parser.parse_args()
     _current_account_idx = args.account - 1
@@ -4616,6 +4900,25 @@ def main():
             try:
                 do_generate_locations_batch(pw, args.loc_batch,
                                             use_builtin_chromium=args.chromium)
+            finally:
+                signal.alarm(0)
+                if _active_context:
+                    try: _active_context.close()
+                    except Exception: pass
+    elif args.generate_refs:
+        if not args.project_dir:
+            parser.error('--generate-refs requires --project-dir')
+        timeout = GLOBAL_TIMEOUT_SEC
+        if timeout > 0:
+            signal.signal(signal.SIGALRM, _timeout_handler)
+            signal.alarm(timeout)
+            print(f'  Timeout: {timeout}s')
+        with sync_playwright() as pw:
+            try:
+                do_generate_refs(pw, args.project_dir,
+                                 use_builtin_chromium=args.chromium,
+                                 bot_index=args.bot_index,
+                                 bot_count=args.bot_count)
             finally:
                 signal.alarm(0)
                 if _active_context:

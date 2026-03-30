@@ -19,23 +19,70 @@ import {
   CHARACTER_ANGLE_TYPES,
 } from '@flow-app/shared';
 import { readFileSync } from 'node:fs';
+import {
+  generateBasePrompt as aiGenerateBasePrompt,
+  generateAnglePrompt as aiGenerateAnglePrompt,
+  rewritePromptWithFeedback,
+  isClaudeAvailable,
+} from '../ai/references.js';
 
-/** Генерирует промпт для базового образа */
-function basePrompt(type: 'characters' | 'locations', name: string, description: string): string {
+type ModelChoice = 'opus' | 'sonnet';
+
+/** Fallback: шаблонный промпт для базового образа (если Claude недоступен) */
+function basePromptFallback(type: 'characters' | 'locations', name: string, description: string): string {
   if (type === 'characters') {
     return `Full body shot of ${description}. Front view, neutral pose, clear details. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.`;
   }
   return `${description}. Wide establishing shot showing the full location. Clear details, consistent lighting. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.`;
 }
 
-/** Генерирует промпт для ракурса (с инструкцией по консистентности) */
-function anglePrompt(type: 'characters' | 'locations', angleDescription: string): string {
+/** Fallback: шаблонный промпт для ракурса (если Claude недоступен) */
+function anglePromptFallback(type: 'characters' | 'locations', angleDescription: string): string {
   if (type === 'characters') {
     return `The EXACT same character from Image 1 — same face, same body proportions, same clothing, same hairstyle, same accessories. IDENTICAL appearance. Pose: ${angleDescription}. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.`;
   }
   return `Reproduce the EXACT same location from Image 1 — same walls, same floor, same furniture, same objects, same colors, same textures, same lighting. NOTHING added, NOTHING removed, NOTHING changed. Camera angle: ${angleDescription}. The location must be IDENTICAL to Image 1 in every detail. Only the camera position and angle change. No text, no watermarks. 3D Pixar-style, family-friendly, cinematic.`;
 }
+
+/** Генерирует промпт для базового образа (Claude AI с fallback на шаблон) */
+async function generateBasePromptSafe(
+  config: AppConfig,
+  type: 'characters' | 'locations',
+  name: string,
+  description: string,
+  model: ModelChoice,
+): Promise<{ prompt: string; aiGenerated: boolean }> {
+  if (isClaudeAvailable(config)) {
+    try {
+      const prompt = await aiGenerateBasePrompt(config, type, name, description, model);
+      return { prompt, aiGenerated: true };
+    } catch (err) {
+      console.warn('[references] Claude API error for base prompt, using fallback:', err);
+    }
+  }
+  return { prompt: basePromptFallback(type, name, description), aiGenerated: false };
+}
+
+/** Генерирует промпт для ракурса (Claude AI с fallback на шаблон) */
+async function generateAnglePromptSafe(
+  config: AppConfig,
+  type: 'characters' | 'locations',
+  name: string,
+  angleDescription: string,
+  model: ModelChoice,
+): Promise<{ prompt: string; aiGenerated: boolean }> {
+  if (isClaudeAvailable(config)) {
+    try {
+      const prompt = await aiGenerateAnglePrompt(config, type, name, angleDescription, model);
+      return { prompt, aiGenerated: true };
+    } catch (err) {
+      console.warn('[references] Claude API error for angle prompt, using fallback:', err);
+    }
+  }
+  return { prompt: anglePromptFallback(type, angleDescription), aiGenerated: false };
+}
 import type { RefReviewDecision, Angle } from '@flow-app/shared';
+import { getBotManager } from '../bot/manager.js';
 
 export function referencesRouter(config: AppConfig): Router {
   const router = Router();
@@ -53,18 +100,20 @@ export function referencesRouter(config: AppConfig): Router {
    * When variants are manually placed in the review directory, the review
    * flow is fully functional.
    */
-  router.post('/:id/references/generate', (req, res) => {
+  router.post('/:id/references/generate', async (req, res) => {
     const project = store.get(req.params.id);
     if (!project) {
       res.status(404).json({ error: 'Проект не найден' });
       return;
     }
 
-    const { type, itemId, target } = req.body as {
+    const { type, itemId, target, model: requestedModel } = req.body as {
       type: 'characters' | 'locations';
       itemId: string;
       target: 'base' | 'angles';
+      model?: 'opus' | 'sonnet';
     };
+    const model: ModelChoice = requestedModel || 'sonnet';
 
     if (!type || !itemId || !target) {
       res.status(400).json({ error: 'type, itemId и target обязательны' });
@@ -100,7 +149,7 @@ export function referencesRouter(config: AppConfig): Router {
         ? project.characters.find((c) => c.id === itemId)
         : project.locations.find((l) => l.id === itemId);
       const description = item?.description || item?.name || itemId;
-      const prompt = basePrompt(type, item?.name || itemId, description);
+      const { prompt, aiGenerated } = await generateBasePromptSafe(config, type, item?.name || itemId, description, model);
 
       manifest.status = 'generating';
       // Сохраняем промпт в манифест (бот будет его использовать)
@@ -129,9 +178,13 @@ export function referencesRouter(config: AppConfig): Router {
 
       res.json({
         success: true,
-        message: 'Генерация базового образа запущена. Бот сгенерирует 4 варианта.',
+        message: aiGenerated
+          ? `Промпт сгенерирован через Claude (${model}). Бот сгенерирует 4 варианта.`
+          : 'Генерация базового образа запущена (шаблон). Бот сгенерирует 4 варианта.',
         botImplemented: false,
         prompt,
+        aiGenerated,
+        model: aiGenerated ? model : undefined,
         ingredients: [],  // Нет ингредиентов для базового образа
         reviewDir: `references/${type}/${itemId}/review/base/`,
       });
@@ -146,13 +199,17 @@ export function referencesRouter(config: AppConfig): Router {
         : project.locations.find((l) => l.id === itemId);
       const baseImagePath = item?.baseImage || '';
 
+      let anyAiGenerated = false;
       for (const angleType of angleTypes) {
         let manifest = loadRefManifest(refsDir, type, itemId, angleType.id);
         if (!manifest) {
           manifest = createRefManifest(itemId, type, angleType.id);
         }
         if (manifest.status !== 'accepted') {
-          const prompt = anglePrompt(type, angleType.description);
+          const { prompt, aiGenerated } = await generateAnglePromptSafe(
+            config, type, item?.name || itemId, angleType.description, model,
+          );
+          if (aiGenerated) anyAiGenerated = true;
           manifest.status = 'generating';
           // Сохраняем промпт и ингредиент в манифест
           if (manifest.attempts.length === 0) {
@@ -183,12 +240,132 @@ export function referencesRouter(config: AppConfig): Router {
 
       res.json({
         success: true,
-        message: `Генерация ракурсов запущена. ${created.length} ракурсов × 4 варианта.`,
+        message: anyAiGenerated
+          ? `Промпты сгенерированы через Claude (${model}). ${created.length} ракурсов × 4 варианта.`
+          : `Генерация ракурсов запущена (шаблон). ${created.length} ракурсов × 4 варианта.`,
         angles: created,
         botImplemented: false,
+        aiGenerated: anyAiGenerated,
+        model: anyAiGenerated ? model : undefined,
         ingredient: baseImagePath,  // Базовый образ — Image 1 для всех ракурсов
       });
     }
+  });
+
+  // ─── START BOT ──────────────────────────────────────────
+
+  /**
+   * POST /api/references/:id/references/start-bot
+   * Body: { botCount?: number, accounts?: number[] }
+   *
+   * Starts one or more bots in --generate-refs mode for this project.
+   * Tasks are distributed evenly across bots by index.
+   */
+  router.post('/:id/references/start-bot', (req, res) => {
+    const project = store.get(req.params.id);
+    if (!project) {
+      res.status(404).json({ error: 'Проект не найден' });
+      return;
+    }
+
+    const { botCount = 1, accounts = [1] } = req.body as {
+      botCount?: number;
+      accounts?: number[];
+    };
+
+    const manager = getBotManager(config);
+
+    // Check if any ref bots are already running
+    const refStatuses = manager.getRefBotStatuses();
+    const runningBots = refStatuses.filter((b) => b.running);
+    if (runningBots.length > 0) {
+      res.status(409).json({
+        error: `Уже запущено ${runningBots.length} бот(ов) для генерации референсов`,
+      });
+      return;
+    }
+
+    const projectDir = store.projectDir(req.params.id);
+
+    if (botCount <= 1) {
+      // Single bot mode (backward compatible)
+      const account = accounts[0] || 1;
+      const REF_BOT_ID = 99;
+      const result = manager.startRefGeneration(REF_BOT_ID, account, projectDir);
+      if (result.success) {
+        res.json({
+          success: true,
+          botIds: [REF_BOT_ID],
+          message: 'Бот запущен для генерации референсов',
+        });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+    } else {
+      // Multi-bot mode
+      const result = manager.startMultiRefGeneration(botCount, accounts, projectDir);
+      if (result.success) {
+        res.json({
+          success: true,
+          botIds: result.botIds,
+          message: `Запущено ${result.botIds.length} бот(ов) для генерации референсов`,
+          errors: result.errors.length > 0 ? result.errors : undefined,
+        });
+      } else {
+        res.status(400).json({
+          error: 'Не удалось запустить ботов',
+          details: result.errors,
+        });
+      }
+    }
+  });
+
+  /**
+   * POST /api/references/:id/references/stop-bot
+   *
+   * Stops all running reference generation bots.
+   */
+  router.post('/:id/references/stop-bot', (req, res) => {
+    const manager = getBotManager(config);
+    const refStatuses = manager.getRefBotStatuses();
+    const runningBots = refStatuses.filter((b) => b.running);
+
+    for (const bot of runningBots) {
+      manager.stopBot(bot.botId);
+    }
+
+    res.json({
+      success: true,
+      stopped: runningBots.length,
+      message: `Остановлено ${runningBots.length} бот(ов)`,
+    });
+  });
+
+  /**
+   * GET /api/references/:id/references/bot-status
+   *
+   * Returns the status of all reference generation bots.
+   */
+  router.get('/:id/references/bot-status', (req, res) => {
+    const manager = getBotManager(config);
+    const refStatuses = manager.getRefBotStatuses();
+
+    if (refStatuses.length === 0) {
+      res.json({ bots: [], running: false, started: false, totalCompleted: 0, totalErrors: 0 });
+      return;
+    }
+
+    const anyRunning = refStatuses.some((b) => b.running);
+    const totalCompleted = refStatuses.reduce((sum, b) => sum + b.completedCount, 0);
+    const totalErrors = refStatuses.reduce((sum, b) => sum + b.errorCount, 0);
+
+    res.json({
+      bots: refStatuses,
+      running: anyRunning,
+      started: true,
+      totalCompleted,
+      totalErrors,
+    });
   });
 
   // ─── REVIEW: GET ─────────────────────────────────────────
@@ -218,7 +395,7 @@ export function referencesRouter(config: AppConfig): Router {
    * POST /api/setup/:id/references/review/submit
    * Body: { decisions: RefReviewDecision[] }
    */
-  router.post('/:id/references/review/submit', (req, res) => {
+  router.post('/:id/references/review/submit', async (req, res) => {
     const project = store.get(req.params.id);
     if (!project) {
       res.status(404).json({ error: 'Проект не найден' });
@@ -226,6 +403,7 @@ export function referencesRouter(config: AppConfig): Router {
     }
 
     const decisions: RefReviewDecision[] = req.body.decisions || [];
+    const reviewModel: ModelChoice = req.body.model || 'sonnet';
     if (decisions.length === 0) {
       res.status(400).json({ error: 'Нет решений' });
       return;
@@ -343,8 +521,38 @@ export function referencesRouter(config: AppConfig): Router {
         acceptedCount++;
         results.push({ itemId: decision.itemId, target, success: true });
       } else if (decision.action === 'reject') {
-        // Reject with feedback
-        markRefRejected(manifest, decision.feedback || '');
+        const feedback = decision.feedback || '';
+        markRefRejected(manifest, feedback);
+
+        // Если есть фидбек и Claude доступен — переписать промпт и создать новую попытку
+        if (feedback.trim() && isClaudeAvailable(config)) {
+          try {
+            const lastAttempt = manifest.attempts[manifest.attempts.length - 1];
+            const originalPrompt = lastAttempt?.prompt || '';
+            if (originalPrompt) {
+              const newPrompt = await rewritePromptWithFeedback(
+                config, originalPrompt, feedback, decision.type, reviewModel,
+              );
+              const newAttemptNum = (lastAttempt?.attempt || 0) + 1;
+              manifest.attempts.push({
+                attempt: newAttemptNum,
+                prompt: newPrompt,
+                variants: [],
+              });
+              manifest.status = 'generating';
+
+              // Ensure review directory for new attempt
+              const newReviewDir = target === 'base'
+                ? resolve(refsDir, decision.type, decision.itemId, 'review', 'base', `attempt_${newAttemptNum}`)
+                : resolve(refsDir, decision.type, decision.itemId, 'review', 'angles', target, `attempt_${newAttemptNum}`);
+              ensureDir(newReviewDir);
+            }
+          } catch (err) {
+            console.warn('[references] Claude feedback rewrite failed, keeping pending status:', err);
+            // Fallback: оставляем status=pending, бот не подхватит автоматически
+          }
+        }
+
         saveRefManifest(refsDir, manifest);
         rejectedCount++;
         results.push({ itemId: decision.itemId, target, success: true });
