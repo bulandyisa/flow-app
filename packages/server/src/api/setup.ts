@@ -563,6 +563,18 @@ export function setupRouter(config: AppConfig): Router {
       // ─── Auto-parse ingredients ─────────────────────
       const parsed = parseIngredientsFromPrompts(clips);
 
+      // Known character names and clothing (Russian + identity locking)
+      const CHAR_RU: Record<string, { nameRu: string; clothing: string }> = {
+        amin: { nameRu: 'Амин', clothing: 'in the grey hoodie' },
+        aya: { nameRu: 'Ая', clothing: 'in the pink dress and dark navy striped hijab' },
+        tako: { nameRu: 'Тако', clothing: 'in the red-and-white striped shirt and red cap' },
+        karim: { nameRu: 'Карим', clothing: 'in the black hoodie' },
+        papa: { nameRu: 'Папа', clothing: 'in the black turtleneck sweater and glasses' },
+        mama: { nameRu: 'Мама', clothing: 'in the black hijab and black abaya' },
+        jamil: { nameRu: 'Джамиль', clothing: 'in the light shirt with glasses on his forehead' },
+        simba: { nameRu: 'Симба', clothing: '' },
+      };
+
       // Add detected characters (if not already present)
       for (const charRef of parsed.characters) {
         const charId = charRef.id;
@@ -572,14 +584,14 @@ export function setupRouter(config: AppConfig): Router {
           ensureDir(resolve(charDir, 'angles'));
           ensureDir(resolve(charDir, 'review'));
 
-          // Derive a display name from id: "amin" -> "Amin", "tako" -> "Tako"
+          const known = CHAR_RU[charId.toLowerCase()];
           const displayName = charId.charAt(0).toUpperCase() + charId.slice(1).replace(/_/g, ' ');
 
           project.characters.push({
             id: charId,
             name: displayName,
-            nameRu: displayName,
-            clothing: '',
+            nameRu: known?.nameRu || displayName,
+            clothing: known?.clothing || '',
             description: '',
             baseImage: null,
             angles: [],
@@ -601,6 +613,33 @@ export function setupRouter(config: AppConfig): Router {
         }
       }
 
+      // Known location names (Russian)
+      const LOC_RU: Record<string, string> = {
+        'кухня': 'Кухня',
+        'гараж': 'Гараж',
+        'кабинет': 'Кабинет папы',
+        'двор_джамиля': 'Двор Джамиля',
+        'дом_джамиля': 'Дом Джамиля (снаружи)',
+        'дверь_джамиля': 'Дверь дома Джамиля',
+        'коридор_джамиля': 'Коридор Джамиля',
+        'фургон_джамиля': 'Фургон Джамиля',
+        'крыльцо': 'Крыльцо дома Амина',
+        'забор': 'Забор между домами',
+        'забор_джамиля': 'Забор со стороны Джамиля',
+        'ворота': 'Ворота',
+        'улица': 'Улица перед домом',
+        'улица_день': 'Улица днём',
+        'комната_амина': 'Комната Амина',
+        'ночная_улица': 'Ночная улица',
+        'ночной_джамиль': 'Дом Джамиля ночью',
+        'переход': 'Переход между сценами',
+        'переход_утро': 'Переход — утро',
+        'переход_вечер': 'Переход — вечер',
+        'переход_ночь': 'Переход — ночь',
+        'чёрный_экран': 'Чёрный экран',
+        'титры': 'Титры',
+      };
+
       for (const [locId, angleIds] of locAnglesMap.entries()) {
         if (!project.locations.find((l) => l.id === locId)) {
           const locDir = paths.locationDir(locId);
@@ -609,12 +648,13 @@ export function setupRouter(config: AppConfig): Router {
           ensureDir(resolve(locDir, 'review'));
 
           const displayName = locId.charAt(0).toUpperCase() + locId.slice(1).replace(/_/g, ' ');
+          const nameRu = LOC_RU[locId] || displayName;
 
           project.locations.push({
             id: locId,
             name: displayName,
-            nameRu: displayName,
-            description: `${angleIds.length} angle(s) detected from prompts`,
+            nameRu: nameRu,
+            description: `${angleIds.length} ракурс(ов) из промптов`,
             baseImage: null,
             angles: [],
             status: 'pending',

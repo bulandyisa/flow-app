@@ -7,6 +7,32 @@ import {
 import { api } from '@/api/client';
 import { VariantGrid } from '@/components/review/VariantGrid';
 
+/** Русские названия ракурсов */
+const ANGLE_RU: Record<string, string> = {
+  wide_front: 'Общий план спереди',
+  wide_left: 'Общий план слева',
+  wide_right: 'Общий план справа',
+  medium_from_door: 'Средний план от двери',
+  medium_from_window: 'Средний план от окна',
+  medium_from_corner: 'Средний план из угла',
+  closeup_detail_1: 'Крупный план — деталь 1',
+  closeup_detail_2: 'Крупный план — деталь 2',
+  closeup_detail_3: 'Крупный план — деталь 3',
+  pov_inside_out: 'Вид изнутри наружу',
+  pov_outside_in: 'Вид снаружи внутрь',
+  low_angle: 'Нижний ракурс',
+  high_angle: 'Верхний ракурс',
+  side_full: 'Полный боковой вид',
+  atmospheric: 'Атмосферный кадр',
+  full_front: 'В полный рост, спереди',
+  full_profile: 'В полный рост, профиль',
+  face_closeup: 'Крупный план лица',
+  sitting: 'Сидящая поза',
+  walking: 'В движении',
+  base: 'Базовый образ',
+};
+const angleRu = (id: string) => ANGLE_RU[id] || id;
+
 interface Variant {
   file: string;
   scores: Record<string, number> | null;
@@ -761,7 +787,7 @@ export function ReferencesStep({
                             {angleReviews.map((angleItem) => (
                               <div key={angleItem.angleId} className="bg-surface-light rounded-lg p-3">
                                 <p className="text-xs text-gray-400 mb-1">
-                                  {angleItem.angleDescription || angleItem.angleId}
+                                  {angleRu(angleItem.angleId || '') || angleItem.angleDescription || angleItem.angleId}
                                 </p>
                                 {renderReviewInline(angleItem)}
                               </div>
@@ -780,12 +806,12 @@ export function ReferencesStep({
                                 <div key={angle.id} className="text-center">
                                   <img
                                     src={api.mediaUrl(projectId, angle.file)}
-                                    alt={angle.description}
+                                    alt={angleRu(angle.id) || angle.description}
                                     className="w-full aspect-square rounded object-cover border border-surface-lighter"
                                     loading="lazy"
                                   />
                                   <span className="text-[10px] text-gray-500 mt-0.5 block truncate">
-                                    {angle.description}
+                                    {angleRu(angle.id) || angle.description}
                                   </span>
                                 </div>
                               ))}
@@ -1018,7 +1044,7 @@ export function ReferencesStep({
                             {angleReviews.map((angleItem) => (
                               <div key={angleItem.angleId} className="bg-surface-light rounded-lg p-3">
                                 <p className="text-xs text-gray-400 mb-1">
-                                  {angleItem.angleDescription || angleItem.angleId}
+                                  {angleRu(angleItem.angleId || '') || angleItem.angleDescription || angleItem.angleId}
                                 </p>
                                 {renderReviewInline(angleItem)}
                               </div>
@@ -1037,12 +1063,12 @@ export function ReferencesStep({
                                 <div key={angle.id} className="text-center">
                                   <img
                                     src={api.mediaUrl(projectId, angle.file)}
-                                    alt={angle.description}
+                                    alt={angleRu(angle.id) || angle.description}
                                     className="w-full aspect-video rounded object-cover border border-surface-lighter"
                                     loading="lazy"
                                   />
                                   <span className="text-[10px] text-gray-500 mt-0.5 block truncate">
-                                    {angle.description}
+                                    {angleRu(angle.id) || angle.description}
                                   </span>
                                 </div>
                               ))}
