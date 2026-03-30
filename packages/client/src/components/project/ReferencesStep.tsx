@@ -441,13 +441,21 @@ export function ReferencesStep({
       );
     }
 
-    // Still generating
-    if (item.manifest.status === 'generating') {
+    // Still generating or pending regeneration
+    if (item.manifest.status === 'generating' || item.manifest.status === 'pending') {
+      const hasFeedback = item.manifest.feedback;
       return (
-        <div className="mt-2 p-2 bg-amber-900/10 border border-amber-800/20 rounded-lg">
+        <div className="mt-2 p-3 bg-amber-900/10 border border-amber-800/20 rounded-lg space-y-2">
+          {hasFeedback && (
+            <div className="text-xs text-amber-400">
+              <span className="font-medium">Фидбек учтён:</span> {item.manifest.feedback}
+            </div>
+          )}
           <div className="flex items-center gap-2 text-amber-400 text-sm">
-            <Loader2 size={14} className="animate-spin" />
-            Генерация...
+            <RefreshCw size={14} />
+            {hasFeedback
+              ? 'Промпт переписан через Claude. Нажмите «Запустить генерацию» для перегенерации.'
+              : 'Ожидает генерации...'}
           </div>
         </div>
       );
