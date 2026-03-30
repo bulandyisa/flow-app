@@ -4496,7 +4496,7 @@ def do_generate_refs(pw, project_dir, use_builtin_chromium=False, bot_index=0, b
             if base_manifest_path.exists():
                 with open(base_manifest_path) as f:
                     manifest = json.load(f)
-                if manifest.get('status') == 'generating' and manifest.get('attempts'):
+                if manifest.get('status') in ('generating', 'pending') and manifest.get('attempts'):
                     last_attempt = manifest['attempts'][-1]
                     prompt = last_attempt.get('prompt', '')
                     if prompt:
@@ -4525,7 +4525,7 @@ def do_generate_refs(pw, project_dir, use_builtin_chromium=False, bot_index=0, b
                         continue
                     with open(angle_manifest_path) as f:
                         manifest = json.load(f)
-                    if manifest.get('status') == 'generating' and manifest.get('attempts'):
+                    if manifest.get('status') in ('generating', 'pending') and manifest.get('attempts'):
                         last_attempt = manifest['attempts'][-1]
                         prompt = last_attempt.get('prompt', '')
                         if not prompt:

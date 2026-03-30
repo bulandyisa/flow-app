@@ -524,32 +524,37 @@ export function referencesRouter(config: AppConfig): Router {
         const feedback = decision.feedback || '';
         markRefRejected(manifest, feedback);
 
-        // Если есть фидбек и Claude доступен — переписать промпт и создать новую попытку
-        if (feedback.trim() && isClaudeAvailable(config)) {
-          try {
-            const lastAttempt = manifest.attempts[manifest.attempts.length - 1];
-            const originalPrompt = lastAttempt?.prompt || '';
-            if (originalPrompt) {
-              const newPrompt = await rewritePromptWithFeedback(
-                config, originalPrompt, feedback, decision.type, reviewModel,
-              );
-              const newAttemptNum = (lastAttempt?.attempt || 0) + 1;
-              manifest.attempts.push({
-                attempt: newAttemptNum,
-                prompt: newPrompt,
-                variants: [],
-              });
-              manifest.status = 'generating';
+        // Переписать промпт и создать новую попытку
+        {
+          const lastAttempt = manifest.attempts[manifest.attempts.length - 1];
+          const originalPrompt = lastAttempt?.prompt || '';
+          if (originalPrompt) {
+            let newPrompt = originalPrompt; // fallback: тот же промпт
 
-              // Ensure review directory for new attempt
-              const newReviewDir = target === 'base'
-                ? resolve(refsDir, decision.type, decision.itemId, 'review', 'base', `attempt_${newAttemptNum}`)
-                : resolve(refsDir, decision.type, decision.itemId, 'review', 'angles', target, `attempt_${newAttemptNum}`);
-              ensureDir(newReviewDir);
+            // Если Claude доступен — переписать с учётом фидбека
+            if (feedback.trim() && isClaudeAvailable(config)) {
+              try {
+                newPrompt = await rewritePromptWithFeedback(
+                  config, originalPrompt, feedback, decision.type, reviewModel,
+                );
+              } catch (err) {
+                console.warn('[references] Claude feedback rewrite failed, using original prompt:', err);
+              }
             }
-          } catch (err) {
-            console.warn('[references] Claude feedback rewrite failed, keeping pending status:', err);
-            // Fallback: оставляем status=pending, бот не подхватит автоматически
+
+            const newAttemptNum = (lastAttempt?.attempt || 0) + 1;
+            manifest.attempts.push({
+              attempt: newAttemptNum,
+              prompt: newPrompt,
+              variants: [],
+            });
+            manifest.status = 'generating';
+
+            // Ensure review directory for new attempt
+            const newReviewDir = target === 'base'
+              ? resolve(refsDir, decision.type, decision.itemId, 'review', 'base', `attempt_${newAttemptNum}`)
+              : resolve(refsDir, decision.type, decision.itemId, 'review', 'angles', target, `attempt_${newAttemptNum}`);
+            ensureDir(newReviewDir);
           }
         }
 
