@@ -208,14 +208,23 @@ async function main() {
   fs.mkdirSync(extractDir, { recursive: true });
 
   try {
+    // Try tar first (built-in on Windows 10+, fast)
     execSync(
-      `powershell -NoProfile -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${extractDir}' -Force"`,
-      { stdio: 'pipe', timeout: 60000 }
+      `tar -xf "${zipPath}" -C "${extractDir}"`,
+      { stdio: 'pipe', timeout: 120000 }
     );
-  } catch (e) {
-    log(`  Extract error: ${e.message}`);
-    rmDir(TEMP_DIR);
-    process.exit(1);
+  } catch (e1) {
+    log(`  tar failed: ${e1.message}, trying PowerShell...`);
+    try {
+      execSync(
+        `powershell -NoProfile -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${extractDir}' -Force"`,
+        { stdio: 'pipe', timeout: 300000 }
+      );
+    } catch (e2) {
+      log(`  Extract error: ${e2.message}`);
+      rmDir(TEMP_DIR);
+      process.exit(1);
+    }
   }
 
   // 5b. Verify extracted code has the critical server file

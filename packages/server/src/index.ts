@@ -55,14 +55,16 @@ app.use('/api/update', updateRouter(config));
 app.use('/api/assembly', assemblyRouter(config));
 app.use('/api/settings', settingsRouter(config));
 
-// В production раздаём собранный клиент
-if (config.nodeEnv === 'production') {
+// Раздаём собранный клиент (если dist существует)
+{
   const __dirname = dirname(fileURLToPath(import.meta.url));
   const clientDist = resolve(__dirname, '../../client/dist');
-  app.use(express.static(clientDist));
-  app.get('*', (_req, res) => {
-    res.sendFile(resolve(clientDist, 'index.html'));
-  });
+  if (existsSync(resolve(clientDist, 'index.html'))) {
+    app.use(express.static(clientDist));
+    app.get('*', (_req, res) => {
+      res.sendFile(resolve(clientDist, 'index.html'));
+    });
+  }
 }
 
 // HTTP + WebSocket сервер
