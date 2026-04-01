@@ -26,6 +26,8 @@ import time
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
+# Ensure bot directory is in path (for bundled Python on Windows)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 import r2_storage
 
 
@@ -4909,10 +4911,12 @@ def main():
         if not args.project_dir:
             parser.error('--generate-refs requires --project-dir')
         timeout = GLOBAL_TIMEOUT_SEC
-        if timeout > 0:
+        if timeout > 0 and hasattr(signal, 'SIGALRM'):
             signal.signal(signal.SIGALRM, _timeout_handler)
             signal.alarm(timeout)
             print(f'  Timeout: {timeout}s')
+        else:
+            print(f'  Timeout: {timeout}s (no SIGALRM on Windows, using soft timeout)')
         with sync_playwright() as pw:
             try:
                 do_generate_refs(pw, args.project_dir,
@@ -4920,7 +4924,8 @@ def main():
                                  bot_index=args.bot_index,
                                  bot_count=args.bot_count)
             finally:
-                signal.alarm(0)
+                if hasattr(signal, 'alarm'):
+                    signal.alarm(0)
                 if _active_context:
                     try: _active_context.close()
                     except Exception: pass
