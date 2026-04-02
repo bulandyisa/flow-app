@@ -391,6 +391,7 @@ No text, no subtitles, no warping, no morphing.
 
 **Для нас**: стиль `3D Pixar-style animation` и камеру ставить в НАЧАЛО промпта, а не в конец.
 
+
 ### 12. Focus Techniques (Динамический фокус)
 
 VEO понимает кинематографические техники фокуса:
