@@ -181,8 +181,8 @@ async function askClaudeWithRefRules(
   if (!ai) throw new Error('Claude API key not configured');
 
   const modelId = model === 'opus'
-    ? 'claude-opus-4-6-20250320'
-    : 'claude-sonnet-4-6-20250320';
+    ? 'claude-opus-4-6-latest'
+    : 'claude-sonnet-4-5-20241022';
 
   const response = await ai.messages.create({
     model: modelId,

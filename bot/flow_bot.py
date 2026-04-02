@@ -4535,16 +4535,27 @@ def do_generate_refs(pw, project_dir, use_builtin_chromium=False, bot_index=0, b
                         prompt = last_attempt.get('prompt', '')
                         if not prompt:
                             continue
-                        # Base image is the ingredient for angles
+                        # Base image is the ingredient for angles — use path from project.json
                         ingredients = []
-                        base_dir = refs_dir / entity_type / item_id
-                        for ext in ('png', 'jpg', 'jpeg', 'webp'):
-                            candidate = base_dir / f'base.{ext}'
-                            if candidate.exists():
-                                ingredients = [str(candidate)]
-                                break
+                        base_image_rel = item.get('baseImage')
+                        if base_image_rel:
+                            base_image_abs = project_dir / base_image_rel
+                            if base_image_abs.exists():
+                                ingredients = [str(base_image_abs)]
+                                print(f'  [REF] Base ingredient from project.json: {base_image_rel}')
+                            else:
+                                print(f'  [REF] WARNING: baseImage path not found: {base_image_abs}')
+                        # Fallback: scan for base.* files
                         if not ingredients:
-                            print(f'  [REF] SKIP {entity_type}/{item_id}/{angle_id}: no base image')
+                            base_dir = refs_dir / entity_type / item_id
+                            for ext in ('png', 'jpg', 'jpeg', 'webp'):
+                                candidate = base_dir / f'base.{ext}'
+                                if candidate.exists():
+                                    ingredients = [str(candidate)]
+                                    print(f'  [REF] Base ingredient from scan: {candidate.name}')
+                                    break
+                        if not ingredients:
+                            print(f'  [REF] SKIP {entity_type}/{item_id}/{angle_id}: no base image found')
                             continue
                         tasks.append({
                             'type': entity_type,
@@ -4650,12 +4661,15 @@ def do_generate_refs(pw, project_dir, use_builtin_chromium=False, bot_index=0, b
             set_variant_count(page, 4)
 
             # Upload ingredients (base image for angles)
-            clear_ingredients(page)
             if task['ingredients']:
-                global _last_uploaded
-                _last_uploaded = None  # Force fresh upload, no caching
-                print(f'  [REF] Uploading {len(task["ingredients"])} ingredient(s)')
-                upload_ingredients(page, task['ingredients'])
+                print(f'  [REF] Ingredients: {task["ingredients"]}')
+                clear_ingredients(page)
+                count = upload_ingredients(page, task['ingredients'])
+                print(f'  [REF] Uploaded {count} ingredient(s), thumbs: {_count_ingredient_thumbs(page)}')
+                if _count_ingredient_thumbs(page) == 0:
+                    print(f'  [REF] WARNING: No ingredient thumbnails visible after upload!')
+            elif idx == 0 or tasks[idx - 1].get('ingredients'):
+                clear_ingredients(page)
 
             clean_prompt = sanitize_nb_prompt(task['prompt'])
 
