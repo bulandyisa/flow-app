@@ -200,6 +200,15 @@ export const api = {
       },
     ),
 
+  rewriteRejected: (projectId: string, filter?: { characters: string[]; locations: string[] }) =>
+    request<{ success: boolean; rewrittenCount: number }>(
+      `/references/${projectId}/references/rewrite-rejected`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ filter }),
+      },
+    ),
+
   stopRefBot: (projectId: string) =>
     request<{ success: boolean; stopped: number; message: string }>(
       `/references/${projectId}/references/stop-bot`,

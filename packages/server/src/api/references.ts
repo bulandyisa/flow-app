@@ -252,6 +252,83 @@ export function referencesRouter(config: AppConfig): Router {
     }
   });
 
+  // ─── REWRITE REJECTED PROMPTS ────────────────────────────
+
+  /**
+   * POST /api/references/:id/references/rewrite-rejected
+   * Body: { filter?: { characters: string[], locations: string[] }, model?: 'opus' | 'sonnet' }
+   *
+   * Rewrites prompts for all rejected items (filtered by selection).
+   * Creates new attempts so the bot can regenerate.
+   */
+  router.post('/:id/references/rewrite-rejected', async (req, res) => {
+    const project = store.get(req.params.id);
+    if (!project) {
+      res.status(404).json({ error: 'Проект не найден' });
+      return;
+    }
+
+    const { filter, model = 'sonnet' } = req.body as {
+      filter?: { characters: string[]; locations: string[] };
+      model?: ModelChoice;
+    };
+
+    const paths = projectPaths(config.dataDir, project.id);
+    const refsDir = resolve(paths.root, 'references');
+    let rewrittenCount = 0;
+
+    // Collect all rejected manifests
+    const reviewItems = getRefReviewItems(refsDir, project);
+    const rejected = reviewItems.filter((item) => item.manifest.status === 'rejected');
+
+    for (const item of rejected) {
+      // Apply filter
+      if (filter) {
+        if (item.type === 'characters' && !filter.characters.includes(item.itemId)) continue;
+        if (item.type === 'locations' && !filter.locations.includes(item.itemId)) continue;
+      }
+
+      const manifest = item.manifest;
+      const lastAttempt = manifest.attempts[manifest.attempts.length - 1];
+      const originalPrompt = lastAttempt?.prompt || '';
+      const feedback = manifest.feedback || '';
+
+      if (!originalPrompt) continue;
+
+      let newPrompt = originalPrompt;
+
+      // Rewrite with Claude if feedback exists
+      if (feedback.trim() && isClaudeAvailable(config)) {
+        try {
+          newPrompt = await rewritePromptWithFeedback(
+            config, originalPrompt, feedback, item.type, model,
+          );
+        } catch (err) {
+          console.warn('[references] Claude rewrite failed:', err);
+        }
+      }
+
+      const newAttemptNum = (lastAttempt?.attempt || 0) + 1;
+      manifest.attempts.push({
+        attempt: newAttemptNum,
+        prompt: newPrompt,
+        variants: [],
+      });
+      manifest.status = 'generating';
+
+      const target = item.target === 'base' ? 'base' : item.angleId || 'base';
+      const newReviewDir = target === 'base'
+        ? resolve(refsDir, item.type, item.itemId, 'review', 'base', `attempt_${newAttemptNum}`)
+        : resolve(refsDir, item.type, item.itemId, 'review', 'angles', target, `attempt_${newAttemptNum}`);
+      ensureDir(newReviewDir);
+
+      saveRefManifest(refsDir, manifest);
+      rewrittenCount++;
+    }
+
+    res.json({ success: true, rewrittenCount });
+  });
+
   // ─── START BOT ──────────────────────────────────────────
 
   /**
@@ -524,41 +601,7 @@ export function referencesRouter(config: AppConfig): Router {
       } else if (decision.action === 'reject') {
         const feedback = decision.feedback || '';
         markRefRejected(manifest, feedback);
-
-        // Переписать промпт и создать новую попытку
-        {
-          const lastAttempt = manifest.attempts[manifest.attempts.length - 1];
-          const originalPrompt = lastAttempt?.prompt || '';
-          if (originalPrompt) {
-            let newPrompt = originalPrompt; // fallback: тот же промпт
-
-            // Если Claude доступен — переписать с учётом фидбека
-            if (feedback.trim() && isClaudeAvailable(config)) {
-              try {
-                newPrompt = await rewritePromptWithFeedback(
-                  config, originalPrompt, feedback, decision.type, reviewModel,
-                );
-              } catch (err) {
-                console.warn('[references] Claude feedback rewrite failed, using original prompt:', err);
-              }
-            }
-
-            const newAttemptNum = (lastAttempt?.attempt || 0) + 1;
-            manifest.attempts.push({
-              attempt: newAttemptNum,
-              prompt: newPrompt,
-              variants: [],
-            });
-            manifest.status = 'generating';
-
-            // Ensure review directory for new attempt
-            const newReviewDir = target === 'base'
-              ? resolve(refsDir, decision.type, decision.itemId, 'review', 'base', `attempt_${newAttemptNum}`)
-              : resolve(refsDir, decision.type, decision.itemId, 'review', 'angles', target, `attempt_${newAttemptNum}`);
-            ensureDir(newReviewDir);
-          }
-        }
-
+        manifest.status = 'rejected';
         saveRefManifest(refsDir, manifest);
         rejectedCount++;
         results.push({ itemId: decision.itemId, target, success: true });

@@ -419,7 +419,21 @@ export function ReferencesStep({
   };
 
   const handleGenerateAllMissing = async () => {
-    // 1. Generate base images for items without them
+    // 1. Rewrite rejected prompts (with feedback) for selected items
+    const filter = {
+      characters: [...selectedChars],
+      locations: [...selectedLocs],
+    };
+    try {
+      const result = await api.rewriteRejected(projectId, filter);
+      if (result.rewrittenCount > 0) {
+        await loadReviewItems();
+      }
+    } catch (err) {
+      console.warn('Rewrite rejected failed:', err);
+    }
+
+    // 2. Generate base images for items without them
     const pendingBases = [
       ...characters.filter((c) => !c.baseImage && selectedChars.has(c.id)).map((c) => ({ type: 'characters' as const, id: c.id })),
       ...locations.filter((l) => !l.baseImage && selectedLocs.has(l.id)).map((l) => ({ type: 'locations' as const, id: l.id })),
@@ -429,7 +443,7 @@ export function ReferencesStep({
       await handleGenerate(item.type, item.id, 'base');
     }
 
-    // 2. Generate angles for items that have base but need angles
+    // 3. Generate angles for items that have base but need angles
     const pendingAngles = [
       ...characters.filter((c) => c.baseImage && c.angles.length < 2 && selectedChars.has(c.id)).map((c) => ({ type: 'characters' as const, id: c.id })),
       ...locations.filter((l) => l.baseImage && l.angles.length < 15 && selectedLocs.has(l.id)).map((l) => ({ type: 'locations' as const, id: l.id })),
