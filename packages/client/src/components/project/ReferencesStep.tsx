@@ -30,6 +30,8 @@ const ANGLE_RU: Record<string, string> = {
   face_closeup: 'Крупный план лица',
   sitting: 'Сидящая поза',
   walking: 'В движении',
+  additional_1: 'Дополнительный референс 1',
+  additional_2: 'Дополнительный референс 2',
   base: 'Базовый образ',
 };
 const angleRu = (id: string) => ANGLE_RU[id] || id;

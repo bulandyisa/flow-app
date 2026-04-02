@@ -34,9 +34,6 @@ export const LOCATION_ANGLE_TYPES = [
 
 /** Типы ракурсов для персонажей */
 export const CHARACTER_ANGLE_TYPES = [
-  { id: 'full_front', description: 'Full body, front view', descriptionRu: 'В полный рост, спереди', type: 'wide' },
-  { id: 'full_profile', description: 'Full body, profile (3/4 view)', descriptionRu: 'В полный рост, профиль (3/4)', type: 'wide' },
-  { id: 'face_closeup', description: 'Face close-up, front', descriptionRu: 'Крупный план лица', type: 'closeup' },
-  { id: 'sitting', description: 'Sitting pose', descriptionRu: 'Сидящая поза', type: 'medium' },
-  { id: 'walking', description: 'Walking/in motion', descriptionRu: 'В движении / ходьба', type: 'medium' },
+  { id: 'additional_1', description: 'Additional reference 1', descriptionRu: 'Дополнительный референс 1', type: 'wide' },
+  { id: 'additional_2', description: 'Additional reference 2', descriptionRu: 'Дополнительный референс 2', type: 'wide' },
 ] as const;
