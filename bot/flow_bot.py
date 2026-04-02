@@ -4466,7 +4466,7 @@ def do_generate_locations_batch(pw, batch_file, use_builtin_chromium=False):
     return total_ok
 
 
-def do_generate_refs(pw, project_dir, use_builtin_chromium=False, bot_index=0, bot_count=1):
+def do_generate_refs(pw, project_dir, use_builtin_chromium=False, bot_index=0, bot_count=1, ref_filter=None):
     """Generate reference images (base and angles) from project manifests.
 
     Reads manifests from <project_dir>/references/ and generates images
@@ -4555,6 +4555,35 @@ def do_generate_refs(pw, project_dir, use_builtin_chromium=False, bot_index=0, b
                             'attempt_num': last_attempt['attempt'],
                             'review_dir': str(angle_manifest_path.parent / f'attempt_{last_attempt["attempt"]}'),
                         })
+
+    # Apply filter if provided
+    if ref_filter:
+        filtered_chars = set(ref_filter.get('characters', []))
+        filtered_locs = set(ref_filter.get('locations', []))
+        filtered_angles = set(ref_filter.get('angles', []))  # keys like "characters:charId:angleId"
+
+        def task_matches_filter(task):
+            entity_type = task['type']
+            item_id = task['item_id']
+
+            # Check if the character/location itself is selected
+            if entity_type == 'characters' and filtered_chars and item_id not in filtered_chars:
+                return False
+            if entity_type == 'locations' and filtered_locs and item_id not in filtered_locs:
+                return False
+
+            # For angle tasks, check if the specific angle is selected
+            if task['target'] == 'angle' and task['angle_id'] and filtered_angles:
+                angle_key = f"{entity_type}:{item_id}:{task['angle_id']}"
+                if angle_key not in filtered_angles:
+                    return False
+
+            return True
+
+        before_count = len(tasks)
+        tasks = [t for t in tasks if task_matches_filter(t)]
+        if before_count != len(tasks):
+            print(f'[REF] Filter applied: {len(tasks)}/{before_count} tasks match selection')
 
     if not tasks:
         print(f'[REF] No pending tasks found. Done.')
@@ -4785,6 +4814,7 @@ def main():
     parser.add_argument('--project-dir', type=str, default=None, help='Project directory for --generate-refs mode')
     parser.add_argument('--bot-index', type=int, default=0, help='Bot index for multi-bot distribution (0-based)')
     parser.add_argument('--bot-count', type=int, default=1, help='Total number of bots for task distribution')
+    parser.add_argument('--filter', type=str, default=None, help='JSON filter for selected characters/locations/angles')
 
     args = parser.parse_args()
     _current_account_idx = args.account - 1
@@ -4922,10 +4952,17 @@ def main():
             print(f'  Timeout: {timeout}s (no SIGALRM on Windows, using soft timeout)')
         with sync_playwright() as pw:
             try:
+                ref_filter_parsed = None
+                if args.filter:
+                    try:
+                        ref_filter_parsed = json.loads(args.filter)
+                    except json.JSONDecodeError:
+                        print(f'[REF] WARNING: Could not parse --filter JSON, ignoring filter')
                 do_generate_refs(pw, args.project_dir,
                                  use_builtin_chromium=args.chromium,
                                  bot_index=args.bot_index,
-                                 bot_count=args.bot_count)
+                                 bot_count=args.bot_count,
+                                 ref_filter=ref_filter_parsed)
             finally:
                 if hasattr(signal, 'alarm'):
                     signal.alarm(0)

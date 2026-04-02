@@ -191,12 +191,12 @@ export const api = {
       }>;
     }>(`/references/${projectId}/references/review`),
 
-  startRefBot: (projectId: string, botCount = 1, accounts: number[] = [1]) =>
+  startRefBot: (projectId: string, botCount = 1, accounts: number[] = [1], filter?: { characters: string[]; locations: string[]; angles: string[] }) =>
     request<{ success: boolean; botIds: number[]; message: string; errors?: string[] }>(
       `/references/${projectId}/references/start-bot`,
       {
         method: 'POST',
-        body: JSON.stringify({ botCount, accounts }),
+        body: JSON.stringify({ botCount, accounts, filter }),
       },
     ),
 

@@ -13,3 +13,7 @@ activation.json
 installer/build/
 installer/*.exe
 installer/code-bundle.zip
+.session*
+output/
+installer/build-mac/
+launcher.bat

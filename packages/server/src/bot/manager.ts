@@ -248,6 +248,7 @@ export class BotManager {
     projectDir: string,
     botIndex: number,
     botCount: number,
+    filter?: { characters: string[]; locations: string[]; angles: string[] },
   ): { success: boolean; error?: string } {
     if (this.bots.has(botId)) {
       const existing = this.bots.get(botId)!;
@@ -337,6 +338,10 @@ export class BotManager {
       '--bot-count', String(botCount),
     ];
 
+    if (filter) {
+      args.push('--filter', JSON.stringify(filter));
+    }
+
     // Формируем env для бота
     const botEnv: Record<string, string> = {
       SESSIONS_DIR: resolve(this.config.dataDir, 'sessions'),
@@ -367,8 +372,9 @@ export class BotManager {
     botId: number,
     account: number,
     projectDir: string,
+    filter?: { characters: string[]; locations: string[]; angles: string[] },
   ): { success: boolean; error?: string } {
-    return this.startSingleRefBot(botId, account, projectDir, 0, 1);
+    return this.startSingleRefBot(botId, account, projectDir, 0, 1, filter);
   }
 
   /** Запускает несколько ботов для генерации референсов */
@@ -376,6 +382,7 @@ export class BotManager {
     botCount: number,
     accounts: number[],
     projectDir: string,
+    filter?: { characters: string[]; locations: string[]; angles: string[] },
   ): { success: boolean; botIds: number[]; errors: string[] } {
     const REF_BOT_BASE_ID = 99;
     const botIds: number[] = [];
@@ -384,7 +391,7 @@ export class BotManager {
     for (let i = 0; i < botCount; i++) {
       const botId = REF_BOT_BASE_ID - i;
       const account = accounts[i % accounts.length];
-      const result = this.startSingleRefBot(botId, account, projectDir, i, botCount);
+      const result = this.startSingleRefBot(botId, account, projectDir, i, botCount, filter);
       if (result.success) {
         botIds.push(botId);
       } else {

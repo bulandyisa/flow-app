@@ -268,9 +268,10 @@ export function referencesRouter(config: AppConfig): Router {
       return;
     }
 
-    const { botCount = 1, accounts = [1] } = req.body as {
+    const { botCount = 1, accounts = [1], filter } = req.body as {
       botCount?: number;
       accounts?: number[];
+      filter?: { characters: string[]; locations: string[]; angles: string[] };
     };
 
     const manager = getBotManager(config);
@@ -291,7 +292,7 @@ export function referencesRouter(config: AppConfig): Router {
       // Single bot mode (backward compatible)
       const account = accounts[0] || 1;
       const REF_BOT_ID = 99;
-      const result = manager.startRefGeneration(REF_BOT_ID, account, projectDir);
+      const result = manager.startRefGeneration(REF_BOT_ID, account, projectDir, filter);
       if (result.success) {
         res.json({
           success: true,
@@ -303,7 +304,7 @@ export function referencesRouter(config: AppConfig): Router {
       }
     } else {
       // Multi-bot mode
-      const result = manager.startMultiRefGeneration(botCount, accounts, projectDir);
+      const result = manager.startMultiRefGeneration(botCount, accounts, projectDir, filter);
       if (result.success) {
         res.json({
           success: true,

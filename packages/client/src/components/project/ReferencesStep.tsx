@@ -114,6 +114,11 @@ export function ReferencesStep({
   const [expandedChar, setExpandedChar] = useState<string | null>(null);
   const [expandedLoc, setExpandedLoc] = useState<string | null>(null);
 
+  // Selection state for checkboxes
+  const [selectedChars, setSelectedChars] = useState<Set<string>>(new Set());
+  const [selectedLocs, setSelectedLocs] = useState<Set<string>>(new Set());
+  const [selectedAngles, setSelectedAngles] = useState<Set<string>>(new Set());
+
   // Manual add forms
   const [showAddChar, setShowAddChar] = useState(false);
   const [showAddLoc, setShowAddLoc] = useState(false);
@@ -144,6 +149,110 @@ export function ReferencesStep({
     completedCount: number; errorCount: number;
     currentAction: string | null; currentClip: string | null;
   }>>([]);
+
+  // ─── Initialize selection sets when data loads ──
+  useEffect(() => {
+    setSelectedChars((prev) => {
+      const next = new Set(prev);
+      for (const c of characters) {
+        if (!next.has(c.id)) next.add(c.id);
+      }
+      // Remove IDs that no longer exist
+      for (const id of next) {
+        if (!characters.find((c) => c.id === id)) next.delete(id);
+      }
+      return next;
+    });
+    setSelectedLocs((prev) => {
+      const next = new Set(prev);
+      for (const l of locations) {
+        if (!next.has(l.id)) next.add(l.id);
+      }
+      for (const id of next) {
+        if (!locations.find((l) => l.id === id)) next.delete(id);
+      }
+      return next;
+    });
+    setSelectedAngles((prev) => {
+      const next = new Set(prev);
+      const charAngleTypes = CHARACTER_ANGLE_TYPES.map((a) => a.id);
+      const locAngleTypes = LOCATION_ANGLE_TYPES.map((a) => a.id);
+      for (const c of characters) {
+        for (const aId of charAngleTypes) {
+          const key = `characters:${c.id}:${aId}`;
+          if (!next.has(key)) next.add(key);
+        }
+      }
+      for (const l of locations) {
+        for (const aId of locAngleTypes) {
+          const key = `locations:${l.id}:${aId}`;
+          if (!next.has(key)) next.add(key);
+        }
+      }
+      // Remove stale keys
+      for (const key of next) {
+        const parts = key.split(':');
+        const type = parts[0];
+        const itemId = parts[1];
+        if (type === 'characters' && !characters.find((c) => c.id === itemId)) next.delete(key);
+        if (type === 'locations' && !locations.find((l) => l.id === itemId)) next.delete(key);
+      }
+      return next;
+    });
+  }, [characters, locations]);
+
+  // ─── Toggle helpers ────────────────────────────
+  const toggleChar = (charId: string) => {
+    const next = new Set(selectedChars);
+    if (next.has(charId)) {
+      next.delete(charId);
+      // Also uncheck all angles for this character
+      const nextAngles = new Set(selectedAngles);
+      for (const key of nextAngles) {
+        if (key.startsWith(`characters:${charId}:`)) nextAngles.delete(key);
+      }
+      setSelectedAngles(nextAngles);
+    } else {
+      next.add(charId);
+      // Also check all angles for this character
+      const nextAngles = new Set(selectedAngles);
+      for (const a of CHARACTER_ANGLE_TYPES) {
+        nextAngles.add(`characters:${charId}:${a.id}`);
+      }
+      setSelectedAngles(nextAngles);
+    }
+    setSelectedChars(next);
+  };
+
+  const toggleLoc = (locId: string) => {
+    const next = new Set(selectedLocs);
+    if (next.has(locId)) {
+      next.delete(locId);
+      // Also uncheck all angles for this location
+      const nextAngles = new Set(selectedAngles);
+      for (const key of nextAngles) {
+        if (key.startsWith(`locations:${locId}:`)) nextAngles.delete(key);
+      }
+      setSelectedAngles(nextAngles);
+    } else {
+      next.add(locId);
+      // Also check all angles for this location
+      const nextAngles = new Set(selectedAngles);
+      for (const a of LOCATION_ANGLE_TYPES) {
+        nextAngles.add(`locations:${locId}:${a.id}`);
+      }
+      setSelectedAngles(nextAngles);
+    }
+    setSelectedLocs(next);
+  };
+
+  const toggleAngle = (type: 'characters' | 'locations', itemId: string, angleId: string) => {
+    const key = `${type}:${itemId}:${angleId}`;
+    const next = new Set(selectedAngles);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    setSelectedAngles(next);
+  };
 
   // ─── Load review items ─────────────────────────
   const loadReviewItems = useCallback(async () => {
@@ -204,7 +313,15 @@ export function ReferencesStep({
         6: [1, 2, 3, 4, 5, 6],
       };
       const accounts = accountMap[botCount] || [1];
-      const result = await api.startRefBot(projectId, botCount, accounts);
+
+      // Build filter from selected items
+      const filter: { characters: string[]; locations: string[]; angles: string[] } = {
+        characters: Array.from(selectedChars),
+        locations: Array.from(selectedLocs),
+        angles: Array.from(selectedAngles),
+      };
+
+      const result = await api.startRefBot(projectId, botCount, accounts, filter);
       setBotRunning(true);
       setBotStatus(result.message);
     } catch (err) {
@@ -303,8 +420,8 @@ export function ReferencesStep({
 
   const handleGenerateAllMissing = async () => {
     const pending = [
-      ...characters.filter((c) => !c.baseImage).map((c) => ({ type: 'characters' as const, id: c.id })),
-      ...locations.filter((l) => !l.baseImage).map((l) => ({ type: 'locations' as const, id: l.id })),
+      ...characters.filter((c) => !c.baseImage && selectedChars.has(c.id)).map((c) => ({ type: 'characters' as const, id: c.id })),
+      ...locations.filter((l) => !l.baseImage && selectedLocs.has(l.id)).map((l) => ({ type: 'locations' as const, id: l.id })),
     ];
 
     for (const item of pending) {
@@ -671,6 +788,15 @@ export function ReferencesStep({
                       className="flex items-center gap-3 p-3 cursor-pointer hover:bg-surface-light/50 transition-colors"
                       onClick={() => setExpandedChar(isExpanded ? null : char.id)}
                     >
+                      {/* Checkbox */}
+                      <input
+                        type="checkbox"
+                        checked={selectedChars.has(char.id)}
+                        onChange={(e) => { e.stopPropagation(); toggleChar(char.id); }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-4 h-4 accent-amber-500 cursor-pointer flex-shrink-0"
+                      />
+
                       {/* Photo */}
                       {char.baseImage ? (
                         <img
@@ -824,8 +950,16 @@ export function ReferencesStep({
                                 ];
                                 return allAngles.map((angle) => {
                                   const accepted = char.angles.find((a) => a.id === angle.id && a.status === 'accepted');
+                                  const angleKey = `characters:${char.id}:${angle.id}`;
                                   return (
                                     <div key={angle.id} className="flex items-center gap-3 py-1.5 px-2 rounded hover:bg-surface-light">
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedAngles.has(angleKey)}
+                                        onChange={() => toggleAngle('characters', char.id, angle.id)}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="w-3.5 h-3.5 accent-amber-500 cursor-pointer flex-shrink-0"
+                                      />
                                       {accepted ? (
                                         <img src={api.mediaUrl(projectId, accepted.file)} className="w-10 h-8 rounded object-cover flex-shrink-0" loading="lazy" />
                                       ) : (
@@ -946,6 +1080,15 @@ export function ReferencesStep({
                       className="flex items-center gap-3 p-3 cursor-pointer hover:bg-surface-light/50 transition-colors"
                       onClick={() => setExpandedLoc(isExpanded ? null : loc.id)}
                     >
+                      {/* Checkbox */}
+                      <input
+                        type="checkbox"
+                        checked={selectedLocs.has(loc.id)}
+                        onChange={(e) => { e.stopPropagation(); toggleLoc(loc.id); }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-4 h-4 accent-amber-500 cursor-pointer flex-shrink-0"
+                      />
+
                       {/* Photo */}
                       {loc.baseImage ? (
                         <img
@@ -1089,8 +1232,16 @@ export function ReferencesStep({
                                 ];
                                 return allAngles.map((angle) => {
                                   const accepted = loc.angles.find((a) => a.id === angle.id && a.status === 'accepted');
+                                  const angleKey = `locations:${loc.id}:${angle.id}`;
                                   return (
                                     <div key={angle.id} className="flex items-center gap-3 py-1.5 px-2 rounded hover:bg-surface-light">
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedAngles.has(angleKey)}
+                                        onChange={() => toggleAngle('locations', loc.id, angle.id)}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="w-3.5 h-3.5 accent-amber-500 cursor-pointer flex-shrink-0"
+                                      />
                                       {accepted ? (
                                         <img src={api.mediaUrl(projectId, accepted.file)} className="w-10 h-8 rounded object-cover flex-shrink-0" loading="lazy" />
                                       ) : (
@@ -1194,6 +1345,9 @@ export function ReferencesStep({
                     <p className="text-sm text-gray-300">Запуск генерации референсов</p>
                     <p className="text-xs text-gray-500 mt-0.5">
                       Бот(ы) сгенерируют варианты по созданным промптам
+                    </p>
+                    <p className="text-xs text-amber-400/80 mt-0.5">
+                      Выбрано: {selectedChars.size} персонаж(ей), {selectedLocs.size} локаций
                     </p>
                     {botStatus && (
                       <p className={`text-xs mt-1 ${botRunning ? 'text-blue-400' : botStatus.includes('Ошибка') ? 'text-red-400' : 'text-green-400'}`}>
