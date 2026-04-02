@@ -4650,11 +4650,12 @@ def do_generate_refs(pw, project_dir, use_builtin_chromium=False, bot_index=0, b
             set_variant_count(page, 4)
 
             # Upload ingredients (base image for angles)
+            clear_ingredients(page)
             if task['ingredients']:
-                clear_ingredients(page)
+                global _last_uploaded
+                _last_uploaded = None  # Force fresh upload, no caching
+                print(f'  [REF] Uploading {len(task["ingredients"])} ingredient(s)')
                 upload_ingredients(page, task['ingredients'])
-            elif idx == 0 or tasks[idx - 1].get('ingredients'):
-                clear_ingredients(page)
 
             clean_prompt = sanitize_nb_prompt(task['prompt'])
 
