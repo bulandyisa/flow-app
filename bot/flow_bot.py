@@ -1045,71 +1045,105 @@ def _count_ingredient_thumbs(page):
 
 
 def _upload_ingredient_fresh(page, fpath):
-    """Upload a single ingredient via file chooser. Always uploads fresh.
+    """Upload a single ingredient via file chooser.
 
-    Flow: click '+' → media dialog → 'Загрузить изображение' → file chooser → crop dialog → done.
+    Tries multiple strategies:
+    1. Direct file chooser interception on "Загрузить изображение" click
+    2. Find any file input on page and set files directly
+    3. Open media dialog, click upload, intercept file chooser with longer timeout
+
     Returns True if ingredient thumbnail appeared after upload.
     """
     thumbs_before = _count_ingredient_thumbs(page)
 
-    # Step 1: Open media dialog via '+' button
+    # Strategy 1: Find file input BEFORE opening dialog and set files + dispatch change
+    uploaded = False
+
+    # Open media dialog first
     if not _open_media_dialog(page):
         return False
 
-    # Step 2: Find and click 'Загрузить изображение' inside the dialog
+    human_delay(1, 2)
+
+    # Strategy 2: Click "Загрузить изображение" with file chooser interception (longer timeout)
     upload_pos = page.evaluate("""() => {
         const dialog = document.querySelector('[role="dialog"]');
         const root = dialog || document;
-        // Search all clickable elements, not just buttons
-        for (const el of root.querySelectorAll('button, [role="button"], [role="menuitem"], div, span, a')) {
-            const t = el.textContent.trim();
-            if ((t.includes('Загрузить') && (t.includes('зображени') || t.includes('Upload'))) ||
-                t === 'uploadЗагрузить изображение' ||
-                t === 'Загрузить изображение') {
+        // Find the deepest element whose OWN text (not children) contains the upload label
+        let best = null;
+        for (const el of root.querySelectorAll('*')) {
+            // Get only direct text content (not from children)
+            let ownText = '';
+            for (const node of el.childNodes) {
+                if (node.nodeType === 3) ownText += node.textContent;
+            }
+            ownText = ownText.trim();
+            if (ownText.includes('Загрузить изображение') || ownText.includes('Upload image')) {
                 const r = el.getBoundingClientRect();
-                if (r.width > 30 && r.height > 10) return {x: r.x + r.width/2, y: r.y + r.height/2, text: t.substring(0, 60)};
+                if (r.width > 20 && r.height > 10) {
+                    best = {x: r.x + r.width/2, y: r.y + r.height/2, text: ownText.substring(0, 60)};
+                }
             }
         }
-        return null;
+        // Fallback: look for element with exact textContent match (leaf nodes)
+        if (!best) {
+            for (const el of root.querySelectorAll('span, button, a, div')) {
+                const t = el.textContent.trim();
+                if (t === 'Загрузить изображение' || t === 'Upload image') {
+                    const r = el.getBoundingClientRect();
+                    if (r.width > 20 && r.height > 10) {
+                        best = {x: r.x + r.width/2, y: r.y + r.height/2, text: t};
+                        break;
+                    }
+                }
+            }
+        }
+        return best;
     }""")
 
-    if not upload_pos:
-        print(f'    "Загрузить изображение" not found in dialog')
-        take_screenshot(page, 'ingredient_no_upload_btn')
-        page.keyboard.press('Escape')
-        human_delay(0.5, 1.0)
-        return False
+    if upload_pos:
+        print(f'    Found upload button: "{upload_pos.get("text", "")[:40]}"')
 
-    # Step 3: Upload via file chooser
-    uploaded = False
-    try:
-        with page.expect_file_chooser(timeout=8000) as fc_info:
-            page.mouse.click(upload_pos['x'], upload_pos['y'])
-        fc = fc_info.value
-        fc.set_files(str(fpath))
-        uploaded = True
-        print(f'    Uploaded: {fpath.name}')
-    except Exception as e:
-        print(f'    File chooser failed: {e}')
-        # Fallback: hidden file input
-        file_input = page.query_selector('input[type="file"][accept="image/*"]')
-        if not file_input:
-            file_input = page.query_selector('input[type="file"]')
-        if file_input:
-            file_input.set_input_files(str(fpath))
+        # Try file chooser with 60s timeout
+        try:
+            with page.expect_file_chooser(timeout=60000) as fc_info:
+                page.mouse.click(upload_pos['x'], upload_pos['y'])
+            fc = fc_info.value
+            fc.set_files(str(fpath))
             uploaded = True
-            print(f'    Uploaded (input fallback): {fpath.name}')
+            print(f'    Uploaded via file chooser: {fpath.name}')
+        except Exception as e:
+            print(f'    File chooser timeout, trying input fallback...')
+
+    # Strategy 3: Find ALL file inputs on page, set files with change event dispatch
+    if not uploaded:
+        file_inputs = page.query_selector_all('input[type="file"]')
+        print(f'    Found {len(file_inputs)} file input(s) on page')
+        for i, fi in enumerate(file_inputs):
+            try:
+                fi.set_input_files(str(fpath))
+                # Dispatch change event to trigger React/Angular handlers
+                page.evaluate("""(el) => {
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                }""", fi)
+                uploaded = True
+                print(f'    Uploaded via input[{i}] + change event: {fpath.name}')
+                break
+            except Exception as e2:
+                print(f'    Input[{i}] failed: {e2}')
 
     if not uploaded:
         print(f'    FAILED to upload {fpath.name}')
+        take_screenshot(page, 'ingredient_upload_failed')
         page.keyboard.press('Escape')
         human_delay(0.5, 1.0)
         return False
 
-    # Step 4: Wait for upload to process
+    # Wait for upload to process
     human_delay(5, 8)
 
-    # Step 5: Handle crop dialog if it appeared (critical — Escape would CANCEL it!)
+    # Handle crop dialog if appeared
     for _ in range(3):
         has_crop = page.evaluate("""() => {
             for (const btn of document.querySelectorAll('button')) {
@@ -1129,13 +1163,32 @@ def _upload_ingredient_fresh(page, fpath):
         else:
             break
 
-    # Step 6: Close media library dialog if still open
+    # Close media library dialog if still open — try selecting the uploaded image first
     has_dialog = page.evaluate("""() => {
         const d = document.querySelector('[role="dialog"]');
         return d && d.getBoundingClientRect().width > 100;
     }""")
     if has_dialog:
-        # Try clicking a 'Select' or 'Done' button first
+        # Try clicking the FIRST (most recent) image thumbnail in the library
+        clicked_thumb = page.evaluate("""() => {
+            const dialog = document.querySelector('[role="dialog"]');
+            if (!dialog) return false;
+            // Find image thumbnails in the dialog
+            const imgs = dialog.querySelectorAll('img');
+            for (const img of imgs) {
+                const r = img.getBoundingClientRect();
+                if (r.width > 40 && r.height > 40 && r.width < 300) {
+                    img.click();
+                    return true;
+                }
+            }
+            return false;
+        }""")
+        if clicked_thumb:
+            print(f'    Clicked first thumbnail in media library')
+            human_delay(1, 2)
+
+        # Now try 'Выбрать'/'Select'/'Готово' button
         selected = page.evaluate("""() => {
             const dialog = document.querySelector('[role="dialog"]');
             if (!dialog) return false;
@@ -1148,19 +1201,22 @@ def _upload_ingredient_fresh(page, fpath):
             return false;
         }""")
         if selected:
+            print(f'    Clicked select/done button')
             human_delay(1, 2)
         else:
             page.keyboard.press('Escape')
             human_delay(0.5, 1.0)
 
-    # Step 7: Verify ingredient was added
+    # Verify ingredient was added
     human_delay(1, 2)
     thumbs_after = _count_ingredient_thumbs(page)
     if thumbs_after > thumbs_before:
+        print(f'    Ingredient added! Thumbs: {thumbs_before} → {thumbs_after}')
         return True
     else:
         print(f'    WARNING: Thumbnail count unchanged ({thumbs_before} → {thumbs_after})')
-        return True  # Trust the upload even if count check fails
+        take_screenshot(page, 'ingredient_thumb_missing')
+        return False
 
 
 def upload_ingredients(page, ingredient_paths):
@@ -4667,9 +4723,12 @@ def do_generate_refs(pw, project_dir, use_builtin_chromium=False, bot_index=0, b
                 print(f'  [REF] Ingredients: {task["ingredients"]}')
                 clear_ingredients(page)
                 count = upload_ingredients(page, task['ingredients'])
-                print(f'  [REF] Uploaded {count} ingredient(s), thumbs: {_count_ingredient_thumbs(page)}')
-                if _count_ingredient_thumbs(page) == 0:
-                    print(f'  [REF] WARNING: No ingredient thumbnails visible after upload!')
+                thumbs = _count_ingredient_thumbs(page)
+                print(f'  [REF] Uploaded {count} ingredient(s), thumbs: {thumbs}')
+                if thumbs == 0 and task['target'] == 'angle':
+                    print(f'  [REF] SKIP: angle generation without ingredient — skipping')
+                    total_fail += 1
+                    continue
             elif idx == 0 or tasks[idx - 1].get('ingredients'):
                 clear_ingredients(page)
 
