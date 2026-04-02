@@ -742,6 +742,20 @@ export function ReferencesStep({
                 <span className="text-sm text-gray-500">
                   {charsReady}/{characters.length} с фото
                 </span>
+                {characters.length > 0 && (
+                  <button
+                    onClick={() => {
+                      if (selectedChars.size === characters.length) {
+                        setSelectedChars(new Set());
+                      } else {
+                        setSelectedChars(new Set(characters.map((c) => c.id)));
+                      }
+                    }}
+                    className="text-xs text-gray-500 hover:text-accent transition-colors"
+                  >
+                    {selectedChars.size === characters.length ? 'Снять все' : 'Выбрать все'}
+                  </button>
+                )}
               </div>
               <button
                 onClick={() => setShowAddChar(true)}
@@ -1034,6 +1048,20 @@ export function ReferencesStep({
                 <span className="text-sm text-gray-500">
                   {locsReady}/{locations.length} с фото, {locsWithAngles} с ракурсами
                 </span>
+                {locations.length > 0 && (
+                  <button
+                    onClick={() => {
+                      if (selectedLocs.size === locations.length) {
+                        setSelectedLocs(new Set());
+                      } else {
+                        setSelectedLocs(new Set(locations.map((l) => l.id)));
+                      }
+                    }}
+                    className="text-xs text-gray-500 hover:text-accent transition-colors"
+                  >
+                    {selectedLocs.size === locations.length ? 'Снять все' : 'Выбрать все'}
+                  </button>
+                )}
               </div>
               <button
                 onClick={() => setShowAddLoc(true)}
