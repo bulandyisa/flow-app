@@ -638,6 +638,20 @@ export function setupRouter(config: AppConfig): Router {
         'переход_ночь': 'Переход — ночь',
         'чёрный_экран': 'Чёрный экран',
         'титры': 'Титры',
+        'garazh': 'Гараж',
+        'amin_room': 'Комната Амина',
+        'kabinet': 'Кабинет папы',
+        'pustyr': 'Пустырь у склада',
+        'sklad': 'Склад',
+        'gate': 'Ворота дома',
+        'bashnya': 'Водонапорная башня',
+        'bashnya_top': 'Башня — верхняя площадка',
+        'tako_room': 'Комната Тако',
+        'road': 'Дорога к башне',
+        'kitchen': 'Кухня',
+        'porch': 'Крыльцо',
+        'street': 'Улица',
+        'fence': 'Забор',
       };
 
       for (const [locId, angleIds] of locAnglesMap.entries()) {

@@ -46,19 +46,22 @@ REFS_DIR     = PROJECT_ROOT
 FLOW_URL = 'https://labs.google/fx/ru/tools/flow'
 COMMANDS_PATH = OUTPUT_DIR / 'commands.json'
 
+# Sessions stored in data/sessions/ (survives app updates)
+SESSIONS_BASE = Path(os.environ.get('SESSIONS_DIR', PROJECT_ROOT))
+
 ACCOUNTS = [
     # Bot 1 — Акк 1, Chrome, сессия .session
-    {'session_dir': PROJECT_ROOT / '.session', 'project_url': None},
+    {'session_dir': SESSIONS_BASE / '.session', 'project_url': None},
     # Bot 2 — Акк 1, Chromium, сессия .session_1b
-    {'session_dir': PROJECT_ROOT / '.session_1b', 'project_url': None},
+    {'session_dir': SESSIONS_BASE / '.session_1b', 'project_url': None},
     # Bot 3 — Акк 2, Chrome, сессия .session_2
-    {'session_dir': PROJECT_ROOT / '.session_2', 'project_url': None},
+    {'session_dir': SESSIONS_BASE / '.session_2', 'project_url': None},
     # Bot 4 — Акк 2, Chromium, сессия .session_2b
-    {'session_dir': PROJECT_ROOT / '.session_2b', 'project_url': None},
+    {'session_dir': SESSIONS_BASE / '.session_2b', 'project_url': None},
     # Bot 5 — Акк 1, Chrome (2-й инстанс), сессия .session_1c
-    {'session_dir': PROJECT_ROOT / '.session_1c', 'project_url': None},
+    {'session_dir': SESSIONS_BASE / '.session_1c', 'project_url': None},
     # Bot 6 — Акк 2, Chrome (2-й инстанс), сессия .session_2c
-    {'session_dir': PROJECT_ROOT / '.session_2c', 'project_url': None},
+    {'session_dir': SESSIONS_BASE / '.session_2c', 'project_url': None},
 ]
 
 _current_account_idx = 0

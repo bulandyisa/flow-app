@@ -216,8 +216,10 @@ export class BotManager {
       ...extraArgs,
     ];
 
-    // Формируем env для бота (installer mode: передаём пути к Chromium)
-    const botEnv: Record<string, string> = {};
+    // Формируем env для бота
+    const botEnv: Record<string, string> = {
+      SESSIONS_DIR: resolve(this.config.dataDir, 'sessions'),
+    };
     if (this.config.appRootDir) {
       const chromiumDir = resolve(this.config.appRootDir, 'chromium');
       if (existsSync(chromiumDir)) {
@@ -335,8 +337,10 @@ export class BotManager {
       '--bot-count', String(botCount),
     ];
 
-    // Формируем env для бота (installer mode: передаём пути к Chromium)
-    const botEnv: Record<string, string> = {};
+    // Формируем env для бота
+    const botEnv: Record<string, string> = {
+      SESSIONS_DIR: resolve(this.config.dataDir, 'sessions'),
+    };
     if (this.config.appRootDir) {
       const chromiumDir = resolve(this.config.appRootDir, 'chromium');
       if (existsSync(chromiumDir)) {
