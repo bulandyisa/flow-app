@@ -131,6 +131,7 @@ export function ReferencesStep({
   const [feedbackTexts, setFeedbackTexts] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
+  const [promptsDoneMessage, setPromptsDoneMessage] = useState<string | null>(null);
 
   // AI model choice
   const [aiModel, setAiModel] = useState<'sonnet' | 'opus'>('sonnet');
@@ -419,6 +420,9 @@ export function ReferencesStep({
   };
 
   const handleGenerateAllMissing = async () => {
+    setPromptsDoneMessage(null);
+    let totalCreated = 0;
+
     // 1. Rewrite rejected prompts (with feedback) for selected items
     const filter = {
       characters: [...selectedChars],
@@ -427,6 +431,7 @@ export function ReferencesStep({
     try {
       const result = await api.rewriteRejected(projectId, filter);
       if (result.rewrittenCount > 0) {
+        totalCreated += result.rewrittenCount;
         await loadReviewItems();
       }
     } catch (err) {
@@ -441,6 +446,7 @@ export function ReferencesStep({
 
     for (const item of pendingBases) {
       await handleGenerate(item.type, item.id, 'base');
+      totalCreated++;
     }
 
     // 3. Generate angles for items that have base but need angles
@@ -451,6 +457,13 @@ export function ReferencesStep({
 
     for (const item of pendingAngles) {
       await handleGenerate(item.type, item.id, 'angles');
+      totalCreated++;
+    }
+
+    if (totalCreated > 0) {
+      setPromptsDoneMessage(`${totalCreated} промпт(ов) готовы для генерации. Можно запускать ботов.`);
+    } else {
+      setPromptsDoneMessage('Нет новых промптов для создания.');
     }
   };
 
@@ -524,7 +537,7 @@ export function ReferencesStep({
         },
       ], aiModel);
 
-      setSubmitMessage('Отклонено. Промпт переписан через Claude — бот сгенерирует новые варианты.');
+      setSubmitMessage('Отклонено. Нажмите «Создать промпты» для переписывания.');
       setFeedbackTexts((prev) => ({ ...prev, [key]: '' }));
       onUpdate();
       await loadReviewItems();
@@ -581,6 +594,23 @@ export function ReferencesStep({
           <div className="flex items-center gap-2 text-green-400 text-sm">
             <CheckCircle size={14} />
             Принято (вариант {(item.manifest.selected_variant?.variant ?? 0) + 1})
+          </div>
+        </div>
+      );
+    }
+
+    // Rejected — waiting for "Create prompts" to rewrite
+    if (item.manifest.status === 'rejected') {
+      return (
+        <div className="mt-2 p-3 bg-red-900/20 border border-red-800/30 rounded-lg space-y-2">
+          {item.manifest.feedback && (
+            <div className="text-xs text-red-300">
+              <span className="font-medium">Фидбек:</span> {item.manifest.feedback}
+            </div>
+          )}
+          <div className="flex items-center gap-2 text-red-400 text-sm">
+            <AlertCircle size={14} />
+            Отклонено. Нажмите «Создать промпты» для переписывания, затем «Запустить ботов».
           </div>
         </div>
       );
@@ -1387,6 +1417,11 @@ export function ReferencesStep({
                       )}
                       Создать промпты
                     </button>
+                    {promptsDoneMessage && (
+                      <p className={`text-sm ${promptsDoneMessage.includes('готовы') ? 'text-green-400' : 'text-gray-400'}`}>
+                        {promptsDoneMessage}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
