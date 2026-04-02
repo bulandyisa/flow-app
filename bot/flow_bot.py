@@ -4543,6 +4543,9 @@ def do_generate_refs(pw, project_dir, use_builtin_chromium=False, bot_index=0, b
                             if candidate.exists():
                                 ingredients = [str(candidate)]
                                 break
+                        if not ingredients:
+                            print(f'  [REF] SKIP {entity_type}/{item_id}/{angle_id}: no base image')
+                            continue
                         tasks.append({
                             'type': entity_type,
                             'item_id': item_id,
