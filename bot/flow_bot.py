@@ -1060,12 +1060,14 @@ def _upload_ingredient_fresh(page, fpath):
     upload_pos = page.evaluate("""() => {
         const dialog = document.querySelector('[role="dialog"]');
         const root = dialog || document;
-        for (const btn of root.querySelectorAll('button')) {
-            const t = btn.textContent.trim();
+        // Search all clickable elements, not just buttons
+        for (const el of root.querySelectorAll('button, [role="button"], [role="menuitem"], div, span, a')) {
+            const t = el.textContent.trim();
             if ((t.includes('Загрузить') && (t.includes('зображени') || t.includes('Upload'))) ||
-                t === 'uploadЗагрузить изображение') {
-                const r = btn.getBoundingClientRect();
-                if (r.width > 30) return {x: r.x + r.width/2, y: r.y + r.height/2, text: t.substring(0, 60)};
+                t === 'uploadЗагрузить изображение' ||
+                t === 'Загрузить изображение') {
+                const r = el.getBoundingClientRect();
+                if (r.width > 30 && r.height > 10) return {x: r.x + r.width/2, y: r.y + r.height/2, text: t.substring(0, 60)};
             }
         }
         return null;

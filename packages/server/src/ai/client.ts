@@ -47,8 +47,8 @@ type ModelChoice = 'opus' | 'sonnet';
 
 function modelId(choice: ModelChoice): string {
   return choice === 'opus'
-    ? 'claude-opus-4-6-latest'
-    : 'claude-sonnet-4-5-20241022';
+    ? 'claude-opus-4-6'
+    : 'claude-sonnet-4-6';
 }
 
 /** Вызов Claude API с prompt caching */
