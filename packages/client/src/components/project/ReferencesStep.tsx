@@ -732,7 +732,7 @@ export function ReferencesStep({
                     {isExpanded && (
                       <div className="px-3 pb-3 border-t border-surface-lighter space-y-3">
                         {/* Generate or upload base button */}
-                        {!char.baseImage && (!baseReview || (baseReview.manifest.status !== 'generating' && baseReview.manifest.status !== 'accepted')) && (
+                        {!char.baseImage && (
                           <div className="pt-3 flex items-center gap-3">
                             <button
                               onClick={(e) => { e.stopPropagation(); handleGenerate('characters', char.id, 'base'); }}
@@ -997,7 +997,7 @@ export function ReferencesStep({
                     {isExpanded && (
                       <div className="px-3 pb-3 border-t border-surface-lighter space-y-3">
                         {/* Generate or upload base button */}
-                        {!loc.baseImage && (!baseReview || (baseReview.manifest.status !== 'generating' && baseReview.manifest.status !== 'accepted')) && (
+                        {!loc.baseImage && (
                           <div className="pt-3 flex items-center gap-3">
                             <button
                               onClick={(e) => { e.stopPropagation(); handleGenerate('locations', loc.id, 'base'); }}
