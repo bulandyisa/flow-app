@@ -1,9 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'node:http';
-import { resolve, dirname } from 'node:path';
+import { resolve, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mkdirSync, existsSync, writeFileSync, unlinkSync } from 'node:fs';
+import { mkdirSync, existsSync, writeFileSync, unlinkSync, renameSync, readdirSync, readFileSync } from 'node:fs';
 import { loadConfig } from './config.js';
 import { projectsRouter } from './api/projects.js';
 import { mediaRouter } from './api/media.js';
@@ -28,6 +28,53 @@ const dirs = [
 ];
 for (const dir of dirs) {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+}
+
+// Миграция: переименовать base.* → {id}_base.* для уникальных имён
+{
+  const projectsDir = resolve(config.dataDir, 'projects');
+  if (existsSync(projectsDir)) {
+    for (const projDir of readdirSync(projectsDir, { withFileTypes: true })) {
+      if (!projDir.isDirectory()) continue;
+      const pjPath = resolve(projectsDir, projDir.name, 'project.json');
+      if (!existsSync(pjPath)) continue;
+
+      try {
+        const project = JSON.parse(readFileSync(pjPath, 'utf-8'));
+        let changed = false;
+
+        for (const type of ['characters', 'locations'] as const) {
+          for (const item of project[type] || []) {
+            const refsDir = resolve(projectsDir, projDir.name, 'references', type, item.id);
+            if (!existsSync(refsDir)) continue;
+
+            // Find base.* files (old format)
+            for (const file of readdirSync(refsDir)) {
+              const match = file.match(/^base\.(png|jpg|jpeg|webp)$/);
+              if (match) {
+                const newName = `${item.id}_base.${match[1]}`;
+                const oldPath = resolve(refsDir, file);
+                const newPath = resolve(refsDir, newName);
+                if (!existsSync(newPath)) {
+                  renameSync(oldPath, newPath);
+                  // Update project.json path
+                  const newRelPath = `references/${type}/${item.id}/${newName}`;
+                  if (item.baseImage && item.baseImage.includes(`/base.${match[1]}`)) {
+                    item.baseImage = newRelPath;
+                    changed = true;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        if (changed) {
+          writeFileSync(pjPath, JSON.stringify(project, null, 2), 'utf-8');
+        }
+      } catch { /* skip broken projects */ }
+    }
+  }
 }
 
 // Проверяем активацию при старте
