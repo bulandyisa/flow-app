@@ -126,10 +126,11 @@ export function copyAcceptedBase(
   const destDir = resolve(refsDir, manifest.type, manifest.itemId);
   if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true });
 
-  const destPath = resolve(destDir, 'base.png');
+  const destFile = `${manifest.itemId}_base.png`;
+  const destPath = resolve(destDir, destFile);
   copyFileSync(srcPath, destPath);
 
-  return `references/${manifest.type}/${manifest.itemId}/base.png`;
+  return `references/${manifest.type}/${manifest.itemId}/${destFile}`;
 }
 
 /**

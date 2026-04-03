@@ -1211,10 +1211,10 @@ def _upload_ingredient_fresh(page, fpath):
     human_delay(1, 2)
     thumbs_after = _count_ingredient_thumbs(page)
     if thumbs_after > thumbs_before:
-        print(f'    Ingredient added! Thumbs: {thumbs_before} → {thumbs_after}')
+        print(f'    Ingredient added! Thumbs: {thumbs_before} -> {thumbs_after}')
         return True
     else:
-        print(f'    WARNING: Thumbnail count unchanged ({thumbs_before} → {thumbs_after})')
+        print(f'    WARNING: Thumbnail count unchanged ({thumbs_before} -> {thumbs_after})')
         take_screenshot(page, 'ingredient_thumb_missing')
         return False
 
@@ -2134,7 +2134,7 @@ def poll_generation(page, errors_before=0, timeout_sec=GENERATION_TIMEOUT, media
             # Verify new content appeared
             count_after = _count_generated_media(page, media)
             if count_after > count_before:
-                print(f'    New media: {count_before} → {count_after}')
+                print(f'    New media: {count_before} -> {count_after}')
             return 'success'
 
         # Check for NEW error (not old ones in chat history)
@@ -2527,7 +2527,7 @@ def copy_selected_to_output(clip_id, manifest, trim_start=None, trim_end=None):
                     dest = FRAMES_DIR / f'{clip_id}_{suffix}{ext}.png'
                     shutil.copy2(src, dest)
                     _r2_sync_upload(dest)
-                    print(f'  Copied → {dest.name}')
+                    print(f'  Copied -> {dest.name}')
         elif comp_name == 'veo':
             sel = comp.get('selected_variant_a')
             if not sel: continue
@@ -2544,7 +2544,7 @@ def copy_selected_to_output(clip_id, manifest, trim_start=None, trim_end=None):
                 else:
                     shutil.copy2(src, dest)
                 _r2_sync_upload(dest)
-                print(f'  Copied → {dest.name}')
+                print(f'  Copied -> {dest.name}')
 
 
 def mark_selected_simple(manifest, component, attempt, variant_idx):
@@ -3506,7 +3506,7 @@ def do_extract_frames(clip_id, component, attempt):
             dur = float(json.loads(dur_result.stdout).get('format',{}).get('duration',0))
         var['duration'] = dur
         var['frames_dir'] = frames_dir.name
-        print(f'  variant_{i+1}: {dur:.1f}s → {frames_dir.name}')
+        print(f'  variant_{i+1}: {dur:.1f}s -> {frames_dir.name}')
     save_manifest(clip_id, manifest)
 
 
@@ -3690,7 +3690,7 @@ def do_phase_select(phase, clip_commands):
                 FRAMES_DIR.mkdir(parents=True, exist_ok=True)
                 dest = FRAMES_DIR / f'{cid}_{suffixes[phase]}.png'
                 shutil.copy2(variant_file, dest)
-                print(f'  {cid}: variant_{variant_idx + 1} → {dest.name}')
+                print(f'  {cid}: variant_{variant_idx + 1} -> {dest.name}')
 
                 mark_selected_simple(manifest, phase, attempt, variant_idx)
                 save_manifest(cid, manifest)
@@ -3708,7 +3708,7 @@ def do_phase_select(phase, clip_commands):
                 CLIPS_DIR.mkdir(parents=True, exist_ok=True)
                 dest = CLIPS_DIR / f'{cid}_clip.mp4'
                 shutil.copy2(variant_file, dest)
-                print(f'  {cid}: variant_{variant_idx + 1} → {dest.name}')
+                print(f'  {cid}: variant_{variant_idx + 1} -> {dest.name}')
 
                 mark_selected_simple(manifest, phase, attempt, variant_idx)
                 save_manifest(cid, manifest)
@@ -4282,7 +4282,7 @@ def do_generate_location(pw, prompt, output_path, num_variants=4, project_id=Non
         # Copy first variant as the main output (user can replace later)
         import shutil
         shutil.copy2(saved[0], output_path)
-        print(f'  Copied variant_1 → {output_path}')
+        print(f'  Copied variant_1 -> {output_path}')
         print(f'  All variants in: {variants_dir}/')
         print(f'  To pick a different variant, copy it manually:')
         for s in saved:
@@ -4606,11 +4606,15 @@ def do_generate_refs(pw, project_dir, use_builtin_chromium=False, bot_index=0, b
                         # Fallback: scan for base.* files
                         if not ingredients:
                             base_dir = refs_dir / entity_type / item_id
-                            for ext in ('png', 'jpg', 'jpeg', 'webp'):
-                                candidate = base_dir / f'base.{ext}'
-                                if candidate.exists():
-                                    ingredients = [str(candidate)]
-                                    print(f'  [REF] Base ingredient from scan: {candidate.name}')
+                            # Try {id}_base.* first (new format), then base.* (legacy)
+                            for prefix in (f'{item_id}_base', 'base'):
+                                for ext in ('png', 'jpg', 'jpeg', 'webp'):
+                                    candidate = base_dir / f'{prefix}.{ext}'
+                                    if candidate.exists():
+                                        ingredients = [str(candidate)]
+                                        print(f'  [REF] Base ingredient from scan: {candidate.name}')
+                                        break
+                                if ingredients:
                                     break
                         if not ingredients:
                             print(f'  [REF] SKIP {entity_type}/{item_id}/{angle_id}: no base image found')

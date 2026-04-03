@@ -84,7 +84,7 @@ export function setupRouter(config: AppConfig): Router {
     let baseImage: string | null = null;
     if (req.file) {
       const ext = extname(req.file.originalname) || '.png';
-      const destFile = `base${ext}`;
+      const destFile = `${charId}_base${ext}`;
       copyFileSync(req.file.path, resolve(charDir, destFile));
       baseImage = `references/characters/${charId}/${destFile}`;
     }
@@ -155,7 +155,7 @@ export function setupRouter(config: AppConfig): Router {
     ensureDir(charDir);
 
     const ext = extname(req.file.originalname) || '.png';
-    const destFile = `base${ext}`;
+    const destFile = `${char.id}_base${ext}`;
     copyFileSync(req.file.path, resolve(charDir, destFile));
 
     char.baseImage = `references/characters/${char.id}/${destFile}`;
@@ -253,7 +253,7 @@ export function setupRouter(config: AppConfig): Router {
     ensureDir(locDir);
 
     const ext = extname(req.file.originalname) || '.png';
-    const destFile = `base${ext}`;
+    const destFile = `${loc.id}_base${ext}`;
     copyFileSync(req.file.path, resolve(locDir, destFile));
 
     loc.baseImage = `references/locations/${loc.id}/${destFile}`;
