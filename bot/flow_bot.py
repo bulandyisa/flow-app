@@ -2504,7 +2504,7 @@ def load_manifest(clip_id):
     m = None
     path = REVIEW_DIR / clip_id / 'manifest.json'
     if path.exists():
-        with open(path) as f:
+        with open(path, encoding='utf-8') as f:
             m = json.load(f)
     if m is None and r2_storage.is_configured():
         r2_key = _r2_key(REVIEW_DIR / clip_id / 'manifest.json')
@@ -2529,7 +2529,7 @@ def load_manifest(clip_id):
 def save_manifest(clip_id, manifest):
     path = REVIEW_DIR / clip_id / 'manifest.json'
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, 'w') as f:
+    with open(path, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, indent=2, ensure_ascii=False)
     # Sync to R2
     if r2_storage.is_configured():
@@ -3288,7 +3288,7 @@ def _prompts_path():
     old = signal.signal(signal.SIGALRM, _timeout_handler)
     try:
         signal.alarm(5)
-        with open(PROMPTS_PATH) as f:
+        with open(PROMPTS_PATH, encoding='utf-8') as f:
             f.read(100)
         signal.alarm(0)
         return PROMPTS_PATH
@@ -3303,7 +3303,7 @@ def _prompts_path():
 
 
 def load_clips(clip_filter=None):
-    with open(_prompts_path()) as f:
+    with open(_prompts_path(), encoding='utf-8') as f:
         clips = json.load(f)
     if clip_filter:
         # Support comma-separated list: "S02_B,S02_C,S02_D"
@@ -3320,7 +3320,7 @@ def find_scene_ref(current_clip_id):
 
     This creates a continuity chain: S01_A_last → S01_B_first → S01_B_last → S01_C_first ...
     """
-    with open(_prompts_path()) as f:
+    with open(_prompts_path(), encoding='utf-8') as f:
         all_clips = json.load(f)
     scene = next((c['scene_id'] for c in all_clips if c['clip_id'] == current_clip_id), None)
     if not scene: return None
@@ -3729,13 +3729,13 @@ def _load_commands():
     """Load commands.json for phase-based workflow."""
     if not COMMANDS_PATH.exists():
         return None
-    with open(COMMANDS_PATH) as f:
+    with open(COMMANDS_PATH, encoding='utf-8') as f:
         return json.load(f)
 
 
 def _save_commands(cmd):
     """Save commands.json."""
-    with open(COMMANDS_PATH, 'w') as f:
+    with open(COMMANDS_PATH, 'w', encoding='utf-8') as f:
         json.dump(cmd, f, indent=2, ensure_ascii=False)
 
 
@@ -4386,7 +4386,7 @@ def do_generate_locations_batch(pw, batch_file, use_builtin_chromium=False):
     batch_path = Path(batch_file)
     if not batch_path.is_absolute():
         batch_path = PROJECT_ROOT / batch_path
-    with open(batch_path) as f:
+    with open(batch_path, encoding='utf-8') as f:
         tasks = _json.load(f)
 
     print(f'\n{"="*60}')
@@ -4616,7 +4616,7 @@ def do_generate_refs(pw, project_dir, use_builtin_chromium=False, bot_index=0, b
         print(f'[REF] ERROR: project.json not found at {project_json_path}')
         return 0
 
-    with open(project_json_path) as f:
+    with open(project_json_path, encoding='utf-8') as f:
         project = json.load(f)
 
     # Collect all manifests with status 'generating'
@@ -4631,7 +4631,7 @@ def do_generate_refs(pw, project_dir, use_builtin_chromium=False, bot_index=0, b
             # Check base manifest
             base_manifest_path = refs_dir / entity_type / item_id / 'review' / 'base' / 'manifest.json'
             if base_manifest_path.exists():
-                with open(base_manifest_path) as f:
+                with open(base_manifest_path, encoding='utf-8') as f:
                     manifest = json.load(f)
                 if manifest.get('status') in ('generating', 'pending') and manifest.get('attempts'):
                     last_attempt = manifest['attempts'][-1]
@@ -4660,7 +4660,7 @@ def do_generate_refs(pw, project_dir, use_builtin_chromium=False, bot_index=0, b
                     angle_manifest_path = angle_dir / 'manifest.json'
                     if not angle_manifest_path.exists():
                         continue
-                    with open(angle_manifest_path) as f:
+                    with open(angle_manifest_path, encoding='utf-8') as f:
                         manifest = json.load(f)
                     if manifest.get('status') in ('generating', 'pending') and manifest.get('attempts'):
                         last_attempt = manifest['attempts'][-1]
@@ -4887,7 +4887,7 @@ def do_generate_refs(pw, project_dir, use_builtin_chromium=False, bot_index=0, b
 
             # Update manifest with results
             manifest_path = Path(task['manifest_path'])
-            with open(manifest_path) as f:
+            with open(manifest_path, encoding='utf-8') as f:
                 manifest = json.load(f)
 
             if saved:
@@ -4898,13 +4898,13 @@ def do_generate_refs(pw, project_dir, use_builtin_chromium=False, bot_index=0, b
                     for vi in range(len(saved))
                 ]
                 manifest['status'] = 'generated'
-                with open(manifest_path, 'w') as f:
+                with open(manifest_path, 'w', encoding='utf-8') as f:
                     json.dump(manifest, f, indent=2, ensure_ascii=False)
                 print(f'[REF] [{idx+1}/{len(tasks)}] OK -- {len(saved)} variants saved')
                 total_ok += 1
             else:
                 manifest['status'] = 'pending'
-                with open(manifest_path, 'w') as f:
+                with open(manifest_path, 'w', encoding='utf-8') as f:
                     json.dump(manifest, f, indent=2, ensure_ascii=False)
                 print(f'[REF] [{idx+1}/{len(tasks)}] FAIL -- no variants saved')
                 total_fail += 1
