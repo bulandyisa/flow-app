@@ -1219,36 +1219,48 @@ def _upload_ingredient_fresh(page, fpath):
         return False
 
 
-def _find_location_base_fallback(missing_path: Path):
-    """If a location angle file is missing, try to find the base image instead.
+def _find_ref_fallback(missing_path: Path):
+    """If a reference file is missing, try alternative names in the same directory.
 
-    Handles paths like:
-      .../references/locations/{locId}/angles/{angleId}.ext  → base
-      .../references/locations/{locId}/{locId}_{angleId}.ext → base
+    Handles characters AND locations:
+      .../references/characters/{charId}/base.jpeg     → try {charId}_base.*
+      .../references/locations/{locId}/angles/wide.png  → try {locId}_base.*
+      .../references/characters/{charId}/angles/side.png → try {charId}_base.*
     """
     parts = missing_path.parts
-    # Structured: references/locations/{locId}/angles/{file}
+
+    # Determine the item directory and item ID
+    ref_dir = None
+    item_id = None
+
     if 'angles' in parts:
+        # .../references/{type}/{itemId}/angles/{file}
         idx = parts.index('angles')
-        loc_dir = Path(*parts[:idx])  # .../references/locations/{locId}
-        loc_id = parts[idx - 1]
-    # Flat: references/locations/{locId}/{locId}_{angle}.ext
-    elif 'locations' in parts:
-        idx = parts.index('locations')
+        ref_dir = Path(*parts[:idx])
+        item_id = parts[idx - 1]
+    elif 'characters' in parts or 'locations' in parts:
+        ref_type = 'characters' if 'characters' in parts else 'locations'
+        idx = parts.index(ref_type)
         if idx + 1 < len(parts):
-            loc_dir = Path(*parts[:idx + 2])
-            loc_id = parts[idx + 1]
-        else:
-            return None
-    else:
+            ref_dir = Path(*parts[:idx + 2])
+            item_id = parts[idx + 1]
+
+    if not ref_dir or not item_id:
         return None
 
-    # Try common base naming conventions
-    for prefix in (f'{loc_id}_base', 'base'):
+    # Try all naming conventions: {id}_base.*, base.*, and scan any file
+    for prefix in (f'{item_id}_base', 'base'):
         for ext in ('png', 'jpg', 'jpeg', 'webp'):
-            candidate = loc_dir / f'{prefix}.{ext}'
+            candidate = ref_dir / f'{prefix}.{ext}'
             if candidate.exists():
                 return candidate
+
+    # Last resort: any image file in the directory
+    if ref_dir.is_dir():
+        for f in sorted(ref_dir.iterdir()):
+            if f.suffix.lower() in ('.png', '.jpg', '.jpeg', '.webp') and 'review' not in f.parts:
+                return f
+
     return None
 
 
@@ -1273,8 +1285,8 @@ def upload_ingredients(page, ingredient_paths):
             if p.exists():
                 resolved.append(p)
             else:
-                # Fallback: if missing location angle → use base image
-                fallback = _find_location_base_fallback(full)
+                # Fallback: try alternative file names (base vs {id}_base, different extensions)
+                fallback = _find_ref_fallback(full)
                 if fallback:
                     print(f'  FALLBACK: {Path(rel).name} not found, using base: {fallback.name}')
                     resolved.append(fallback)
