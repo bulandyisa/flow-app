@@ -5048,7 +5048,7 @@ def main():
             try:
                 do_chain(pw, scenes_filter=args.scenes, clip_filter=args.clip, use_builtin_chromium=args.chromium)
             finally:
-                signal.alarm(0)
+                if hasattr(signal, 'alarm'): signal.alarm(0)
                 if _active_context:
                     try: _active_context.close()
                     except Exception: pass
@@ -5064,7 +5064,7 @@ def main():
             try:
                 do_phase(pw, use_builtin_chromium=args.chromium)
             finally:
-                signal.alarm(0)
+                if hasattr(signal, 'alarm'): signal.alarm(0)
                 if _active_context:
                     try: _active_context.close()
                     except Exception: pass
@@ -5087,7 +5087,7 @@ def main():
                                      project_id=args.project,
                                      use_builtin_chromium=args.chromium)
             finally:
-                signal.alarm(0)
+                if hasattr(signal, 'alarm'): signal.alarm(0)
                 if _active_context:
                     try: _active_context.close()
                     except Exception: pass
@@ -5106,7 +5106,7 @@ def main():
                 do_generate_locations_batch(pw, args.loc_batch,
                                             use_builtin_chromium=args.chromium)
             finally:
-                signal.alarm(0)
+                if hasattr(signal, 'alarm'): signal.alarm(0)
                 if _active_context:
                     try: _active_context.close()
                     except Exception: pass
@@ -5152,7 +5152,7 @@ def main():
                 do_review(pw, args.clip, component_filter=args.component, project_id=args.project,
                          use_builtin_chromium=args.chromium)
             finally:
-                signal.alarm(0)
+                if hasattr(signal, 'alarm'): signal.alarm(0)
                 if _active_context:
                     try: _active_context.close()
                     except Exception: pass
