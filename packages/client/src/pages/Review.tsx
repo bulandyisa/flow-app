@@ -536,7 +536,9 @@ function BotLogPanel() {
   });
 
   const bots = status?.bots || [];
-  const hasAnyBot = bots.length > 0 && bots.some((b) => b.isRunning || b.exitCode != null);
+  // Default bot tabs 1-6 even when status is empty
+  const botTabs = bots.length > 0 ? bots : [1, 2, 3, 4, 5, 6].map((id) => ({ id, isRunning: false, exitCode: null as number | null }));
+  const hasError = bots.some((b) => b.exitCode != null && b.exitCode !== 0);
 
   const { data: logData } = useQuery({
     queryKey: ['bot-log', selectedBot],
@@ -553,8 +555,6 @@ function BotLogPanel() {
     }
   }, [lines, open]);
 
-  if (!hasAnyBot) return null;
-
   return (
     <div className="mb-4">
       <button
@@ -564,7 +564,7 @@ function BotLogPanel() {
         <Terminal size={14} />
         <span>Логи ботов</span>
         <ChevronDown size={12} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
-        {bots.some((b) => b.exitCode != null && b.exitCode !== 0) && (
+        {hasError && (
           <span className="px-1.5 py-0.5 bg-red-900/30 text-red-400 rounded text-[10px]">ошибка</span>
         )}
       </button>
@@ -572,7 +572,7 @@ function BotLogPanel() {
       {open && (
         <div className="mt-2">
           <div className="flex gap-1 mb-2">
-            {bots.map((bot) => (
+            {botTabs.map((bot) => (
               <button
                 key={bot.id}
                 onClick={() => setSelectedBot(bot.id)}
