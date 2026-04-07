@@ -3248,6 +3248,9 @@ def review_veo(page, clip, manifest, attempt, first_frame, last_frame, prompt_ov
 def _prompts_path():
     """Return the best available prompts path (fallback if iCloud blocks main file)."""
     import signal
+    if not hasattr(signal, 'SIGALRM'):
+        # Windows: no iCloud issue, just return main path
+        return PROMPTS_PATH if PROMPTS_PATH.exists() else PROMPTS_PATH_LOCAL
     def _timeout_handler(signum, frame):
         raise TimeoutError("File read timed out")
     old = signal.signal(signal.SIGALRM, _timeout_handler)
@@ -4998,10 +5001,12 @@ def main():
         do_sync_dashboard(args.clip)
     elif args.chain:
         timeout = GLOBAL_TIMEOUT_SEC
-        if timeout > 0:
+        if timeout > 0 and hasattr(signal, 'SIGALRM'):
             signal.signal(signal.SIGALRM, _timeout_handler)
             signal.alarm(timeout)
             print(f'  Timeout: {timeout}s')
+        elif timeout > 0:
+            print(f'  Timeout: {timeout}s (no SIGALRM on Windows, relying on launcher timeout)')
         with sync_playwright() as pw:
             try:
                 do_chain(pw, scenes_filter=args.scenes, clip_filter=args.clip, use_builtin_chromium=args.chromium)
@@ -5012,10 +5017,12 @@ def main():
                     except Exception: pass
     elif args.phase:
         timeout = GLOBAL_TIMEOUT_SEC
-        if timeout > 0:
+        if timeout > 0 and hasattr(signal, 'SIGALRM'):
             signal.signal(signal.SIGALRM, _timeout_handler)
             signal.alarm(timeout)
             print(f'  Timeout: {timeout}s')
+        elif timeout > 0:
+            print(f'  Timeout: {timeout}s (no SIGALRM on Windows, relying on launcher timeout)')
         with sync_playwright() as pw:
             try:
                 do_phase(pw, use_builtin_chromium=args.chromium)
@@ -5030,10 +5037,12 @@ def main():
         if not args.loc_output:
             parser.error('--generate-location requires --loc-output')
         timeout = GLOBAL_TIMEOUT_SEC
-        if timeout > 0:
+        if timeout > 0 and hasattr(signal, 'SIGALRM'):
             signal.signal(signal.SIGALRM, _timeout_handler)
             signal.alarm(timeout)
             print(f'  Timeout: {timeout}s')
+        elif timeout > 0:
+            print(f'  Timeout: {timeout}s (no SIGALRM on Windows, relying on launcher timeout)')
         with sync_playwright() as pw:
             try:
                 do_generate_location(pw, args.loc_prompt, args.loc_output,
@@ -5049,10 +5058,12 @@ def main():
         if not args.loc_batch:
             parser.error('--generate-locations-batch requires --loc-batch')
         timeout = GLOBAL_TIMEOUT_SEC
-        if timeout > 0:
+        if timeout > 0 and hasattr(signal, 'SIGALRM'):
             signal.signal(signal.SIGALRM, _timeout_handler)
             signal.alarm(timeout)
             print(f'  Timeout: {timeout}s')
+        elif timeout > 0:
+            print(f'  Timeout: {timeout}s (no SIGALRM on Windows, relying on launcher timeout)')
         with sync_playwright() as pw:
             try:
                 do_generate_locations_batch(pw, args.loc_batch,
@@ -5093,10 +5104,12 @@ def main():
                     except Exception: pass
     elif args.review:
         timeout = GLOBAL_TIMEOUT_SEC
-        if timeout > 0:
+        if timeout > 0 and hasattr(signal, 'SIGALRM'):
             signal.signal(signal.SIGALRM, _timeout_handler)
             signal.alarm(timeout)
             print(f'  Timeout: {timeout}s')
+        elif timeout > 0:
+            print(f'  Timeout: {timeout}s (no SIGALRM on Windows, relying on launcher timeout)')
         with sync_playwright() as pw:
             try:
                 do_review(pw, args.clip, component_filter=args.component, project_id=args.project,
