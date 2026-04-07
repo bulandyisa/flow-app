@@ -1,9 +1,9 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSubmitReview } from '@/api/hooks';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/api/client';
-import { Image, Video, CheckCircle, Clock, Filter, Send, Loader2, Search, AlertTriangle, Lock } from 'lucide-react';
+import { Image, Video, CheckCircle, Clock, Filter, Send, Loader2, Search, AlertTriangle, Lock, Terminal, ChevronDown } from 'lucide-react';
 import { SceneHeader } from '@/components/review/SceneHeader';
 import { ClipCard } from '@/components/review/ClipCard';
 import { useGenerationStore } from '@/store/generation';
@@ -443,6 +443,9 @@ export function Review() {
         })}
       </div>
 
+      {/* Логи ботов */}
+      <BotLogPanel />
+
       {/* Bulk feedback */}
       <div className="mb-4">
         <label className="text-xs text-gray-500 block mb-1">
@@ -515,6 +518,96 @@ export function Review() {
             })}
           </div>
         ))
+      )}
+    </div>
+  );
+}
+
+
+function BotLogPanel() {
+  const [open, setOpen] = useState(false);
+  const [selectedBot, setSelectedBot] = useState(1);
+  const logRef = useRef<HTMLPreElement>(null);
+
+  const { data: status } = useQuery({
+    queryKey: ['bot-status'],
+    queryFn: api.getBotStatus,
+    refetchInterval: 5000,
+  });
+
+  const bots = status?.bots || [];
+  const hasAnyBot = bots.length > 0 && bots.some((b) => b.isRunning || b.exitCode != null);
+
+  const { data: logData } = useQuery({
+    queryKey: ['bot-log', selectedBot],
+    queryFn: () => api.getBotLog(selectedBot, 500),
+    refetchInterval: open ? 3000 : false,
+    enabled: open,
+  });
+
+  const lines = logData?.log || [];
+
+  useEffect(() => {
+    if (open && logRef.current) {
+      logRef.current.scrollTop = logRef.current.scrollHeight;
+    }
+  }, [lines, open]);
+
+  if (!hasAnyBot) return null;
+
+  return (
+    <div className="mb-4">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 text-xs text-gray-400 hover:text-gray-200 transition-colors"
+      >
+        <Terminal size={14} />
+        <span>Логи ботов</span>
+        <ChevronDown size={12} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+        {bots.some((b) => b.exitCode != null && b.exitCode !== 0) && (
+          <span className="px-1.5 py-0.5 bg-red-900/30 text-red-400 rounded text-[10px]">ошибка</span>
+        )}
+      </button>
+
+      {open && (
+        <div className="mt-2">
+          <div className="flex gap-1 mb-2">
+            {bots.map((bot) => (
+              <button
+                key={bot.id}
+                onClick={() => setSelectedBot(bot.id)}
+                className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1.5 ${
+                  selectedBot === bot.id
+                    ? 'bg-accent text-white'
+                    : 'bg-surface-light text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                {bot.isRunning && <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />}
+                {!bot.isRunning && bot.exitCode != null && bot.exitCode !== 0 && (
+                  <div className="w-1.5 h-1.5 bg-red-400 rounded-full" />
+                )}
+                Bot {bot.id}
+              </button>
+            ))}
+          </div>
+          <pre
+            ref={logRef}
+            className="bg-black/70 border border-surface-lighter rounded-lg p-3 text-[11px] font-mono leading-relaxed overflow-auto max-h-64"
+          >
+            {lines.length === 0 ? (
+              <span className="text-gray-600">Нет логов. Запустите генерацию.</span>
+            ) : (
+              lines.map((line: { timestamp: string; stream: string; text: string }, i: number) => (
+                <div key={i} className={line.stream === 'stderr' ? 'text-red-400' : 'text-gray-300'}>
+                  <span className="text-gray-600 select-none">
+                    {new Date(line.timestamp).toLocaleTimeString()}{' '}
+                  </span>
+                  {line.text}
+                </div>
+              ))
+            )}
+          </pre>
+        </div>
       )}
     </div>
   );
