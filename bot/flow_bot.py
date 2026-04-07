@@ -1219,6 +1219,39 @@ def _upload_ingredient_fresh(page, fpath):
         return False
 
 
+def _find_location_base_fallback(missing_path: Path):
+    """If a location angle file is missing, try to find the base image instead.
+
+    Handles paths like:
+      .../references/locations/{locId}/angles/{angleId}.ext  → base
+      .../references/locations/{locId}/{locId}_{angleId}.ext → base
+    """
+    parts = missing_path.parts
+    # Structured: references/locations/{locId}/angles/{file}
+    if 'angles' in parts:
+        idx = parts.index('angles')
+        loc_dir = Path(*parts[:idx])  # .../references/locations/{locId}
+        loc_id = parts[idx - 1]
+    # Flat: references/locations/{locId}/{locId}_{angle}.ext
+    elif 'locations' in parts:
+        idx = parts.index('locations')
+        if idx + 1 < len(parts):
+            loc_dir = Path(*parts[:idx + 2])
+            loc_id = parts[idx + 1]
+        else:
+            return None
+    else:
+        return None
+
+    # Try common base naming conventions
+    for prefix in (f'{loc_id}_base', 'base'):
+        for ext in ('png', 'jpg', 'jpeg', 'webp'):
+            candidate = loc_dir / f'{prefix}.{ext}'
+            if candidate.exists():
+                return candidate
+    return None
+
+
 def upload_ingredients(page, ingredient_paths):
     """Upload ingredient images, reusing already-attached ones when possible.
 
@@ -1240,7 +1273,13 @@ def upload_ingredients(page, ingredient_paths):
             if p.exists():
                 resolved.append(p)
             else:
-                print(f'  WARNING: ingredient not found: {full}')
+                # Fallback: if missing location angle → use base image
+                fallback = _find_location_base_fallback(full)
+                if fallback:
+                    print(f'  FALLBACK: {Path(rel).name} not found, using base: {fallback.name}')
+                    resolved.append(fallback)
+                else:
+                    print(f'  WARNING: ingredient not found: {full}')
     if not resolved:
         return 0
 

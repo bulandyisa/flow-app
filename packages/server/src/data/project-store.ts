@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 
 import { resolve } from 'node:path';
 import { v4 as uuid } from 'uuid';
 import type { Project } from '@flow-app/shared';
+import { LOC_RU } from './location-names.js';
 
 export class ProjectStore {
   private baseDir: string;
@@ -31,7 +32,9 @@ export class ProjectStore {
     for (const dir of dirs) {
       const file = resolve(this.baseDir, dir.name, 'project.json');
       if (existsSync(file)) {
-        projects.push(JSON.parse(readFileSync(file, 'utf-8')));
+        const p: Project = JSON.parse(readFileSync(file, 'utf-8'));
+        this.applyLocationNames(p);
+        projects.push(p);
       }
     }
     return projects.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -41,7 +44,22 @@ export class ProjectStore {
   get(projectId: string): Project | null {
     const file = this.projectFile(projectId);
     if (!existsSync(file)) return null;
-    return JSON.parse(readFileSync(file, 'utf-8'));
+    const project: Project = JSON.parse(readFileSync(file, 'utf-8'));
+    this.applyLocationNames(project);
+    return project;
+  }
+
+  /** Обновить русские названия локаций из словаря LOC_RU */
+  private applyLocationNames(project: Project): void {
+    let changed = false;
+    for (const loc of project.locations) {
+      const ruName = LOC_RU[loc.id];
+      if (ruName && loc.nameRu !== ruName) {
+        loc.nameRu = ruName;
+        changed = true;
+      }
+    }
+    if (changed) this.save(project);
   }
 
   /** Создать новый проект */

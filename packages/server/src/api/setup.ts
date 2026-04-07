@@ -7,6 +7,7 @@ import type { AppConfig } from '../config.js';
 import { ProjectStore } from '../data/project-store.js';
 import { parseDocx } from '../data/docx-parser.js';
 import { projectPaths, ensureDir } from '../data/file-manager.js';
+import { LOC_RU } from '../data/location-names.js';
 import { analyzeScreenplay } from '../ai/screenplay.js';
 import { generateScenePrompts } from '../ai/prompts.js';
 import { matchAndDownloadRefs } from '../data/github-refs.js';
@@ -612,47 +613,6 @@ export function setupRouter(config: AppConfig): Router {
           angles.push(locRef.angleId);
         }
       }
-
-      // Known location names (Russian)
-      const LOC_RU: Record<string, string> = {
-        'кухня': 'Кухня',
-        'гараж': 'Гараж',
-        'кабинет': 'Кабинет папы',
-        'двор_джамиля': 'Двор Джамиля',
-        'дом_джамиля': 'Дом Джамиля (снаружи)',
-        'дверь_джамиля': 'Дверь дома Джамиля',
-        'коридор_джамиля': 'Коридор Джамиля',
-        'фургон_джамиля': 'Фургон Джамиля',
-        'крыльцо': 'Крыльцо дома Амина',
-        'забор': 'Забор между домами',
-        'забор_джамиля': 'Забор со стороны Джамиля',
-        'ворота': 'Ворота',
-        'улица': 'Улица перед домом',
-        'улица_день': 'Улица днём',
-        'комната_амина': 'Комната Амина',
-        'ночная_улица': 'Ночная улица',
-        'ночной_джамиль': 'Дом Джамиля ночью',
-        'переход': 'Переход между сценами',
-        'переход_утро': 'Переход — утро',
-        'переход_вечер': 'Переход — вечер',
-        'переход_ночь': 'Переход — ночь',
-        'чёрный_экран': 'Чёрный экран',
-        'титры': 'Титры',
-        'garazh': 'Гараж',
-        'amin_room': 'Комната Амина',
-        'kabinet': 'Кабинет папы',
-        'pustyr': 'Пустырь у склада',
-        'sklad': 'Склад',
-        'gate': 'Ворота дома',
-        'bashnya': 'Водонапорная башня',
-        'bashnya_top': 'Башня — верхняя площадка',
-        'tako_room': 'Комната Тако',
-        'road': 'Дорога к башне',
-        'kitchen': 'Кухня',
-        'porch': 'Крыльцо',
-        'street': 'Улица',
-        'fence': 'Забор',
-      };
 
       for (const [locId, angleIds] of locAnglesMap.entries()) {
         if (!project.locations.find((l) => l.id === locId)) {
