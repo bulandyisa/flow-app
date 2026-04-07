@@ -4945,7 +4945,7 @@ def main():
     _current_account_idx = args.account - 1
 
     # Override paths if --prompts or --output-dir provided
-    global PROMPTS_PATH, OUTPUT_DIR, FRAMES_DIR, CLIPS_DIR, REVIEW_DIR, SCREENSHOTS_DIR
+    global PROMPTS_PATH, OUTPUT_DIR, FRAMES_DIR, CLIPS_DIR, REVIEW_DIR, SCREENSHOTS_DIR, REFS_DIR
     if args.prompts:
         PROMPTS_PATH = Path(args.prompts).resolve()
     if args.output_dir:
@@ -4954,6 +4954,7 @@ def main():
         CLIPS_DIR = OUTPUT_DIR / 'clips'
         REVIEW_DIR = OUTPUT_DIR / 'review'
         SCREENSHOTS_DIR = OUTPUT_DIR / 'screenshots'
+        REFS_DIR = OUTPUT_DIR  # ingredients are relative to project dir
 
     for d in (FRAMES_DIR, CLIPS_DIR, REVIEW_DIR, SCREENSHOTS_DIR):
         d.mkdir(parents=True, exist_ok=True)
