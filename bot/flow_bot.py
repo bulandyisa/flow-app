@@ -1220,21 +1220,36 @@ def _upload_ingredient_fresh(page, fpath):
 
 
 def _find_ref_fallback(missing_path: Path):
-    """If a reference file is missing, try alternative names in the same directory.
+    """If a reference file is missing, try alternative names/extensions.
 
-    Handles characters AND locations:
-      .../references/characters/{charId}/base.jpeg     → try {charId}_base.*
-      .../references/locations/{locId}/angles/wide.png  → try {locId}_base.*
-      .../references/characters/{charId}/angles/side.png → try {charId}_base.*
+    Search order:
+    1. Same filename, different extension (angles/wide.png → angles/wide.jpg)
+    2. Any file in same directory (angles/)
+    3. Base image in parent ({id}_base.*, base.*)
+    4. Any image in parent directory
     """
     parts = missing_path.parts
+    same_dir = missing_path.parent
+    stem = missing_path.stem  # e.g. "medium_from_corner" or "base"
 
-    # Determine the item directory and item ID
+    # 1. Same filename, different extension
+    if same_dir.is_dir():
+        for ext in ('png', 'jpg', 'jpeg', 'webp'):
+            candidate = same_dir / f'{stem}.{ext}'
+            if candidate.exists() and candidate != missing_path:
+                return candidate
+
+    # 2. Any image in same directory (e.g. scan angles/ folder)
+    if same_dir.is_dir():
+        for f in sorted(same_dir.iterdir()):
+            if f.suffix.lower() in ('.png', '.jpg', '.jpeg', '.webp'):
+                return f
+
+    # 3. Find parent item directory and try base image
     ref_dir = None
     item_id = None
 
     if 'angles' in parts:
-        # .../references/{type}/{itemId}/angles/{file}
         idx = parts.index('angles')
         ref_dir = Path(*parts[:idx])
         item_id = parts[idx - 1]
@@ -1245,21 +1260,26 @@ def _find_ref_fallback(missing_path: Path):
             ref_dir = Path(*parts[:idx + 2])
             item_id = parts[idx + 1]
 
-    if not ref_dir or not item_id:
-        return None
+    if ref_dir and item_id:
+        for prefix in (f'{item_id}_base', 'base'):
+            for ext in ('png', 'jpg', 'jpeg', 'webp'):
+                candidate = ref_dir / f'{prefix}.{ext}'
+                if candidate.exists():
+                    return candidate
+        # Any image in item directory
+        if ref_dir.is_dir():
+            for f in sorted(ref_dir.iterdir()):
+                if f.suffix.lower() in ('.png', '.jpg', '.jpeg', '.webp') and f.is_file():
+                    return f
 
-    # Try all naming conventions: {id}_base.*, base.*, and scan any file
-    for prefix in (f'{item_id}_base', 'base'):
-        for ext in ('png', 'jpg', 'jpeg', 'webp'):
-            candidate = ref_dir / f'{prefix}.{ext}'
-            if candidate.exists():
-                return candidate
-
-    # Last resort: any image file in the directory
-    if ref_dir.is_dir():
-        for f in sorted(ref_dir.iterdir()):
-            if f.suffix.lower() in ('.png', '.jpg', '.jpeg', '.webp') and 'review' not in f.parts:
-                return f
+    # Debug: log what we see
+    print(f'    FALLBACK DEBUG: dir exists={same_dir.is_dir()}, path={same_dir}')
+    if same_dir.is_dir():
+        files = [f.name for f in same_dir.iterdir()]
+        print(f'    FALLBACK DEBUG: files in dir: {files[:20]}')
+    if ref_dir and ref_dir.is_dir():
+        files = [f.name for f in ref_dir.iterdir()]
+        print(f'    FALLBACK DEBUG: files in parent: {files[:20]}')
 
     return None
 
@@ -4970,6 +4990,10 @@ def main():
 
     for d in (FRAMES_DIR, CLIPS_DIR, REVIEW_DIR, SCREENSHOTS_DIR):
         d.mkdir(parents=True, exist_ok=True)
+
+    print(f'  REFS_DIR: {REFS_DIR}')
+    refs_check = REFS_DIR / 'references'
+    print(f'  references/ exists: {refs_check.is_dir()}')
 
     if args.select:
         if not all([args.clip, args.component, args.attempt, args.variant is not None, args.scores]):
