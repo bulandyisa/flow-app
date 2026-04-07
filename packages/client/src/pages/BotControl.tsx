@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/api/client';
-import { Play, Square, Minus, Plus, AlertTriangle, ChevronDown, Terminal } from 'lucide-react';
+import { Play, Square, Minus, Plus, AlertTriangle, ChevronDown, Terminal, RefreshCw } from 'lucide-react';
 
 interface BotStatus {
   id: number;
@@ -171,6 +171,9 @@ export function BotControl() {
         )}
       </div>
 
+      {/* Логи ботов */}
+      {bots.length > 0 && <BotLogs bots={bots} />}
+
       {/* Расширенные настройки (для отладки) */}
       <div className="mt-4">
         <button
@@ -195,6 +198,84 @@ export function BotControl() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+
+function BotLogs({ bots }: { bots: BotStatus[] }) {
+  const [selectedBot, setSelectedBot] = useState(bots[0]?.id ?? 1);
+  const [autoScroll, setAutoScroll] = useState(true);
+  const logRef = useRef<HTMLPreElement>(null);
+
+  const { data, refetch } = useQuery({
+    queryKey: ['bot-log', selectedBot],
+    queryFn: () => api.getBotLog(selectedBot, 500),
+    refetchInterval: 3000,
+  });
+
+  const lines = data?.log || [];
+
+  useEffect(() => {
+    if (autoScroll && logRef.current) {
+      logRef.current.scrollTop = logRef.current.scrollHeight;
+    }
+  }, [lines, autoScroll]);
+
+  return (
+    <div className="mt-6">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-3">
+          <Terminal size={16} className="text-gray-400" />
+          <span className="text-sm font-medium">Логи</span>
+          <div className="flex gap-1">
+            {bots.map((bot) => (
+              <button
+                key={bot.id}
+                onClick={() => setSelectedBot(bot.id)}
+                className={`px-2 py-0.5 text-xs rounded transition-colors ${
+                  selectedBot === bot.id
+                    ? 'bg-accent text-white'
+                    : 'bg-surface-light text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                Bot {bot.id}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-1 text-xs text-gray-500 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={autoScroll}
+              onChange={(e) => setAutoScroll(e.target.checked)}
+              className="w-3 h-3"
+            />
+            Автопрокрутка
+          </label>
+          <button onClick={() => refetch()} className="p-1 text-gray-500 hover:text-gray-300">
+            <RefreshCw size={12} />
+          </button>
+        </div>
+      </div>
+      <pre
+        ref={logRef}
+        className="bg-black/60 border border-surface-lighter rounded-lg p-3 text-xs font-mono leading-relaxed overflow-auto max-h-80 min-h-[120px]"
+      >
+        {lines.length === 0 ? (
+          <span className="text-gray-600">Нет логов</span>
+        ) : (
+          lines.map((line: { timestamp: string; stream: string; text: string }, i: number) => (
+            <div key={i} className={line.stream === 'stderr' ? 'text-red-400' : 'text-gray-300'}>
+              <span className="text-gray-600 select-none">
+                {new Date(line.timestamp).toLocaleTimeString()}{' '}
+              </span>
+              {line.text}
+            </div>
+          ))
+        )}
+      </pre>
     </div>
   );
 }
