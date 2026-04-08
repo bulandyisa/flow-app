@@ -323,7 +323,7 @@ def ensure_project(page, project_id=None):
     if project_id:
         project_url = f'{FLOW_URL}/project/{project_id}'
         print(f'  Opening project {project_id[:8]}...')
-        page.goto(project_url, timeout=120000, wait_until='domcontentloaded')
+        page.goto(project_url, timeout=180000, wait_until='domcontentloaded')
         human_delay_long(5, 8)
         for _ in range(3):
             dismiss_popups(page)
@@ -335,7 +335,7 @@ def ensure_project(page, project_id=None):
         print(f'  WARNING: project navigation failed, falling back...')
 
     print(f'  Opening Flow...')
-    page.goto(FLOW_URL, timeout=120000, wait_until='domcontentloaded')
+    page.goto(FLOW_URL, timeout=180000, wait_until='domcontentloaded')
     human_delay_long(5, 8)
     for _ in range(3):
         dismiss_popups(page)
@@ -430,7 +430,7 @@ def ensure_project(page, project_id=None):
 
 def wait_for_flow_ready(page):
     """Wait for prompt field to appear."""
-    page.wait_for_load_state('domcontentloaded', timeout=120000)
+    page.wait_for_load_state('domcontentloaded', timeout=180000)
 
     # Check if we landed in /edit/ mode (editing a previous generation)
     # and navigate back to project root (chat/generation view)
@@ -456,7 +456,7 @@ def wait_for_flow_ready(page):
             page.keyboard.press('Escape')
             human_delay(0.5, 1.0)
         dismiss_popups(page)
-        page.wait_for_selector(sel, timeout=120000)
+        page.wait_for_selector(sel, timeout=180000)
     human_delay(1.5, 3.0)
     dismiss_popups(page)
     print('  Flow workspace ready.')
