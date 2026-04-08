@@ -1540,24 +1540,61 @@ def upload_frame_for_veo(page, frame_path, slot_index):
 
     take_screenshot(page, f'veo_slot_{slot_name}_dialog_open')
 
-    # Upload fresh via file chooser — click "Загрузить изображение" button
+    # Upload fresh via file chooser — click upload button in dialog
     upload_pos = page.evaluate("""() => {
         const dialog = document.querySelector('[role="dialog"]');
         if (!dialog) return null;
-        for (const btn of dialog.querySelectorAll('button')) {
-            const t = btn.textContent.trim();
-            if (t.includes('Загрузить') || t.includes('Upload')) {
-                const r = btn.getBoundingClientRect();
-                if (r.width > 30) return {x: r.x + r.width/2, y: r.y + r.height/2, text: t.substring(0, 60)};
+        // Try multiple text patterns (Flow changes button text)
+        const patterns = ['Загрузить', 'Upload', 'загрузить', 'upload', 'Выбрать', 'Добавить'];
+        for (const btn of dialog.querySelectorAll('button, [role="button"]')) {
+            const t = (btn.textContent || '').trim();
+            for (const p of patterns) {
+                if (t.includes(p)) {
+                    const r = btn.getBoundingClientRect();
+                    if (r.width > 20) return {x: r.x + r.width/2, y: r.y + r.height/2, text: t.substring(0, 60)};
+                }
             }
         }
+        // Fallback: look for file input
+        const fileInput = dialog.querySelector('input[type="file"]');
+        if (fileInput) return {type: 'input', selector: 'input[type="file"]'};
         return null;
     }""")
 
     if not upload_pos:
+        # Debug: log all buttons in dialog
+        btns = page.evaluate("""() => {
+            const dialog = document.querySelector('[role="dialog"]');
+            if (!dialog) return 'no dialog';
+            const buttons = [];
+            for (const btn of dialog.querySelectorAll('button, [role="button"]')) {
+                const t = (btn.textContent || '').trim().substring(0, 60);
+                const r = btn.getBoundingClientRect();
+                if (r.width > 10) buttons.push(t + ' [' + Math.round(r.width) + 'x' + Math.round(r.height) + ']');
+            }
+            return buttons.join(' | ');
+        }""")
         print(f'  WARNING: Upload button not found in dialog for {slot_name}')
+        print(f'  DEBUG: Dialog buttons: {btns}')
+        take_screenshot(page, f'veo_slot_{slot_name}_no_upload_btn')
+        # Try hidden file input as fallback
+        file_input = page.query_selector('[role="dialog"] input[type="file"]')
+        if file_input:
+            file_input.set_input_files(frame_path)
+            print(f'  Uploaded {slot_name} frame via hidden file input')
+            human_delay(3.0, 5.0)
+            return True
         page.keyboard.press('Escape')
         return False
+
+    # Handle file input type (no click needed)
+    if isinstance(upload_pos, dict) and upload_pos.get('type') == 'input':
+        file_input = page.query_selector(upload_pos['selector'])
+        if file_input:
+            file_input.set_input_files(frame_path)
+            print(f'  Uploaded {slot_name} frame via file input')
+            human_delay(3.0, 5.0)
+            return True
 
     try:
         with page.expect_file_chooser(timeout=5000) as fc_info:
