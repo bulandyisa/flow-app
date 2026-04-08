@@ -3910,7 +3910,10 @@ def do_chain(pw, scenes_filter=None, clip_filter=None, use_builtin_chromium=Fals
                 _ensure_chat_view(page)
                 manifest = load_manifest(cid)
 
+                # Auto-detect skip_last: if no last prompt in clip, skip last frame
                 is_skip_last = manifest.get('skip_last', False)
+                if not is_skip_last and not clip.get('nano_banana_prompt_last'):
+                    is_skip_last = True
 
                 for component in ('nb_first', 'nb_last', 'veo'):
                     # Skip mid for now (most clips don't use it)
