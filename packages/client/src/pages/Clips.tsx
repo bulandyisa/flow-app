@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
-import { FileText, ChevronDown, ChevronRight, Send, Loader2, Search } from 'lucide-react';
+import { FileText, ChevronDown, ChevronRight, Send, Loader2, Search, X } from 'lucide-react';
 
 interface Clip {
   clip_id: string;
@@ -234,6 +234,12 @@ export function Clips() {
                             isFixing={fixing === `${clip.clip_id}_nb_first`}
                           />
 
+                          {/* Ингредиенты — миниатюры */}
+                          <IngredientThumbnails
+                            ingredients={clip.nano_banana_ingredients}
+                            projectId={projectId!}
+                          />
+
                           {/* VEO */}
                           <PromptBlock
                             label="VEO"
@@ -245,18 +251,6 @@ export function Clips() {
                             isFixing={fixing === `${clip.clip_id}_veo`}
                             charCount
                           />
-
-                          {/* Ингредиенты */}
-                          <div>
-                            <span className="text-[10px] text-gray-500 uppercase">Ингредиенты</span>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {clip.nano_banana_ingredients.map((ing, i) => (
-                                <span key={i} className="text-xs bg-surface px-2 py-0.5 rounded text-gray-400">
-                                  Image {i + 1}: {ing.split('/').pop()}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
                         </div>
                       )}
                     </div>
@@ -333,5 +327,62 @@ function PromptBlock({
         </button>
       </div>
     </div>
+  );
+}
+
+
+/** Миниатюры ингредиентов с лайтбоксом */
+function IngredientThumbnails({ ingredients, projectId }: { ingredients: string[]; projectId: string }) {
+  const [lightbox, setLightbox] = useState<string | null>(null);
+
+  if (!ingredients.length) return null;
+
+  return (
+    <>
+      <div className="flex flex-wrap gap-2 -mt-2">
+        {ingredients.map((ing, i) => {
+          const url = api.mediaUrl(projectId, ing);
+          const filename = ing.split('/').pop() || '';
+          return (
+            <div
+              key={i}
+              className="group relative cursor-pointer"
+              onClick={() => setLightbox(url)}
+            >
+              <img
+                src={url}
+                alt={filename}
+                className="w-14 h-14 object-cover rounded border border-surface-lighter hover:border-accent transition-colors"
+                loading="lazy"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+              <span className="absolute -top-1 -left-1 bg-surface-lighter text-[9px] text-gray-400 rounded px-1">
+                {i + 1}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Лайтбокс */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center cursor-pointer"
+          onClick={() => setLightbox(null)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white/70 hover:text-white"
+            onClick={() => setLightbox(null)}
+          >
+            <X size={24} />
+          </button>
+          <img
+            src={lightbox}
+            alt=""
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
+          />
+        </div>
+      )}
+    </>
   );
 }
