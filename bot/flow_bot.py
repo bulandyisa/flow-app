@@ -3933,12 +3933,16 @@ def do_chain(pw, scenes_filter=None, clip_filter=None, use_builtin_chromium=Fals
 
                     # Dependency check
                     if component == 'nb_first' and not is_first_in_scene:
-                        # Need previous clip's last (or first if skip_last) frame to be ACCEPTED
+                        # Need previous clip's first frame to be ACCEPTED (skip_last auto-detected)
                         ref = find_scene_ref(cid)
                         if not ref:
-                            prev_cid = scene_clips[clip_idx - 1]['clip_id']
+                            prev_clip = scene_clips[clip_idx - 1]
+                            prev_cid = prev_clip['clip_id']
                             prev_manifest = load_manifest(prev_cid)
                             prev_skip = prev_manifest.get('skip_last', False)
+                            # Auto-detect skip_last for previous clip too
+                            if not prev_skip and not prev_clip.get('nano_banana_prompt_last'):
+                                prev_skip = True
                             if prev_skip:
                                 prev_dep_status = prev_manifest['components']['nb_first'].get('status', 'pending')
                             else:
