@@ -107,5 +107,45 @@ export function clipsRouter(config: AppConfig): Router {
     }
   });
 
+  // PATCH /api/clips/update — прямое редактирование промпта
+  router.patch('/update', (req, res) => {
+    const { projectId, clipId, component, prompt } = req.body as {
+      projectId: string;
+      clipId: string;
+      component: 'nb_first' | 'veo';
+      prompt: string;
+    };
+
+    if (!projectId || !clipId || !component || prompt == null) {
+      res.status(400).json({ error: 'projectId, clipId, component и prompt обязательны' });
+      return;
+    }
+
+    const promptsFile = resolve(store.projectDir(projectId), 'prompts', 'all_prompts.json');
+    if (!existsSync(promptsFile)) {
+      res.status(404).json({ error: 'Файл промптов не найден' });
+      return;
+    }
+
+    const clips: Clip[] = JSON.parse(readFileSync(promptsFile, 'utf-8'));
+    const clipIdx = clips.findIndex((c) => c.clip_id === clipId);
+    if (clipIdx < 0) {
+      res.status(404).json({ error: `Клип ${clipId} не найден` });
+      return;
+    }
+
+    if (component === 'nb_first') {
+      clips[clipIdx].nano_banana_prompt_first = prompt;
+    } else if (component === 'veo') {
+      clips[clipIdx].veo_prompt = prompt;
+    } else {
+      res.status(400).json({ error: `Неизвестный компонент: ${component}` });
+      return;
+    }
+
+    writeFileSync(promptsFile, JSON.stringify(clips, null, 2), 'utf-8');
+    res.json({ success: true, clipId, component, prompt });
+  });
+
   return router;
 }

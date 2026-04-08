@@ -258,6 +258,13 @@ export const api = {
       body: JSON.stringify({ decisions, model }),
     }),
 
+  // Прямое редактирование промпта
+  updateClipPrompt: (projectId: string, clipId: string, component: 'nb_first' | 'veo', prompt: string) =>
+    request<{ success: boolean }>('/clips/update', {
+      method: 'PATCH',
+      body: JSON.stringify({ projectId, clipId, component, prompt }),
+    }),
+
   // Боты
   getBotStatus: () => request<{
     bots: Array<{

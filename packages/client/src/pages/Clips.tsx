@@ -231,6 +231,10 @@ export function Clips() {
                             feedback={feedbacks[clip.clip_id]?.nb_first || ''}
                             onFeedbackChange={(v) => setFeedback(clip.clip_id, 'nb_first', v)}
                             onFix={() => handleFix(clip.clip_id, 'nb_first')}
+                            onSave={async (p) => {
+                              await api.updateClipPrompt(projectId!, clip.clip_id, 'nb_first', p);
+                              queryClient.invalidateQueries({ queryKey: ['clips', projectId] });
+                            }}
                             isFixing={fixing === `${clip.clip_id}_nb_first`}
                           />
 
@@ -248,6 +252,10 @@ export function Clips() {
                             feedback={feedbacks[clip.clip_id]?.veo || ''}
                             onFeedbackChange={(v) => setFeedback(clip.clip_id, 'veo', v)}
                             onFix={() => handleFix(clip.clip_id, 'veo')}
+                            onSave={async (p) => {
+                              await api.updateClipPrompt(projectId!, clip.clip_id, 'veo', p);
+                              queryClient.invalidateQueries({ queryKey: ['clips', projectId] });
+                            }}
                             isFixing={fixing === `${clip.clip_id}_veo`}
                             charCount
                           />
@@ -265,7 +273,7 @@ export function Clips() {
   );
 }
 
-/** Блок одного промпта с переводом и фидбеком */
+/** Блок одного промпта с переводом, фидбеком и прямым редактированием */
 function PromptBlock({
   label,
   prompt,
@@ -273,6 +281,7 @@ function PromptBlock({
   feedback,
   onFeedbackChange,
   onFix,
+  onSave,
   isFixing,
   charCount,
 }: {
@@ -282,50 +291,113 @@ function PromptBlock({
   feedback: string;
   onFeedbackChange: (v: string) => void;
   onFix: () => void;
+  onSave: (newPrompt: string) => void;
   isFixing: boolean;
   charCount?: boolean;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const startEdit = () => {
+    setEditText(prompt);
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    if (editText.trim() === prompt) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave(editText.trim());
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const displayText = editing ? editText : prompt;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
         <span className="text-[10px] text-amber-400 uppercase font-bold">{label}</span>
-        {charCount && (
-          <span className={`text-[10px] ${prompt.length > 300 ? 'text-red-400' : 'text-gray-500'}`}>
-            {prompt.length} символов
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {charCount && (
+            <span className={`text-[10px] ${displayText.length > 300 ? 'text-red-400' : 'text-gray-500'}`}>
+              {displayText.length} символов
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Промпт на английском */}
-      <div className="bg-surface rounded-lg border-l-2 border-amber-400/30 px-3 py-2 text-sm text-gray-300 whitespace-pre-wrap">
-        {prompt || <span className="text-gray-600 italic">Пусто</span>}
-      </div>
+      {/* Промпт — редактируемый или обычный */}
+      {editing ? (
+        <div>
+          <textarea
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            rows={5}
+            autoFocus
+            className="w-full bg-surface rounded-lg border-l-2 border-green-400/50 px-3 py-2 text-sm text-gray-200 whitespace-pre-wrap outline-none resize-y focus:border-green-400"
+          />
+          <div className="flex justify-end gap-2 mt-1">
+            <button
+              onClick={() => setEditing(false)}
+              className="px-3 py-1 text-xs text-gray-400 hover:text-white transition-colors"
+            >
+              Отмена
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-1 px-3 py-1 bg-green-600 hover:bg-green-500 rounded text-xs transition-colors disabled:opacity-40"
+            >
+              {saving ? <Loader2 size={10} className="animate-spin" /> : null}
+              Сохранить
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div
+          onClick={startEdit}
+          className="bg-surface rounded-lg border-l-2 border-amber-400/30 px-3 py-2 text-sm text-gray-300 whitespace-pre-wrap cursor-pointer hover:border-amber-400/60 transition-colors group"
+          title="Нажмите чтобы редактировать"
+        >
+          {prompt || <span className="text-gray-600 italic">Пусто</span>}
+          <span className="invisible group-hover:visible text-[10px] text-gray-600 ml-2">✎</span>
+        </div>
+      )}
 
       {/* Перевод */}
-      {translation && (
+      {translation && !editing && (
         <div className="mt-1 bg-surface rounded-lg border-l-2 border-blue-400/30 px-3 py-2 text-sm text-blue-300/70 whitespace-pre-wrap">
           {translation}
         </div>
       )}
 
       {/* Фидбек */}
-      <div className="mt-1.5 flex gap-2">
-        <input
-          type="text"
-          placeholder="Что исправить..."
-          value={feedback}
-          onChange={(e) => onFeedbackChange(e.target.value)}
-          className="flex-1 px-3 py-1.5 bg-surface rounded border border-surface-lighter focus:border-accent outline-none text-xs"
-        />
-        <button
-          onClick={onFix}
-          disabled={!feedback.trim() || isFixing}
-          className="flex items-center gap-1 px-3 py-1.5 bg-accent hover:bg-accent-hover rounded text-xs transition-colors disabled:opacity-40"
-        >
-          {isFixing ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
-          Исправить
-        </button>
-      </div>
+      {!editing && (
+        <div className="mt-1.5 flex gap-2">
+          <input
+            type="text"
+            placeholder="Что исправить..."
+            value={feedback}
+            onChange={(e) => onFeedbackChange(e.target.value)}
+            className="flex-1 px-3 py-1.5 bg-surface rounded border border-surface-lighter focus:border-accent outline-none text-xs"
+          />
+          <button
+            onClick={onFix}
+            disabled={!feedback.trim() || isFixing}
+            className="flex items-center gap-1 px-3 py-1.5 bg-accent hover:bg-accent-hover rounded text-xs transition-colors disabled:opacity-40"
+          >
+            {isFixing ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+            Исправить
+          </button>
+        </div>
+      )}
     </div>
   );
 }
