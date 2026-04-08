@@ -457,7 +457,13 @@ def wait_for_flow_ready(page):
             page.keyboard.press('Escape')
             human_delay(0.5, 1.0)
         dismiss_popups(page)
-        page.wait_for_selector(sel, timeout=180000)
+        # Check if not logged in — give user time to log in manually
+        if '/project/' not in page.url:
+            print()
+            print('  ⚠ NOT LOGGED IN — please log in to Google and open the project in the browser window.')
+            print('  ⚠ Waiting up to 10 minutes...')
+            print()
+        page.wait_for_selector(sel, timeout=600000)
     human_delay(1.5, 3.0)
     dismiss_popups(page)
     print('  Flow workspace ready.')
