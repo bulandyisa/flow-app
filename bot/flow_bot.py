@@ -3921,6 +3921,7 @@ def do_chain(pw, scenes_filter=None, clip_filter=None, use_builtin_chromium=Fals
     work_scenes = _scenes_with_work()
     my_scenes = {sid for i, sid in enumerate(work_scenes) if i % num_bots == bot_idx}
     print(f'  Bot {bot_idx + 1}/{num_bots}: assigned {len(my_scenes)}/{len(work_scenes)} scenes with work (total {len(scenes)})')
+    print(f'  My scenes: {sorted(my_scenes)}')
 
     # Keep looping until no more progress can be made
     max_passes = 50  # safety limit
@@ -3936,6 +3937,8 @@ def do_chain(pw, scenes_filter=None, clip_filter=None, use_builtin_chromium=Fals
             work_scenes = _scenes_with_work()
             my_scenes = {sid for i, sid in enumerate(work_scenes) if i % num_bots == bot_idx}
             print(f'  Bot {bot_idx + 1}: {len(my_scenes)}/{len(work_scenes)} scenes with work')
+
+        verbose = (pass_num == 1)  # verbose logging on first pass
 
         for sid, scene_clips in scenes.items():
             if sid not in my_scenes:
@@ -3961,11 +3964,13 @@ def do_chain(pw, scenes_filter=None, clip_filter=None, use_builtin_chromium=Fals
 
                     status = manifest['components'][component].get('status', 'pending')
                     if status in ('accepted', 'needs_manual_work', 'skipped'):
+                        if verbose: print(f'  [{cid}/{component}] skip: status={status}')
                         continue
 
                     # Check if already generated (waiting for selection)
                     attempts = manifest['components'][component].get('attempts', [])
                     if attempts and status == 'generated':
+                        if verbose: print(f'  [{cid}/{component}] skip: already generated, waiting for review')
                         continue
 
                     # Dependency check
@@ -3985,20 +3990,24 @@ def do_chain(pw, scenes_filter=None, clip_filter=None, use_builtin_chromium=Fals
                             else:
                                 prev_dep_status = prev_manifest['components']['nb_last'].get('status', 'pending')
                             if prev_dep_status != 'accepted':
+                                if verbose: print(f'  [{cid}/{component}] skip: prev {prev_cid} dep={prev_dep_status} (need accepted, skip_last={prev_skip})')
                                 continue
                     elif component == 'nb_last':
                         # Need this clip's first frame to be accepted
                         ref = _resolve_ref_frame(manifest, cid, component)
                         if not ref:
+                            if verbose: print(f'  [{cid}/{component}] skip: first frame not accepted')
                             continue
                     elif component == 'veo':
                         # Need first frame accepted; last frame only if not skip_last
                         first_st = manifest['components']['nb_first'].get('status', 'pending')
                         if first_st != 'accepted':
+                            if verbose: print(f'  [{cid}/{component}] skip: first={first_st} (need accepted)')
                             continue
                         if not is_skip_last:
                             last_st = manifest['components']['nb_last'].get('status', 'pending')
                             if last_st != 'accepted':
+                                if verbose: print(f'  [{cid}/{component}] skip: last={last_st} (need accepted, skip_last={is_skip_last})')
                                 continue
 
                     # Ready to generate
@@ -4021,6 +4030,7 @@ def do_chain(pw, scenes_filter=None, clip_filter=None, use_builtin_chromium=Fals
                             if r2_storage.is_configured():
                                 r2_storage.download_file(r2_key, last_frame)
                         if not first_frame.exists():
+                            if verbose: print(f'  [{cid}/veo] skip: first frame missing: {first_frame}')
                             summary['blocked'].append(f'{cid}/veo (missing first frame)')
                             continue
                         if last_frame and not last_frame.exists():
