@@ -47,7 +47,7 @@ export function BotControl() {
     if (!projectId) return;
     try {
       for (let i = 1; i <= botCount; i++) {
-        await api.startBot(projectId, i, i);
+        await api.startBot(projectId, i, i, botCount);
       }
       refetch();
     } catch (err) {

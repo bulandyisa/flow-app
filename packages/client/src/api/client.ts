@@ -279,10 +279,10 @@ export const api = {
     botScriptPath: string | null;
   }>('/bot/status'),
 
-  startBot: (projectId: string, botId: number, account: number) =>
+  startBot: (projectId: string, botId: number, account: number, numBots?: number) =>
     request<{ success: boolean }>('/bot/start', {
       method: 'POST',
-      body: JSON.stringify({ projectId, botId, account }),
+      body: JSON.stringify({ projectId, botId, account, numBots }),
     }),
 
   stopBot: (botId?: number) =>

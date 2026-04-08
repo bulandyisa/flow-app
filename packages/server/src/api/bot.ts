@@ -23,10 +23,11 @@ export function botRouter(config: AppConfig): Router {
 
   // POST /api/bot/start — запустить бота
   router.post('/start', (req, res) => {
-    const { projectId, botId, account } = req.body as {
+    const { projectId, botId, account, numBots } = req.body as {
       projectId: string;
       botId: number;
       account: number;
+      numBots?: number;
     };
 
     if (!projectId || botId == null || account == null) {
@@ -48,7 +49,8 @@ export function botRouter(config: AppConfig): Router {
       return;
     }
 
-    const result = manager.startBot(botId, account, projectDir, promptsFile);
+    const extraArgs = numBots ? ['--num-bots', String(numBots)] : [];
+    const result = manager.startBot(botId, account, projectDir, promptsFile, extraArgs);
     if (result.success) {
       res.json({ success: true, message: `Бот ${botId} запущен на аккаунте ${account}` });
     } else {

@@ -65,6 +65,7 @@ ACCOUNTS = [
 ]
 
 _current_account_idx = 0
+_num_bots_override = None
 _active_context = None
 
 GLOBAL_TIMEOUT_SEC = int(os.environ.get('FLOW_TIMEOUT', 18000))
@@ -3899,7 +3900,7 @@ def do_chain(pw, scenes_filter=None, clip_filter=None, use_builtin_chromium=Fals
     retry_pauses_done = 0
 
     # Distribute scenes across bots — only scenes that still have work
-    num_bots = len(ACCOUNTS)
+    num_bots = _num_bots_override or len(ACCOUNTS)
     bot_idx = _current_account_idx  # 0-based
 
     def _scenes_with_work():
@@ -5014,6 +5015,7 @@ def main():
     parser.add_argument('--trim-end', type=float, default=None)
     parser.add_argument('--batch', type=str, default='a', choices=['a','b'])
     parser.add_argument('--account', type=int, default=1, choices=range(1, len(ACCOUNTS)+1))
+    parser.add_argument('--num-bots', type=int, default=None, help='Total number of bots running (for scene distribution). Defaults to len(ACCOUNTS).')
     parser.add_argument('--project', type=str, default=None, help='Project UUID to use (overrides auto-detect)')
     parser.add_argument('--chromium', action='store_true', help='Use built-in Chromium instead of system Chrome (for parallel bots)')
     parser.add_argument('--prompts', type=str, default=None, help='Path to prompts JSON file (overrides default)')
@@ -5029,6 +5031,7 @@ def main():
 
     args = parser.parse_args()
     _current_account_idx = args.account - 1
+    _num_bots_override = args.num_bots
 
     # Override paths if --prompts or --output-dir provided
     global PROMPTS_PATH, OUTPUT_DIR, FRAMES_DIR, CLIPS_DIR, REVIEW_DIR, SCREENSHOTS_DIR, REFS_DIR
