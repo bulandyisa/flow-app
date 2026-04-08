@@ -66,7 +66,7 @@ export class BotRunner extends EventEmitter {
 
     this.process = spawn(options.pythonPath, allArgs, {
       cwd: options.cwd,
-      env: { ...process.env, PYTHONUNBUFFERED: '1', ...options.env },
+      env: { ...process.env, PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8', ...options.env },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 
