@@ -348,8 +348,11 @@ export function Review() {
               if (!confirm('Сбросить ВСЕ nb_first с фидбеками на pending?\nБоты перегенерируют их заново.')) return;
               try {
                 const result = await api.resetFirst(projectId);
+                setFeedbacks({});
+                setSelections({});
+                try { localStorage.removeItem(LS_KEY_FEEDBACKS); localStorage.removeItem(LS_KEY_SELECTIONS); } catch {}
                 setSubmitResult(result.message);
-                setTimeout(() => setSubmitResult(null), 5000);
+                setTimeout(() => { setSubmitResult(null); window.location.reload(); }, 2000);
               } catch (err) {
                 setSubmitResult(`Ошибка: ${err instanceof Error ? err.message : String(err)}`);
               }
@@ -366,7 +369,7 @@ export function Review() {
               try {
                 const result = await api.resetVeo(projectId);
                 setSubmitResult(result.message);
-                setTimeout(() => setSubmitResult(null), 5000);
+                setTimeout(() => { setSubmitResult(null); window.location.reload(); }, 2000);
               } catch (err) {
                 setSubmitResult(`Ошибка: ${err instanceof Error ? err.message : String(err)}`);
               }
