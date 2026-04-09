@@ -328,6 +328,24 @@ export function Review() {
               Исправление промптов
             </span>
           )}
+          {/* Сброс VEO */}
+          <button
+            onClick={async () => {
+              if (!projectId) return;
+              if (!confirm('Сбросить ВСЕ VEO со статусом "generated" на pending?\nБоты перегенерируют их заново.')) return;
+              try {
+                const result = await api.resetVeo(projectId);
+                setSubmitResult(result.message);
+                setTimeout(() => setSubmitResult(null), 5000);
+              } catch (err) {
+                setSubmitResult(`Ошибка: ${err instanceof Error ? err.message : String(err)}`);
+              }
+            }}
+            className="px-3 py-2 text-xs bg-surface rounded-lg border border-surface-lighter text-yellow-400 hover:text-yellow-300 hover:border-yellow-400/30 transition-colors"
+            title="Сбросить все VEO (generated → pending) для перегенерации"
+          >
+            Сбросить VEO
+          </button>
           {/* Выбор модели */}
           <div className="flex items-center bg-surface rounded-lg border border-surface-lighter overflow-hidden text-xs">
             <button

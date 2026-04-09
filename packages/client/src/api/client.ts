@@ -38,6 +38,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ decisions, model }),
     }),
+  resetVeo: (projectId: string) =>
+    request<{ reset: number; message: string }>(`/projects/${projectId}/review/reset-veo`, {
+      method: 'POST',
+    }),
   revokeAccepted: (projectId: string, clipId: string, component: string, feedback?: string) =>
     request<{ success: boolean; fixResult?: { explanation?: string; error?: string } }>(
       `/projects/${projectId}/review/revoke`,

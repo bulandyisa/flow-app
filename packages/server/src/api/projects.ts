@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { AppConfig } from '../config.js';
 import { ProjectStore } from '../data/project-store.js';
@@ -392,6 +392,51 @@ export function projectsRouter(config: AppConfig): Router {
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error('Ошибка в review/revoke:', message);
+      res.status(500).json({ error: `Ошибка сервера: ${message}` });
+    }
+  });
+
+  // POST /api/projects/:id/review/reset-veo — сбросить все VEO "generated" → "pending"
+  router.post('/:id/review/reset-veo', async (req, res) => {
+    const project = store.get(req.params.id);
+    if (!project) {
+      res.status(404).json({ error: 'Проект не найден' });
+      return;
+    }
+
+    try {
+      const projectDir = store.projectDir(project.id);
+      const reviewDir = resolve(projectDir, 'review');
+
+      if (!existsSync(reviewDir)) {
+        res.json({ reset: 0, message: 'Нет папки review' });
+        return;
+      }
+
+      let resetCount = 0;
+      const clipDirs = readdirSync(reviewDir, { withFileTypes: true })
+        .filter((d) => d.isDirectory())
+        .map((d) => d.name);
+
+      for (const clipId of clipDirs) {
+        const manifest = loadManifest(reviewDir, clipId);
+        if (!manifest) continue;
+
+        const veo = manifest.components.veo;
+        if (veo && veo.status === 'generated') {
+          veo.status = 'pending';
+          veo.attempts = [];
+          veo.selected_variant_a = null;
+          veo.feedback = '';
+          saveManifest(reviewDir, manifest);
+          resetCount++;
+        }
+      }
+
+      res.json({ reset: resetCount, message: `Сброшено ${resetCount} VEO на pending` });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('Ошибка в reset-veo:', message);
       res.status(500).json({ error: `Ошибка сервера: ${message}` });
     }
   });
