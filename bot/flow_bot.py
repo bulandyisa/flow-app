@@ -1548,44 +1548,61 @@ def upload_frame_for_veo(page, frame_path, slot_index):
     take_screenshot(page, f'veo_slot_{slot_name}_dialog_open')
 
     # Upload fresh via file chooser — click upload button in dialog
+    # First scroll the dialog content to bottom to reveal "Загрузить изображение" button
+    page.evaluate("""() => {
+        const dialog = document.querySelector('[role="dialog"]');
+        if (!dialog) return;
+        // Scroll all scrollable children to bottom
+        for (const el of dialog.querySelectorAll('*')) {
+            if (el.scrollHeight > el.clientHeight + 10) {
+                el.scrollTop = el.scrollHeight;
+            }
+        }
+    }""")
+    human_delay(0.5, 1.0)
+
     upload_pos = page.evaluate("""() => {
         const dialog = document.querySelector('[role="dialog"]');
         if (!dialog) return null;
         // Try multiple text patterns (Flow changes button text)
         const patterns = ['Загрузить', 'Upload', 'загрузить', 'upload', 'Выбрать', 'Добавить'];
-        for (const btn of dialog.querySelectorAll('button, [role="button"]')) {
+        // Search ALL elements, not just button/[role=button] — the upload btn may be a div
+        for (const btn of dialog.querySelectorAll('button, [role="button"], div[class], a, span')) {
             const t = (btn.textContent || '').trim();
             for (const p of patterns) {
                 if (t.includes(p)) {
                     const r = btn.getBoundingClientRect();
-                    if (r.width > 20) return {x: r.x + r.width/2, y: r.y + r.height/2, text: t.substring(0, 60)};
+                    if (r.width > 20 && r.height > 10) return {x: r.x + r.width/2, y: r.y + r.height/2, text: t.substring(0, 60)};
                 }
             }
         }
         // Fallback: look for file input
         const fileInput = dialog.querySelector('input[type="file"]');
-        if (fileInput) return {type: 'input', selector: 'input[type="file"]'};
+        if (fileInput) return {type: 'input', selector: '[role="dialog"] input[type="file"]'};
         return null;
     }""")
 
     if not upload_pos:
-        # Debug: log all buttons in dialog
+        # Debug: log all clickable elements in dialog
         btns = page.evaluate("""() => {
             const dialog = document.querySelector('[role="dialog"]');
             if (!dialog) return 'no dialog';
-            const buttons = [];
-            for (const btn of dialog.querySelectorAll('button, [role="button"]')) {
-                const t = (btn.textContent || '').trim().substring(0, 60);
-                const r = btn.getBoundingClientRect();
-                if (r.width > 10) buttons.push(t + ' [' + Math.round(r.width) + 'x' + Math.round(r.height) + ']');
+            const items = [];
+            for (const el of dialog.querySelectorAll('button, [role="button"], div, a, span')) {
+                const t = (el.textContent || '').trim().substring(0, 60);
+                const r = el.getBoundingClientRect();
+                if (r.width > 10 && r.height > 10 && t.length > 0 && t.length < 80) {
+                    items.push(t + ' <' + el.tagName + '> [' + Math.round(r.width) + 'x' + Math.round(r.height) + ']');
+                }
             }
-            return buttons.join(' | ');
+            // Deduplicate
+            return [...new Set(items)].join(' | ');
         }""")
         print(f'  WARNING: Upload button not found in dialog for {slot_name}')
-        print(f'  DEBUG: Dialog buttons: {btns}')
+        print(f'  DEBUG: Dialog elements: {btns}')
         take_screenshot(page, f'veo_slot_{slot_name}_no_upload_btn')
-        # Try hidden file input as fallback
-        file_input = page.query_selector('[role="dialog"] input[type="file"]')
+        # Try hidden file input as fallback (search entire page, not just dialog)
+        file_input = page.query_selector('[role="dialog"] input[type="file"]') or page.query_selector('input[type="file"]')
         if file_input:
             file_input.set_input_files(frame_path)
             print(f'  Uploaded {slot_name} frame via hidden file input')
