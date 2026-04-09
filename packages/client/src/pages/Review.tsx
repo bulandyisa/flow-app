@@ -289,7 +289,10 @@ export function Review() {
       } catch { /* ignore */ }
       setTimeout(() => setSubmitResult(null), 5000);
     } catch (err) {
-      setSubmitResult(`Ошибка: ${err}`);
+      const message = err instanceof TypeError && err.message === 'Failed to fetch'
+        ? 'Сервер недоступен. Проверьте что приложение запущено и попробуйте снова.'
+        : err instanceof Error ? err.message : String(err);
+      setSubmitResult(`Ошибка: ${message}`);
     }
   };
 

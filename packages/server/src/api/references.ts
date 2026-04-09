@@ -480,147 +480,159 @@ export function referencesRouter(config: AppConfig): Router {
       return;
     }
 
-    const decisions: RefReviewDecision[] = req.body.decisions || [];
-    const reviewModel: ModelChoice = req.body.model || 'sonnet';
-    if (decisions.length === 0) {
-      res.status(400).json({ error: 'Нет решений' });
-      return;
-    }
-
-    const paths = projectPaths(config.dataDir, project.id);
-    const refsDir = resolve(paths.root, 'references');
-
-    const results: Array<{ itemId: string; target: string; success: boolean; error?: string }> = [];
-    let acceptedCount = 0;
-    let rejectedCount = 0;
-
-    for (const decision of decisions) {
-      const target = decision.target === 'base' ? 'base' : decision.angleId || 'base';
-
-      const manifest = loadRefManifest(refsDir, decision.type, decision.itemId, target);
-      if (!manifest) {
-        results.push({
-          itemId: decision.itemId,
-          target,
-          success: false,
-          error: 'Манифест не найден',
-        });
-        continue;
+    try {
+      const decisions: RefReviewDecision[] = req.body.decisions || [];
+      const reviewModel: ModelChoice = req.body.model || 'sonnet';
+      if (decisions.length === 0) {
+        res.status(400).json({ error: 'Нет решений' });
+        return;
       }
 
-      if (decision.action === 'accept' && decision.attempt != null && decision.variant != null) {
-        // Accept
-        markRefAccepted(manifest, decision.attempt, decision.variant);
-        saveRefManifest(refsDir, manifest);
+      const paths = projectPaths(config.dataDir, project.id);
+      const refsDir = resolve(paths.root, 'references');
 
-        if (decision.target === 'base') {
-          // Copy accepted base image
-          const basePath = copyAcceptedBase(refsDir, manifest);
+      const results: Array<{ itemId: string; target: string; success: boolean; error?: string }> = [];
+      let acceptedCount = 0;
+      let rejectedCount = 0;
 
-          // Update project.json
-          if (decision.type === 'characters') {
-            const char = project.characters.find((c) => c.id === decision.itemId);
-            if (char && basePath) {
-              char.baseImage = basePath;
-              // If no angles yet, mark as base_review, otherwise keep current status
-              if (char.status === 'pending' || char.status === 'base_review') {
-                char.status = 'base_review';
-              }
-            }
-          } else {
-            const loc = project.locations.find((l) => l.id === decision.itemId);
-            if (loc && basePath) {
-              loc.baseImage = basePath;
-              if (loc.status === 'pending' || loc.status === 'base_review') {
-                loc.status = 'base_review';
-              }
-            }
+      for (const decision of decisions) {
+        try {
+          const target = decision.target === 'base' ? 'base' : decision.angleId || 'base';
+
+          const manifest = loadRefManifest(refsDir, decision.type, decision.itemId, target);
+          if (!manifest) {
+            results.push({
+              itemId: decision.itemId,
+              target,
+              success: false,
+              error: 'Манифест не найден',
+            });
+            continue;
           }
-        } else if (decision.angleId) {
-          // Copy accepted angle image
-          const anglePath = copyAcceptedAngle(refsDir, manifest);
 
-          // Update project.json angles array
-          if (decision.type === 'characters') {
-            const char = project.characters.find((c) => c.id === decision.itemId);
-            if (char && anglePath) {
-              const existing = char.angles.findIndex((a) => a.id === decision.angleId);
-              const angleObj: Angle = {
-                id: decision.angleId!,
-                file: anglePath,
-                description: decision.angleId!.replace(/_/g, ' '),
-                type: getAngleType(decision.type, decision.angleId!),
-                status: 'accepted',
-              };
-              if (existing >= 0) {
-                char.angles[existing] = angleObj;
+          if (decision.action === 'accept' && decision.attempt != null && decision.variant != null) {
+            // Accept
+            markRefAccepted(manifest, decision.attempt, decision.variant);
+            saveRefManifest(refsDir, manifest);
+
+            if (decision.target === 'base') {
+              // Copy accepted base image
+              const basePath = copyAcceptedBase(refsDir, manifest);
+
+              // Update project.json
+              if (decision.type === 'characters') {
+                const char = project.characters.find((c) => c.id === decision.itemId);
+                if (char && basePath) {
+                  char.baseImage = basePath;
+                  // If no angles yet, mark as base_review, otherwise keep current status
+                  if (char.status === 'pending' || char.status === 'base_review') {
+                    char.status = 'base_review';
+                  }
+                }
               } else {
-                char.angles.push(angleObj);
+                const loc = project.locations.find((l) => l.id === decision.itemId);
+                if (loc && basePath) {
+                  loc.baseImage = basePath;
+                  if (loc.status === 'pending' || loc.status === 'base_review') {
+                    loc.status = 'base_review';
+                  }
+                }
               }
+            } else if (decision.angleId) {
+              // Copy accepted angle image
+              const anglePath = copyAcceptedAngle(refsDir, manifest);
 
-              // Check if all angles are ready
-              const totalAngles = CHARACTER_ANGLE_TYPES.length;
-              const acceptedAngles = char.angles.filter((a) => a.status === 'accepted').length;
-              if (acceptedAngles >= totalAngles) {
-                char.status = 'ready';
+              // Update project.json angles array
+              if (decision.type === 'characters') {
+                const char = project.characters.find((c) => c.id === decision.itemId);
+                if (char && anglePath) {
+                  const existing = char.angles.findIndex((a) => a.id === decision.angleId);
+                  const angleObj: Angle = {
+                    id: decision.angleId!,
+                    file: anglePath,
+                    description: decision.angleId!.replace(/_/g, ' '),
+                    type: getAngleType(decision.type, decision.angleId!),
+                    status: 'accepted',
+                  };
+                  if (existing >= 0) {
+                    char.angles[existing] = angleObj;
+                  } else {
+                    char.angles.push(angleObj);
+                  }
+
+                  // Check if all angles are ready
+                  const totalAngles = CHARACTER_ANGLE_TYPES.length;
+                  const acceptedAngles = char.angles.filter((a) => a.status === 'accepted').length;
+                  if (acceptedAngles >= totalAngles) {
+                    char.status = 'ready';
+                  } else {
+                    char.status = 'angles_review';
+                  }
+                }
               } else {
-                char.status = 'angles_review';
+                const loc = project.locations.find((l) => l.id === decision.itemId);
+                if (loc && anglePath) {
+                  const existing = loc.angles.findIndex((a) => a.id === decision.angleId);
+                  const angleObj: Angle = {
+                    id: decision.angleId!,
+                    file: anglePath,
+                    description: decision.angleId!.replace(/_/g, ' '),
+                    type: getAngleType(decision.type, decision.angleId!),
+                    status: 'accepted',
+                  };
+                  if (existing >= 0) {
+                    loc.angles[existing] = angleObj;
+                  } else {
+                    loc.angles.push(angleObj);
+                  }
+
+                  // Check if all angles are ready
+                  const totalAngles = LOCATION_ANGLE_TYPES.length;
+                  const acceptedAngles = loc.angles.filter((a) => a.status === 'accepted').length;
+                  if (acceptedAngles >= totalAngles) {
+                    loc.status = 'ready';
+                  } else {
+                    loc.status = 'angles_review';
+                  }
+                }
               }
             }
-          } else {
-            const loc = project.locations.find((l) => l.id === decision.itemId);
-            if (loc && anglePath) {
-              const existing = loc.angles.findIndex((a) => a.id === decision.angleId);
-              const angleObj: Angle = {
-                id: decision.angleId!,
-                file: anglePath,
-                description: decision.angleId!.replace(/_/g, ' '),
-                type: getAngleType(decision.type, decision.angleId!),
-                status: 'accepted',
-              };
-              if (existing >= 0) {
-                loc.angles[existing] = angleObj;
-              } else {
-                loc.angles.push(angleObj);
-              }
 
-              // Check if all angles are ready
-              const totalAngles = LOCATION_ANGLE_TYPES.length;
-              const acceptedAngles = loc.angles.filter((a) => a.status === 'accepted').length;
-              if (acceptedAngles >= totalAngles) {
-                loc.status = 'ready';
-              } else {
-                loc.status = 'angles_review';
-              }
-            }
+            acceptedCount++;
+            results.push({ itemId: decision.itemId, target, success: true });
+          } else if (decision.action === 'reject') {
+            const feedback = decision.feedback || '';
+            markRefRejected(manifest, feedback);
+            manifest.status = 'rejected';
+            saveRefManifest(refsDir, manifest);
+            rejectedCount++;
+            results.push({ itemId: decision.itemId, target, success: true });
           }
+        } catch (decisionErr) {
+          const msg = decisionErr instanceof Error ? decisionErr.message : String(decisionErr);
+          console.error(`Ошибка обработки решения для ${decision.itemId}:`, msg);
+          results.push({ itemId: decision.itemId, target: decision.target, success: false, error: msg });
         }
-
-        acceptedCount++;
-        results.push({ itemId: decision.itemId, target, success: true });
-      } else if (decision.action === 'reject') {
-        const feedback = decision.feedback || '';
-        markRefRejected(manifest, feedback);
-        manifest.status = 'rejected';
-        saveRefManifest(refsDir, manifest);
-        rejectedCount++;
-        results.push({ itemId: decision.itemId, target, success: true });
       }
+
+      store.save(project);
+
+      // Check if all references are ready
+      const allReady =
+        project.characters.every((c) => c.status === 'ready') &&
+        project.locations.every((l) => l.status === 'ready');
+
+      res.json({
+        results,
+        accepted: acceptedCount,
+        rejected: rejectedCount,
+        allReady,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('Ошибка в references/review/submit:', message);
+      res.status(500).json({ error: `Ошибка сервера: ${message}` });
     }
-
-    store.save(project);
-
-    // Check if all references are ready
-    const allReady =
-      project.characters.every((c) => c.status === 'ready') &&
-      project.locations.every((l) => l.status === 'ready');
-
-    res.json({
-      results,
-      accepted: acceptedCount,
-      rejected: rejectedCount,
-      allReady,
-    });
   });
 
   return router;

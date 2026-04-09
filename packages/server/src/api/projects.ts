@@ -173,125 +173,137 @@ export function projectsRouter(config: AppConfig): Router {
       return;
     }
 
-    const projectDir = store.projectDir(project.id);
-    const reviewDir = resolve(projectDir, 'review');
-    const promptsFile = resolve(projectDir, 'prompts', 'all_prompts.json');
-    const model = (req.body.model || 'sonnet') as 'opus' | 'sonnet';
-    const decisions: Array<{
-      clipId: string;
-      component: string;
-      action: 'accept' | 'reject';
-      attempt?: number;
-      variant?: number;
-      scores?: Record<string, number>;
-      feedback?: string;
-    }> = req.body.decisions || [];
+    try {
+      const projectDir = store.projectDir(project.id);
+      const reviewDir = resolve(projectDir, 'review');
+      const promptsFile = resolve(projectDir, 'prompts', 'all_prompts.json');
+      const model = (req.body.model || 'sonnet') as 'opus' | 'sonnet';
+      const decisions: Array<{
+        clipId: string;
+        component: string;
+        action: 'accept' | 'reject';
+        attempt?: number;
+        variant?: number;
+        scores?: Record<string, number>;
+        feedback?: string;
+      }> = req.body.decisions || [];
 
-    // Загружаем промпты для исправлений
-    let clips: Clip[] = [];
-    if (existsSync(promptsFile)) {
-      clips = JSON.parse(readFileSync(promptsFile, 'utf-8'));
-    }
-
-    const results: Array<{ clipId: string; success: boolean; error?: string }> = [];
-    const toFix: Array<{ clip: Clip; component: string; feedback: string; sceneContext: string }> = [];
-    let acceptedCount = 0;
-
-    // 1. Обрабатываем решения: принятые сразу, отклонённые собираем для Claude
-    for (const decision of decisions) {
-      const manifest = loadManifest(reviewDir, decision.clipId);
-      if (!manifest) {
-        results.push({ clipId: decision.clipId, success: false, error: 'Манифест не найден' });
-        continue;
+      // Загружаем промпты для исправлений
+      let clips: Clip[] = [];
+      if (existsSync(promptsFile)) {
+        clips = JSON.parse(readFileSync(promptsFile, 'utf-8'));
       }
 
-      const component = decision.component as ComponentName;
+      const results: Array<{ clipId: string; success: boolean; error?: string }> = [];
+      const toFix: Array<{ clip: Clip; component: string; feedback: string; sceneContext: string }> = [];
+      let acceptedCount = 0;
 
-      if (decision.action === 'accept' && decision.attempt != null && decision.variant != null) {
-        markAccepted(manifest, component, decision.attempt, decision.variant, decision.scores || null);
-        copyAcceptedToOutput(reviewDir, projectDir, manifest, component);
-        saveManifest(reviewDir, manifest);
-        acceptedCount++;
-        results.push({ clipId: decision.clipId, success: true });
-      } else if (decision.action === 'reject' && decision.feedback) {
-        markRejected(manifest, component, decision.feedback);
-        saveManifest(reviewDir, manifest);
-
-        // Собираем для Claude
-        const clip = clips.find((c) => c.clip_id === decision.clipId);
-        if (clip) {
-          toFix.push({
-            clip,
-            component,
-            feedback: decision.feedback,
-            sceneContext: clip.scene_description_ru,
-          });
-        }
-        results.push({ clipId: decision.clipId, success: true });
-      }
-    }
-
-    // 2. Если есть отклонённые с фидбеком и есть API ключ — исправляем через Claude
-    let fixResults: Array<{ clipId: string; component: string; explanation: string }> = [];
-    let fixFailures: Array<{ clipId: string; component: string; error: string }> = [];
-
-    if (toFix.length > 0 && config.anthropicApiKey) {
-      // Оповещаем фронт что началось исправление
-      broadcast({ type: 'generation_progress', data: { action: 'fixing_start', total: toFix.length } });
-
-      try {
-        const { successes, failures } = await fixPromptsBatch(config, toFix, model, (done, total) => {
-          broadcast({ type: 'generation_progress', data: { action: 'fixing_progress', done, total } });
-        });
-
-        // 3. Обновляем промпты в all_prompts.json
-        for (const fix of successes) {
-          const clipIdx = clips.findIndex((c) => c.clip_id === fix.clip_id);
-          if (clipIdx < 0) continue;
-
-          if (fix.component === 'nb_first') {
-            clips[clipIdx].nano_banana_prompt_first = fix.new_prompt;
-          } else if (fix.component === 'veo') {
-            clips[clipIdx].veo_prompt = fix.new_prompt;
+      // 1. Обрабатываем решения: принятые сразу, отклонённые собираем для Claude
+      for (const decision of decisions) {
+        try {
+          const manifest = loadManifest(reviewDir, decision.clipId);
+          if (!manifest) {
+            results.push({ clipId: decision.clipId, success: false, error: 'Манифест не найден' });
+            continue;
           }
 
-          fixResults.push({
-            clipId: fix.clip_id,
-            component: fix.component,
-            explanation: fix.explanation,
-          });
+          const component = decision.component as ComponentName;
+
+          if (decision.action === 'accept' && decision.attempt != null && decision.variant != null) {
+            markAccepted(manifest, component, decision.attempt, decision.variant, decision.scores || null);
+            copyAcceptedToOutput(reviewDir, projectDir, manifest, component);
+            saveManifest(reviewDir, manifest);
+            acceptedCount++;
+            results.push({ clipId: decision.clipId, success: true });
+          } else if (decision.action === 'reject' && decision.feedback) {
+            markRejected(manifest, component, decision.feedback);
+            saveManifest(reviewDir, manifest);
+
+            // Собираем для Claude
+            const clip = clips.find((c) => c.clip_id === decision.clipId);
+            if (clip) {
+              toFix.push({
+                clip,
+                component,
+                feedback: decision.feedback,
+                sceneContext: clip.scene_description_ru,
+              });
+            }
+            results.push({ clipId: decision.clipId, success: true });
+          }
+        } catch (decisionErr) {
+          const msg = decisionErr instanceof Error ? decisionErr.message : String(decisionErr);
+          console.error(`Ошибка обработки решения для ${decision.clipId}:`, msg);
+          results.push({ clipId: decision.clipId, success: false, error: msg });
         }
-
-        fixFailures = failures.map((f) => ({
-          clipId: f.clip_id,
-          component: f.component,
-          error: f.error,
-        }));
-
-        // Сохраняем обновлённые промпты
-        writeFileSync(promptsFile, JSON.stringify(clips, null, 2), 'utf-8');
-
-        broadcast({
-          type: 'generation_progress',
-          data: {
-            action: 'fixing_done',
-            fixed: successes.length,
-            failed: failures.length,
-          },
-        });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        broadcast({ type: 'generation_progress', data: { action: 'fixing_error', error: message } });
       }
-    }
 
-    res.json({
-      results,
-      accepted: acceptedCount,
-      rejected: toFix.length,
-      promptsFixed: fixResults,
-      promptsFailures: fixFailures,
-    });
+      // 2. Если есть отклонённые с фидбеком и есть API ключ — исправляем через Claude
+      let fixResults: Array<{ clipId: string; component: string; explanation: string }> = [];
+      let fixFailures: Array<{ clipId: string; component: string; error: string }> = [];
+
+      if (toFix.length > 0 && config.anthropicApiKey) {
+        // Оповещаем фронт что началось исправление
+        broadcast({ type: 'generation_progress', data: { action: 'fixing_start', total: toFix.length } });
+
+        try {
+          const { successes, failures } = await fixPromptsBatch(config, toFix, model, (done, total) => {
+            broadcast({ type: 'generation_progress', data: { action: 'fixing_progress', done, total } });
+          });
+
+          // 3. Обновляем промпты в all_prompts.json
+          for (const fix of successes) {
+            const clipIdx = clips.findIndex((c) => c.clip_id === fix.clip_id);
+            if (clipIdx < 0) continue;
+
+            if (fix.component === 'nb_first') {
+              clips[clipIdx].nano_banana_prompt_first = fix.new_prompt;
+            } else if (fix.component === 'veo') {
+              clips[clipIdx].veo_prompt = fix.new_prompt;
+            }
+
+            fixResults.push({
+              clipId: fix.clip_id,
+              component: fix.component,
+              explanation: fix.explanation,
+            });
+          }
+
+          fixFailures = failures.map((f) => ({
+            clipId: f.clip_id,
+            component: f.component,
+            error: f.error,
+          }));
+
+          // Сохраняем обновлённые промпты
+          writeFileSync(promptsFile, JSON.stringify(clips, null, 2), 'utf-8');
+
+          broadcast({
+            type: 'generation_progress',
+            data: {
+              action: 'fixing_done',
+              fixed: successes.length,
+              failed: failures.length,
+            },
+          });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          broadcast({ type: 'generation_progress', data: { action: 'fixing_error', error: message } });
+        }
+      }
+
+      res.json({
+        results,
+        accepted: acceptedCount,
+        rejected: toFix.length,
+        promptsFixed: fixResults,
+        promptsFailures: fixFailures,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('Ошибка в review/submit:', message);
+      res.status(500).json({ error: `Ошибка сервера: ${message}` });
+    }
   });
 
   // POST /api/projects/:id/review/revoke — отозвать принятый вариант
@@ -302,80 +314,86 @@ export function projectsRouter(config: AppConfig): Router {
       return;
     }
 
-    const { clipId, component, feedback } = req.body as {
-      clipId: string;
-      component: string;
-      feedback?: string;
-    };
+    try {
+      const { clipId, component, feedback } = req.body as {
+        clipId: string;
+        component: string;
+        feedback?: string;
+      };
 
-    if (!clipId || !component) {
-      res.status(400).json({ error: 'clipId и component обязательны' });
-      return;
-    }
+      if (!clipId || !component) {
+        res.status(400).json({ error: 'clipId и component обязательны' });
+        return;
+      }
 
-    const projectDir = store.projectDir(project.id);
-    const reviewDir = resolve(projectDir, 'review');
-    const manifest = loadManifest(reviewDir, clipId);
+      const projectDir = store.projectDir(project.id);
+      const reviewDir = resolve(projectDir, 'review');
+      const manifest = loadManifest(reviewDir, clipId);
 
-    if (!manifest) {
-      res.status(404).json({ error: 'Манифест не найден' });
-      return;
-    }
+      if (!manifest) {
+        res.status(404).json({ error: 'Манифест не найден' });
+        return;
+      }
 
-    const comp = manifest.components[component as ComponentName];
-    if (!comp) {
-      res.status(404).json({ error: 'Компонент не найден' });
-      return;
-    }
+      const comp = manifest.components[component as ComponentName];
+      if (!comp) {
+        res.status(404).json({ error: 'Компонент не найден' });
+        return;
+      }
 
-    if (comp.status !== 'accepted') {
-      res.status(400).json({ error: 'Компонент не в статусе "accepted"' });
-      return;
-    }
+      if (comp.status !== 'accepted') {
+        res.status(400).json({ error: 'Компонент не в статусе "accepted"' });
+        return;
+      }
 
-    // Сбрасываем статус
-    comp.status = 'pending';
-    comp.selected_variant_a = null;
-    comp.feedback = feedback || '';
-    saveManifest(reviewDir, manifest);
+      // Сбрасываем статус
+      comp.status = 'pending';
+      comp.selected_variant_a = null;
+      comp.feedback = feedback || '';
+      saveManifest(reviewDir, manifest);
 
-    // Если есть фидбек и API ключ — исправляем промпт через Claude
-    let fixResult = null;
-    if (feedback && config.anthropicApiKey) {
-      const promptsFile = resolve(projectDir, 'prompts', 'all_prompts.json');
-      if (existsSync(promptsFile)) {
-        const clips: Clip[] = JSON.parse(readFileSync(promptsFile, 'utf-8'));
-        const clip = clips.find((c) => c.clip_id === clipId);
-        if (clip) {
-          try {
-            const fix = await fixPromptByFeedback(
-              config,
-              clip,
-              component,
-              feedback,
-              clip.scene_description_ru,
-              'sonnet',
-            );
+      // Если есть фидбек и API ключ — исправляем промпт через Claude
+      let fixResult = null;
+      if (feedback && config.anthropicApiKey) {
+        const promptsFile = resolve(projectDir, 'prompts', 'all_prompts.json');
+        if (existsSync(promptsFile)) {
+          const clips: Clip[] = JSON.parse(readFileSync(promptsFile, 'utf-8'));
+          const clip = clips.find((c) => c.clip_id === clipId);
+          if (clip) {
+            try {
+              const fix = await fixPromptByFeedback(
+                config,
+                clip,
+                component,
+                feedback,
+                clip.scene_description_ru,
+                'sonnet',
+              );
 
-            // Обновляем промпт
-            const clipIdx = clips.findIndex((c) => c.clip_id === clipId);
-            if (fix.component === 'nb_first' || component === 'nb_first') {
-              clips[clipIdx].nano_banana_prompt_first = fix.new_prompt;
-            } else if (fix.component === 'veo' || component === 'veo') {
-              clips[clipIdx].veo_prompt = fix.new_prompt;
+              // Обновляем промпт
+              const clipIdx = clips.findIndex((c) => c.clip_id === clipId);
+              if (fix.component === 'nb_first' || component === 'nb_first') {
+                clips[clipIdx].nano_banana_prompt_first = fix.new_prompt;
+              } else if (fix.component === 'veo' || component === 'veo') {
+                clips[clipIdx].veo_prompt = fix.new_prompt;
+              }
+
+              writeFileSync(promptsFile, JSON.stringify(clips, null, 2), 'utf-8');
+              fixResult = { explanation: fix.explanation };
+            } catch (err) {
+              const message = err instanceof Error ? err.message : String(err);
+              fixResult = { error: message };
             }
-
-            writeFileSync(promptsFile, JSON.stringify(clips, null, 2), 'utf-8');
-            fixResult = { explanation: fix.explanation };
-          } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
-            fixResult = { error: message };
           }
         }
       }
-    }
 
-    res.json({ success: true, fixResult });
+      res.json({ success: true, fixResult });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('Ошибка в review/revoke:', message);
+      res.status(500).json({ error: `Ошибка сервера: ${message}` });
+    }
   });
 
   return router;
