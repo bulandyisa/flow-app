@@ -70,6 +70,7 @@ export function markRejected(manifest: Manifest, component: ComponentName, feedb
   comp.status = 'pending';
   comp.feedback = feedback;
   comp.selected_variant_a = null;
+  comp.attempts = [];
 }
 
 /** Копирует принятый вариант в папку frames/clips */

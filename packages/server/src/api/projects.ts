@@ -441,5 +441,51 @@ export function projectsRouter(config: AppConfig): Router {
     }
   });
 
+  // POST /api/projects/:id/review/reset-first — сбросить nb_first с фидбеком (pending+feedback) → чистый pending
+  router.post('/:id/review/reset-first', async (req, res) => {
+    const project = store.get(req.params.id);
+    if (!project) {
+      res.status(404).json({ error: 'Проект не найден' });
+      return;
+    }
+
+    try {
+      const projectDir = store.projectDir(project.id);
+      const reviewDir = resolve(projectDir, 'review');
+
+      if (!existsSync(reviewDir)) {
+        res.json({ reset: 0, message: 'Нет папки review' });
+        return;
+      }
+
+      let resetCount = 0;
+      const clipDirs = readdirSync(reviewDir, { withFileTypes: true })
+        .filter((d) => d.isDirectory())
+        .map((d) => d.name);
+
+      for (const clipId of clipDirs) {
+        const manifest = loadManifest(reviewDir, clipId);
+        if (!manifest) continue;
+
+        const first = manifest.components.nb_first;
+        // Сброс: generated с фидбеком, или pending с фидбеком (застрявшие)
+        if (first && first.feedback) {
+          first.status = 'pending';
+          first.attempts = [];
+          first.selected_variant_a = null;
+          first.feedback = '';
+          saveManifest(reviewDir, manifest);
+          resetCount++;
+        }
+      }
+
+      res.json({ reset: resetCount, message: `Сброшено ${resetCount} nb_first на pending` });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('Ошибка в reset-first:', message);
+      res.status(500).json({ error: `Ошибка сервера: ${message}` });
+    }
+  });
+
   return router;
 }

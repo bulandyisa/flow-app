@@ -230,16 +230,12 @@ export function Review() {
       feedback?: string;
     }> = [];
 
+    const added = new Set<string>();
+
+    // 1. Selections: принятые варианты
     for (const [clipId, compSelections] of Object.entries(selections)) {
       for (const [comp, variantIdx] of Object.entries(compSelections)) {
-        // Индивидуальный фидбек приоритетнее
-        const individualFeedback = feedbacks[clipId]?.[comp]?.trim();
-        // Bulk feedback как fallback для клипов без индивидуального фидбека
-        const effectiveFeedback = individualFeedback || (bulkFeedback.trim() && variantIdx == null ? bulkFeedback.trim() : '');
-
-        if (individualFeedback) {
-          decisions.push({ clipId, component: comp, action: 'reject', feedback: individualFeedback });
-        } else if (variantIdx != null) {
+        if (variantIdx != null) {
           const manifest = manifests[clipId];
           const compData = manifest?.components?.[comp];
           const latestAttempt = compData?.attempts?.[compData.attempts.length - 1];
@@ -250,19 +246,36 @@ export function Review() {
             attempt: latestAttempt?.attempt || 1,
             variant: variantIdx,
           });
-        } else if (effectiveFeedback) {
-          decisions.push({ clipId, component: comp, action: 'reject', feedback: effectiveFeedback });
+          added.add(`${clipId}:${comp}`);
         }
       }
     }
 
-    // Применяем bulk feedback к клипам с выбранными вариантами но без индивидуального фидбека
-    // (для случая когда пользователь хочет отклонить все с одним фидбеком)
+    // 2. Feedbacks: отклонения (с индивидуальным фидбеком или bulk)
+    for (const [clipId, compFeedbacks] of Object.entries(feedbacks)) {
+      for (const [comp, fb] of Object.entries(compFeedbacks)) {
+        const key = `${clipId}:${comp}`;
+        if (added.has(key)) continue; // уже принят — не отклоняем
+        const text = fb?.trim() || '';
+        if (text) {
+          decisions.push({ clipId, component: comp, action: 'reject', feedback: text });
+          added.add(key);
+        }
+      }
+    }
+
+    // 3. Bulk feedback для клипов без индивидуального решения
     if (bulkFeedback.trim()) {
-      for (const [clipId, compFeedbacks] of Object.entries(feedbacks)) {
-        for (const [comp, fb] of Object.entries(compFeedbacks)) {
-          if (!fb.trim() && !selections[clipId]?.[comp]) {
-            // Нет ни выбора, ни фидбека — пропускаем
+      for (const clip of pageClips) {
+        const cid = clip.clip_id;
+        for (const comp of ['nb_first', 'veo'] as const) {
+          const key = `${cid}:${comp}`;
+          if (added.has(key)) continue;
+          const manifest = manifests[cid];
+          const compData = manifest?.components?.[comp];
+          if (compData?.status === 'generated') {
+            decisions.push({ clipId: cid, component: comp, action: 'reject', feedback: bulkFeedback.trim() });
+            added.add(key);
           }
         }
       }
@@ -328,7 +341,24 @@ export function Review() {
               Исправление промптов
             </span>
           )}
-          {/* Сброс VEO */}
+          {/* Сброс */}
+          <button
+            onClick={async () => {
+              if (!projectId) return;
+              if (!confirm('Сбросить ВСЕ nb_first с фидбеками на pending?\nБоты перегенерируют их заново.')) return;
+              try {
+                const result = await api.resetFirst(projectId);
+                setSubmitResult(result.message);
+                setTimeout(() => setSubmitResult(null), 5000);
+              } catch (err) {
+                setSubmitResult(`Ошибка: ${err instanceof Error ? err.message : String(err)}`);
+              }
+            }}
+            className="px-3 py-2 text-xs bg-surface rounded-lg border border-surface-lighter text-yellow-400 hover:text-yellow-300 hover:border-yellow-400/30 transition-colors"
+            title="Сбросить все nb_first с фидбеками (→ pending) для перегенерации"
+          >
+            Сбросить фото
+          </button>
           <button
             onClick={async () => {
               if (!projectId) return;
@@ -344,7 +374,7 @@ export function Review() {
             className="px-3 py-2 text-xs bg-surface rounded-lg border border-surface-lighter text-yellow-400 hover:text-yellow-300 hover:border-yellow-400/30 transition-colors"
             title="Сбросить все VEO (generated → pending) для перегенерации"
           >
-            Сбросить VEO
+            Сбросить видео
           </button>
           {/* Выбор модели */}
           <div className="flex items-center bg-surface rounded-lg border border-surface-lighter overflow-hidden text-xs">
