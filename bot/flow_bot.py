@@ -1547,62 +1547,64 @@ def upload_frame_for_veo(page, frame_path, slot_index):
 
     take_screenshot(page, f'veo_slot_{slot_name}_dialog_open')
 
-    # Upload fresh via file chooser — click upload button in dialog
-    # First scroll the dialog content to bottom to reveal "Загрузить изображение" button
+    # Upload fresh via file chooser — click upload button
+    # Scroll ALL overlays/panels to bottom to reveal "Загрузить изображение" button
     page.evaluate("""() => {
-        const dialog = document.querySelector('[role="dialog"]');
-        if (!dialog) return;
-        // Scroll all scrollable children to bottom
-        for (const el of dialog.querySelectorAll('*')) {
-            if (el.scrollHeight > el.clientHeight + 10) {
-                el.scrollTop = el.scrollHeight;
+        // Scroll dialog and any overlay/panel/drawer to bottom
+        const containers = document.querySelectorAll('[role="dialog"], [role="listbox"], [class*="panel"], [class*="drawer"], [class*="overlay"], [class*="popup"], [class*="modal"]');
+        for (const c of containers) {
+            for (const el of c.querySelectorAll('*')) {
+                if (el.scrollHeight > el.clientHeight + 10) {
+                    el.scrollTop = el.scrollHeight;
+                }
             }
         }
     }""")
     human_delay(0.5, 1.0)
 
+    # Search the ENTIRE PAGE for "Загрузить" button (not just inside [role="dialog"])
     upload_pos = page.evaluate("""() => {
-        const dialog = document.querySelector('[role="dialog"]');
-        if (!dialog) return null;
-        // Try multiple text patterns (Flow changes button text)
-        const patterns = ['Загрузить', 'Upload', 'загрузить', 'upload', 'Выбрать', 'Добавить'];
-        // Search ALL elements, not just button/[role=button] — the upload btn may be a div
-        for (const btn of dialog.querySelectorAll('button, [role="button"], div[class], a, span')) {
-            const t = (btn.textContent || '').trim();
+        const patterns = ['Загрузить', 'Upload', 'загрузить', 'upload'];
+        // Search ALL visible elements on the page
+        for (const el of document.querySelectorAll('button, [role="button"], div, a, span, label')) {
+            const t = (el.textContent || '').trim();
+            if (t.length > 50) continue;  // skip containers with too much text
             for (const p of patterns) {
                 if (t.includes(p)) {
-                    const r = btn.getBoundingClientRect();
-                    if (r.width > 20 && r.height > 10) return {x: r.x + r.width/2, y: r.y + r.height/2, text: t.substring(0, 60)};
+                    const r = el.getBoundingClientRect();
+                    if (r.width > 20 && r.height > 10 && r.y > 0 && r.y < window.innerHeight) {
+                        return {x: r.x + r.width/2, y: r.y + r.height/2, text: t.substring(0, 60), tag: el.tagName};
+                    }
                 }
             }
         }
-        // Fallback: look for file input
-        const fileInput = dialog.querySelector('input[type="file"]');
-        if (fileInput) return {type: 'input', selector: '[role="dialog"] input[type="file"]'};
+        // Fallback: file input anywhere on the page
+        const fileInput = document.querySelector('input[type="file"]');
+        if (fileInput) return {type: 'input'};
         return null;
     }""")
 
+    if upload_pos and upload_pos.get('text'):
+        print(f'  Found upload button: "{upload_pos["text"]}" <{upload_pos.get("tag", "?")}>')
+
     if not upload_pos:
-        # Debug: log all clickable elements in dialog
+        # Debug: dump visible elements with text near bottom of viewport
         btns = page.evaluate("""() => {
-            const dialog = document.querySelector('[role="dialog"]');
-            if (!dialog) return 'no dialog';
             const items = [];
-            for (const el of dialog.querySelectorAll('button, [role="button"], div, a, span')) {
-                const t = (el.textContent || '').trim().substring(0, 60);
+            for (const el of document.querySelectorAll('button, [role="button"], div, a, span')) {
+                const t = (el.textContent || '').trim();
                 const r = el.getBoundingClientRect();
-                if (r.width > 10 && r.height > 10 && t.length > 0 && t.length < 80) {
-                    items.push(t + ' <' + el.tagName + '> [' + Math.round(r.width) + 'x' + Math.round(r.height) + ']');
+                if (r.width > 30 && r.height > 15 && t.length > 2 && t.length < 60 && r.y > 300) {
+                    items.push(t + ' <' + el.tagName + '> [' + Math.round(r.x) + ',' + Math.round(r.y) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height) + ']');
                 }
             }
-            // Deduplicate
-            return [...new Set(items)].join(' | ');
+            return [...new Set(items)].slice(0, 30).join('\\n');
         }""")
-        print(f'  WARNING: Upload button not found in dialog for {slot_name}')
-        print(f'  DEBUG: Dialog elements: {btns}')
+        print(f'  WARNING: Upload button not found anywhere on page for {slot_name}')
+        print(f'  DEBUG: Visible elements:\n{btns}')
         take_screenshot(page, f'veo_slot_{slot_name}_no_upload_btn')
-        # Try hidden file input as fallback (search entire page, not just dialog)
-        file_input = page.query_selector('[role="dialog"] input[type="file"]') or page.query_selector('input[type="file"]')
+        # Last resort: try any file input on page
+        file_input = page.query_selector('input[type="file"]')
         if file_input:
             file_input.set_input_files(frame_path)
             print(f'  Uploaded {slot_name} frame via hidden file input')
