@@ -321,6 +321,17 @@ export function Review() {
     }
   }, [projectId, submitMutation]);
 
+  // Ручная загрузка first-кадра
+  const handleUploadFirst = useCallback(async (clipId: string, file: File) => {
+    if (!projectId) return;
+    try {
+      await api.uploadFirstFrame(projectId, clipId, file);
+      submitMutation.reset();
+    } catch (err) {
+      alert(`Ошибка загрузки: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }, [projectId, submitMutation]);
+
   if (isLoading) return <div className="text-gray-400">Загрузка...</div>;
 
   return (
@@ -567,6 +578,7 @@ export function Review() {
                   onFeedbackChange={(comp, val) => handleFeedback(clip.clip_id, comp, val)}
                   chainBlocked={blocked}
                   onRevoke={(component, feedback) => handleRevoke(clip.clip_id, component, feedback)}
+                  onUploadFirst={(file) => handleUploadFirst(clip.clip_id, file)}
                 />
               );
             })}

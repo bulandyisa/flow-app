@@ -1,12 +1,16 @@
 import { Router } from 'express';
-import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
-import { resolve } from 'node:path';
+import multer from 'multer';
+import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, copyFileSync } from 'node:fs';
+import { resolve, extname } from 'node:path';
+import { tmpdir } from 'node:os';
 import type { AppConfig } from '../config.js';
 import { ProjectStore } from '../data/project-store.js';
-import { loadManifest, saveManifest, markAccepted, markRejected, copyAcceptedToOutput } from '../data/manifest.js';
+import { createManifest, loadManifest, saveManifest, markAccepted, markRejected, copyAcceptedToOutput } from '../data/manifest.js';
 import { fixPromptsBatch, fixPromptByFeedback } from '../ai/feedback.js';
 import { broadcast } from '../ws/events.js';
 import type { Clip, ComponentName } from '@flow-app/shared';
+
+const upload = multer({ dest: resolve(tmpdir(), 'flow-app-uploads') });
 
 export function projectsRouter(config: AppConfig): Router {
   const router = Router();
@@ -483,6 +487,79 @@ export function projectsRouter(config: AppConfig): Router {
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error('Ошибка в reset-first:', message);
+      res.status(500).json({ error: `Ошибка сервера: ${message}` });
+    }
+  });
+
+  // POST /api/projects/:id/review/upload-first — ручная загрузка first-кадра
+  router.post('/:id/review/upload-first', upload.single('file'), (req, res) => {
+    const project = store.get(req.params.id as string);
+    if (!project) {
+      res.status(404).json({ error: 'Проект не найден' });
+      return;
+    }
+
+    const { clipId } = req.body as { clipId?: string };
+    if (!clipId) {
+      res.status(400).json({ error: 'clipId обязателен' });
+      return;
+    }
+
+    if (!req.file) {
+      res.status(400).json({ error: 'Файл не загружен' });
+      return;
+    }
+
+    try {
+      const projectDir = store.projectDir(project.id);
+      const reviewDir = resolve(projectDir, 'review');
+
+      // Загружаем или создаём манифест
+      let manifest = loadManifest(reviewDir, clipId);
+      if (!manifest) {
+        manifest = createManifest(clipId);
+      }
+
+      const comp = manifest.components.nb_first;
+
+      // Добавляем в последнюю попытку как доп. вариант, или создаём новую если нет попыток
+      let attempt: { attempt: number; prompt: string; variants: Array<{ file: string; scores: Record<string, number> | null; avg: number | null }>; best_variant: number | null; best_avg: number | null };
+      if (comp.attempts.length > 0) {
+        attempt = comp.attempts[comp.attempts.length - 1];
+      } else {
+        attempt = {
+          attempt: 1,
+          prompt: 'manual upload',
+          variants: [],
+          best_variant: null,
+          best_avg: null,
+        };
+        comp.attempts.push(attempt);
+      }
+
+      const variantNum = attempt.variants.length + 1;
+
+      // Создаём директорию для попытки
+      const attemptDir = resolve(reviewDir, clipId, 'nb_first', `attempt_${attempt.attempt}`);
+      if (!existsSync(attemptDir)) mkdirSync(attemptDir, { recursive: true });
+
+      // Копируем файл
+      const ext = extname(req.file.originalname) || '.png';
+      const destFile = `variant_${variantNum}${ext}`;
+      copyFileSync(req.file.path, resolve(attemptDir, destFile));
+
+      // Добавляем вариант в попытку
+      attempt.variants.push({ file: destFile, scores: null, avg: null });
+      comp.status = 'generated';
+      comp.selected_variant_a = null;
+      comp.feedback = '';
+
+      saveManifest(reviewDir, manifest);
+
+      res.json({ success: true, clipId, attempt: attempt.attempt, variant: variantNum });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('Ошибка загрузки first-кадра:', message);
       res.status(500).json({ error: `Ошибка сервера: ${message}` });
     }
   });

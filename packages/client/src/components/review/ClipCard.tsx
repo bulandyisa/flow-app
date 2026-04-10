@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { StatusBadge } from './StatusBadge';
 import { VariantGrid } from './VariantGrid';
 import { FeedbackForm } from './FeedbackForm';
-import { Lock, RotateCcw } from 'lucide-react';
+import { Lock, RotateCcw, Upload } from 'lucide-react';
 
 interface ComponentData {
   name: string;
@@ -33,6 +33,7 @@ interface ClipCardProps {
   onFeedbackChange: (component: string, value: string) => void;
   chainBlocked?: boolean;
   onRevoke?: (component: string, feedback?: string) => void;
+  onUploadFirst?: (file: File) => Promise<void>;
 }
 
 export function ClipCard({
@@ -47,10 +48,13 @@ export function ClipCard({
   onFeedbackChange,
   chainBlocked,
   onRevoke,
+  onUploadFirst,
 }: ClipCardProps) {
   const [revokeComponent, setRevokeComponent] = useState<string | null>(null);
   const [revokeFeedback, setRevokeFeedback] = useState('');
   const [isRevoking, setIsRevoking] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Компоненты, которые на ревью (generated)
   const reviewComponents = components.filter((c) => c.status === 'generated' && c.variants.length > 0);
@@ -75,12 +79,44 @@ export function ClipCard({
           <span className="font-mono font-bold text-white">{clipId}</span>
           <span className="text-sm text-gray-500 truncate max-w-md">{description}</span>
         </div>
-        {chainBlocked && (
-          <span className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-900/10 px-2 py-1 rounded">
-            <Lock size={12} />
-            Chain-заблокирован
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {chainBlocked && (
+            <span className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-900/10 px-2 py-1 rounded">
+              <Lock size={12} />
+              Chain-заблокирован
+            </span>
+          )}
+          {onUploadFirst && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setIsUploading(true);
+                  try {
+                    await onUploadFirst(file);
+                  } finally {
+                    setIsUploading(false);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }
+                }}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="flex items-center gap-1.5 px-2 py-1 text-xs text-gray-400 hover:text-accent bg-surface-light border border-surface-lighter rounded transition-colors disabled:opacity-40"
+                title="Загрузить first-кадр вручную"
+              >
+                <Upload size={12} />
+                {isUploading ? 'Загрузка...' : 'Загрузить first'}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Статусы компонентов */}

@@ -46,6 +46,15 @@ export const api = {
     request<{ reset: number; message: string }>(`/projects/${projectId}/review/reset-first`, {
       method: 'POST',
     }),
+  uploadFirstFrame: async (projectId: string, clipId: string, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('clipId', clipId);
+    const res = await fetch(`${BASE_URL}/projects/${projectId}/review/upload-first`, { method: 'POST', body: form });
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json() as Promise<{ success: boolean; clipId: string; attempt: number }>;
+  },
+
   revokeAccepted: (projectId: string, clipId: string, component: string, feedback?: string) =>
     request<{ success: boolean; fixResult?: { explanation?: string; error?: string } }>(
       `/projects/${projectId}/review/revoke`,
