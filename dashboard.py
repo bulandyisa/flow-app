@@ -13,14 +13,12 @@ from pathlib import Path
 
 import streamlit as st
 
-# Add scripts/ to path for r2_storage import
-sys.path.insert(0, str(Path(__file__).parent / "scripts"))
-import r2_storage
+sys.path.insert(0, str(Path(__file__).resolve().parent / "scripts"))
 
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-BASE_DIR = Path(__file__).parent
+BASE_DIR = Path(__file__).resolve().parent
 
 # ---------------------------------------------------------------------------
 # Series definitions
@@ -115,9 +113,92 @@ SERIES = {
             "Jamil": "Джамиль", "Simba": "Симба",
         },
     },
+    "sosed_v2": {
+        "id": "sosed_v2",
+        "title": "Сосед v2",
+        "icon": "🏠",
+        "color": "#3A9BD5",
+        "output_dir": "output_sosed_v2",
+        "prompts_file": "output_sosed_v2/prompts/all_prompts.json",
+        "scenario_file": "scenario_sosed.txt",
+        "chars_dir": "sosed_персонажи_hq",
+        "chars_dir_fallback": "sosed_персонажи",
+        "locs_dir": "sosed_локации_hq",
+        "locs_dir_fallback": "sosed_локации",
+        "scene_colors": "auto",
+        "scene_labels": "auto",
+        "char_display": {
+            "Amin": "Амин", "Karim": "Карим", "Tako": "Тако",
+            "Papa": "Папа", "Mama": "Мама", "Aya": "Ая",
+            "Jamil": "Джамиль", "Simba": "Симба",
+        },
+    },
+    "sosed_v3": {
+        "id": "sosed_v3",
+        "title": "Сосед v3 (Ч.1)",
+        "icon": "🏠",
+        "color": "#2E86C1",
+        "output_dir": "output_sosed_v3",
+        "prompts_file": "output_sosed_v3/prompts/all_prompts.json",
+        "scenario_file": "sosed_final_v3.docx",
+        "chars_dir": "sosed_персонажи_hq",
+        "chars_dir_fallback": "sosed_персонажи",
+        "locs_dir": "sosed_локации_hq",
+        "locs_dir_fallback": "sosed_локации",
+        "scene_colors": "auto",
+        "scene_labels": "auto",
+        "char_display": {
+            "Amin": "Амин", "Karim": "Карим", "Tako": "Тако",
+            "Papa": "Папа", "Mama": "Мама", "Aya": "Ая",
+            "Jamil": "Джамиль", "Simba": "Симба",
+        },
+    },
+    "sosed_v3_p2": {
+        "id": "sosed_v3_p2",
+        "title": "Сосед v3 (Ч.2)",
+        "icon": "🏠",
+        "color": "#1ABC9C",
+        "output_dir": "output_sosed_v3_part2",
+        "prompts_file": "output_sosed_v3_part2/prompts/all_prompts.json",
+        "scenario_file": "sosed_final_v3.docx",
+        "chars_dir": "sosed_персонажи_hq",
+        "chars_dir_fallback": "sosed_персонажи",
+        "locs_dir": "sosed_локации_hq",
+        "locs_dir_fallback": "sosed_локации",
+        "scene_colors": "auto",
+        "scene_labels": "auto",
+        "char_display": {
+            "Amin": "Амин", "Karim": "Карим", "Tako": "Тако",
+            "Papa": "Папа", "Mama": "Мама", "Aya": "Ая",
+            "Jamil": "Джамиль", "Simba": "Симба",
+        },
+    },
+    "camera": {
+        "id": "camera",
+        "title": "Камера",
+        "icon": "📷",
+        "color": "#E74C3C",
+        "output_dir": "output_camera",
+        "prompts_file": "output_camera/prompts/all_prompts.json",
+        "scenario_file": "«КАМЕРА» .docx",
+        "chars_dir": "camera_персонажи_hq",
+        "chars_dir_fallback": "camera_персонажи_hq",
+        "locs_dir": "camera_локации_hq",
+        "locs_dir_fallback": "camera_локации_hq",
+        "scene_colors": "auto",
+        "scene_labels": "auto",
+        "char_display": {
+            "Amin": "Амин", "Karim": "Карим", "Tako": "Тако",
+            "Aya": "Ая", "Papa": "Папа", "Mama": "Мама",
+            "Jamil": "Джамиль", "Simba": "Симба",
+            "Starik": "Старик", "Farid": "Фарид",
+            "Hozyaika": "Хозяйка", "Collector": "Коллекционер",
+        },
+    },
 }
 
-DEFAULT_SERIES = "signal"
+# Default to the last series in the dict (most recent)
+DEFAULT_SERIES = list(SERIES.keys())[-1]
 
 
 def _get_series_config() -> dict:
@@ -164,30 +245,75 @@ COMMANDS_FILE = BASE_DIR / "output" / "commands.json"
 SCENE_COLORS: dict = {}
 SCENE_LABELS: dict = {}
 CHAR_DISPLAY: dict = {}
+_AUTO_SCENES: bool = False
 
-# R2 state
-_R2_OK = r2_storage.is_configured()
+# Russian labels for location file stems (used in refs page & review)
+_LOC_LABELS: dict[str, str] = {
+    # Сосед
+    "loc_kitchen": "Кухня",
+    "loc_fence": "Забор",
+    "loc_gazebo": "Беседка",
+    "loc_besedka": "Беседка",
+    "loc_carwash": "Автомойка",
+    "loc_jamil_house_front": "Дом Джамиля — фасад",
+    "loc_jamil_house_door": "Дом Джамиля — дверь",
+    "loc_jamil_house_fence": "Дом Джамиля — забор",
+    "loc_jamil_house_street": "Дом Джамиля — улица",
+    "loc_jamil_yard": "Двор Джамиля",
+    "loc_jamil_corridor": "Коридор Джамиля",
+    "loc_jamil_van": "Фургон Джамиля",
+    "loc_night_jamil": "Ночь у дома Джамиля",
+    "loc_library": "Библиотека",
+    "loc_old_quarter": "Старый квартал",
+    "loc_old_mill": "Старая мельница",
+    "loc_parking_mosque": "Парковка у мечети",
+    "loc_strojka": "Стройка",
+    "loc_underground_corridor": "Подземный коридор",
+    "loc_underground_hall": "Подземный зал",
+    # Камера
+    "loc_garazh": "Гараж",
+    "loc_amin_room": "Комната Амина",
+    "loc_amin_porch": "Крыльцо Амина",
+    "loc_kabinet": "Кабинет Папы",
+    "loc_dom": "Дом (экстерьер)",
+    "loc_farid_room": "Комната Фарида",
+    "loc_photo_studio": "Фотоателье",
+    "loc_night_street": "Ночная улица",
+    "loc_night_alley": "Ночной переулок",
+    "loc_night_hiding": "Ночь — укрытие",
+    "loc_night_path": "Ночная тропа",
+    "loc_well": "Колодец",
+    "loc_outskirts": "Окрестности",
+    "loc_alley": "Переулок",
+    "loc_quarter": "Старый квартал (доп.)",
+    # Общие
+    "loc_hallway": "Прихожая",
+    "loc_bridge": "Мост",
+    "loc_park": "Парк",
+    "loc_school": "Школа",
+    "loc_shop": "Магазин",
+    "loc_tower": "Башня",
+    "loc_wasteland": "Пустырь",
+    "loc_tako_room": "Комната Тако",
+    "loc_basement": "Подвал",
+}
 
 
-def _r2_key(local_path) -> str:
-    """Convert local path to R2 key relative to BASE_DIR."""
-    try:
-        return str(Path(local_path).relative_to(BASE_DIR))
-    except ValueError:
-        return str(local_path)
+def _loc_group(stem: str) -> str:
+    """Find the best matching Russian label for a location file stem."""
+    parts = stem.split("_")
+    for end in range(len(parts), 1, -1):
+        candidate = "_".join(parts[:end])
+        if candidate in _LOC_LABELS:
+            return _LOC_LABELS[candidate]
+    return stem.replace("loc_", "").replace("_", " ").capitalize()
 
-
-def _r2_image_url(local_path) -> str | None:
-    """Get R2 public URL for an image/video file. Returns None if R2 not configured."""
-    if not _R2_OK:
-        return None
-    return r2_storage.public_url(_r2_key(local_path))
 
 
 def _apply_series():
     """Apply current series config to global variables."""
     global PROMPTS_FILE, FRAMES_DIR, CLIPS_DIR, REVIEW_DIR, CHARS_DIR, LOCS_DIR
-    global SCENARIO_FILE, STATUS_FILE, COMMANDS_FILE, SCENE_COLORS, SCENE_LABELS, CHAR_DISPLAY
+    global SCENARIO_FILE, STATUS_FILE, COMMANDS_FILE, SCENE_COLORS, SCENE_LABELS, CHAR_DISPLAY, _AUTO_SCENES
 
     cfg = _get_series_config()
     paths = _series_paths(cfg)
@@ -200,21 +326,50 @@ def _apply_series():
     SCENARIO_FILE = paths["scenario_file"]
     CHARS_DIR = paths["chars_dir"]
     LOCS_DIR = paths["locs_dir"]
-    SCENE_COLORS = cfg["scene_colors"]
-    SCENE_LABELS = cfg["scene_labels"]
+    SCENE_COLORS = cfg["scene_colors"] if cfg["scene_colors"] != "auto" else {}
+    SCENE_LABELS = cfg["scene_labels"] if cfg["scene_labels"] != "auto" else {}
+    _AUTO_SCENES = cfg["scene_colors"] == "auto" or cfg["scene_labels"] == "auto"
     CHAR_DISPLAY = cfg["char_display"]
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
+
+def _show_local_image(path, **kwargs):
+    """Show image by reading bytes — works reliably in all Streamlit versions."""
+    p = Path(path) if not isinstance(path, Path) else path
+    if p.exists():
+        try:
+            st.image(p.read_bytes(), **kwargs)
+        except Exception as e:
+            st.warning(f"Не удалось открыть изображение: {p.name} ({e})")
+    elif isinstance(path, str) and path.startswith("http"):
+        st.image(path, **kwargs)
+    else:
+        st.warning(f"Файл не найден: {p}")
+
+
+def _show_image_with_lightbox(path, caption="", width="100%"):
+    """Show image as HTML <img> with base64 data URI — supports lightbox zoom."""
+    import base64
+    p = Path(path) if not isinstance(path, Path) else path
+    if not p.exists():
+        st.warning(f"Файл не найден: {p}")
+        return
+    data = p.read_bytes()
+    b64 = base64.b64encode(data).decode()
+    ext = p.suffix.lower().lstrip(".")
+    mime = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp"}.get(ext, "image/png")
+    cap_html = f'<br><small>{caption}</small>' if caption else ""
+    st.markdown(
+        f'<img src="data:{mime};base64,{b64}" style="width:{width};border-radius:4px;cursor:pointer;" />{cap_html}',
+        unsafe_allow_html=True,
+    )
+
 @st.cache_data(ttl=60)
-def _load_clips_cached(prompts_r2_key: str, prompts_local: str) -> list[dict]:
-    """Load clip data — R2 first, local fallback. Keyed by path for cache."""
-    if _R2_OK and prompts_r2_key:
-        data = r2_storage.read_json(prompts_r2_key)
-        if data is not None:
-            return data
+def _load_clips_cached(prompts_local: str) -> list[dict]:
+    """Load clip data from local JSON file."""
     p = Path(prompts_local)
     if p.exists():
         with open(p, encoding="utf-8") as f:
@@ -223,7 +378,31 @@ def _load_clips_cached(prompts_r2_key: str, prompts_local: str) -> list[dict]:
 
 
 def load_clips() -> list[dict]:
-    return _load_clips_cached(_r2_key(PROMPTS_FILE), str(PROMPTS_FILE))
+    clips = _load_clips_cached(str(PROMPTS_FILE))
+    if _AUTO_SCENES and clips:
+        _build_auto_scene_maps(clips)
+    return clips
+
+
+def _build_auto_scene_maps(clips: list[dict]):
+    """Auto-generate SCENE_COLORS and SCENE_LABELS from clips data."""
+    global SCENE_COLORS, SCENE_LABELS
+    if SCENE_COLORS and SCENE_LABELS:
+        return  # already built
+    palette = [
+        "#E8B849", "#49B6E8", "#E85A49", "#6BE849", "#C149E8",
+        "#E89849", "#49E8D6", "#E84980", "#8B49E8", "#B8E849",
+        "#E8D649", "#4998E8", "#49E8A0", "#E86B49", "#A349E8",
+    ]
+    seen = {}
+    for clip in clips:
+        sid = clip.get("scene_id", "")
+        if sid and sid not in seen:
+            desc = clip.get("scene_description_ru", "")
+            short = desc[:50] + "…" if len(desc) > 50 else desc
+            seen[sid] = short
+    SCENE_COLORS = {sid: palette[i % len(palette)] for i, sid in enumerate(seen)}
+    SCENE_LABELS = {sid: f"{sid} — {desc}" for sid, desc in seen.items()}
 
 
 @st.cache_data(ttl=60)
@@ -375,53 +554,95 @@ def get_review_variants(clip_id: str, component: str) -> list[Path]:
     return result
 
 
+@st.cache_resource(ttl=300)
+def _batch_scan_variants(review_dir_str: str) -> dict:
+    """Batch-scan review directory once. Returns {clip_id: {comp: [(attempt_num, [file_str])]}}."""
+    review_dir = Path(review_dir_str)
+    if not review_dir.exists():
+        return {}
+    result = {}
+    try:
+        clip_dirs = sorted(review_dir.iterdir())
+    except OSError:
+        return {}
+    for clip_dir in clip_dirs:
+        if not clip_dir.is_dir():
+            continue
+        cid = clip_dir.name
+        clip_data = {}
+        try:
+            comp_dirs = list(clip_dir.iterdir())
+        except OSError:
+            continue
+        for comp_dir in comp_dirs:
+            if not comp_dir.is_dir():
+                continue
+            comp = comp_dir.name
+            if comp not in ("nb_first", "nb_mid", "nb_last", "veo"):
+                continue
+            attempts = []
+            try:
+                attempt_dirs = sorted(comp_dir.iterdir())
+            except OSError:
+                continue
+            for attempt_dir in attempt_dirs:
+                if not attempt_dir.is_dir() or not attempt_dir.name.startswith("attempt_"):
+                    continue
+                try:
+                    attempt_num = int(attempt_dir.name.replace("attempt_", ""))
+                except ValueError:
+                    continue
+                ext = ".mp4" if comp == "veo" else ".png"
+                files = sorted(str(f) for f in attempt_dir.iterdir() if f.is_file() and f.suffix == ext)
+                if not files:
+                    pa = attempt_dir / "prompt_a"
+                    if pa.exists():
+                        files = sorted(str(f) for f in pa.iterdir() if f.is_file() and f.suffix == ext)
+                if files:
+                    attempts.append((attempt_num, files))
+            if attempts:
+                clip_data[comp] = attempts
+        if clip_data:
+            result[cid] = clip_data
+    return result
+
+
+@st.cache_resource(ttl=300)
+def _batch_load_manifests_local(review_dir_str: str) -> dict:
+    """Batch-load all local manifests. Returns {clip_id: manifest_dict}."""
+    review_dir = Path(review_dir_str)
+    if not review_dir.exists():
+        return {}
+    result = {}
+    for manifest_path in review_dir.glob("*/manifest.json"):
+        try:
+            with open(manifest_path) as f:
+                m = json.load(f)
+            cid = m.get("clip_id", manifest_path.parent.name)
+            result[cid] = _normalize_manifest(m)
+        except (json.JSONDecodeError, KeyError, OSError):
+            continue
+    return result
+
+
+def _clear_local_caches():
+    """Clear batch caches after accept/reject actions."""
+    _batch_scan_variants.clear()
+    _batch_load_manifests_local.clear()
+
+
 def get_all_attempt_variants(clip_id: str, component: str) -> list[tuple[int, list]]:
     """Get variants for ALL attempts. Returns [(attempt_num, [path_or_url]), ...].
 
     On Railway (R2 mode): builds URLs from manifest data.
-    Locally: scans filesystem as before.
+    Locally: uses batch-scanned cache for speed.
     """
-    # Try local filesystem first
-    comp_dir = REVIEW_DIR / clip_id / component
-    has_local = comp_dir.exists()
-
-    if has_local:
-        result = []
-        for attempt_dir in sorted(comp_dir.glob("attempt_*")):
-            try:
-                attempt_num = int(attempt_dir.name.replace("attempt_", ""))
-            except ValueError:
-                continue
-            ext = "*.mp4" if component == "veo" else "*.png"
-            files = sorted(attempt_dir.glob(ext))
-            if not files:
-                pa = attempt_dir / "prompt_a"
-                if pa.exists():
-                    files = sorted(pa.glob(ext))
-            if files:
-                result.append((attempt_num, files))
-        if result:
-            return result
-
-    # R2 mode: build paths from manifest
-    if _R2_OK:
-        manifest = _load_manifest(clip_id)
-        comp_data = manifest.get("components", {}).get(component, {})
-        result = []
-        for att in comp_data.get("attempts", []):
-            attempt_num = att.get("attempt", 0)
-            variants = att.get("variants", [])
-            urls = []
-            for v in variants:
-                vfile = v.get("file", "")
-                # Build the R2 key from the review directory structure
-                local_path = REVIEW_DIR / clip_id / component / f"attempt_{attempt_num}" / vfile
-                url = r2_storage.public_url(_r2_key(local_path))
-                if url:
-                    urls.append(url)
-            if urls:
-                result.append((attempt_num, urls))
-        return result
+    # Try local filesystem (batch-cached)
+    cache = _batch_scan_variants(str(REVIEW_DIR))
+    clip_data = cache.get(clip_id, {})
+    local_result = clip_data.get(component, [])
+    if local_result:
+        return local_result
 
     return []
 
@@ -468,6 +689,136 @@ def do_local_select(phase: str, selections: dict):
 # ---------------------------------------------------------------------------
 # CSS
 # ---------------------------------------------------------------------------
+
+def inject_lightbox():
+    """Inject a JS lightbox overlay for variant images with keyboard navigation."""
+    import streamlit.components.v1 as components
+    components.html("""
+    <script>
+    (function() {
+        const doc = window.parent.document;
+        if (doc.getElementById('lb-overlay')) return;
+
+        // --- Create overlay ---
+        const overlay = doc.createElement('div');
+        overlay.id = 'lb-overlay';
+        overlay.style.cssText = 'display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.92); z-index:999999; align-items:center; justify-content:center; cursor:pointer; flex-direction:column;';
+
+        const img = doc.createElement('img');
+        img.id = 'lb-img';
+        img.style.cssText = 'max-width:92vw; max-height:82vh; object-fit:contain; cursor:default; border-radius:6px; box-shadow:0 0 40px rgba(0,0,0,0.5);';
+        overlay.appendChild(img);
+
+        const counter = doc.createElement('div');
+        counter.id = 'lb-counter';
+        counter.style.cssText = 'position:absolute; bottom:18px; left:50%; transform:translateX(-50%); color:#ccc; font-size:16px; font-family:monospace; background:rgba(0,0,0,0.6); padding:4px 16px; border-radius:12px;';
+        overlay.appendChild(counter);
+
+        const caption = doc.createElement('div');
+        caption.id = 'lb-caption';
+        caption.style.cssText = 'position:absolute; top:16px; left:50%; transform:translateX(-50%); color:#fff; font-size:14px; font-family:monospace; background:rgba(0,0,0,0.6); padding:4px 16px; border-radius:12px; max-width:80vw; text-align:center;';
+        overlay.appendChild(caption);
+
+        function makeArrow(text, side) {
+            const btn = doc.createElement('div');
+            btn.textContent = text;
+            btn.style.cssText = 'position:absolute; top:50%; ' + side + ':16px; transform:translateY(-50%); color:white; font-size:56px; cursor:pointer; user-select:none; padding:8px 14px; opacity:0.5; transition:opacity 0.15s;';
+            btn.onmouseover = function() { btn.style.opacity = '1'; };
+            btn.onmouseout = function() { btn.style.opacity = '0.5'; };
+            return btn;
+        }
+        const prevBtn = makeArrow('\\u2039', 'left');
+        const nextBtn = makeArrow('\\u203A', 'right');
+        overlay.appendChild(prevBtn);
+        overlay.appendChild(nextBtn);
+
+        doc.body.appendChild(overlay);
+
+        let images = [];
+        let captions = [];
+        let idx = 0;
+
+        function show() {
+            overlay.style.display = 'flex';
+            img.src = images[idx];
+            counter.textContent = (idx + 1) + ' / ' + images.length;
+            caption.textContent = captions[idx] || '';
+        }
+        function close() { overlay.style.display = 'none'; }
+        function nav(dir) { idx = (idx + dir + images.length) % images.length; show(); }
+
+        overlay.onclick = function(e) { if (e.target === overlay) close(); };
+        prevBtn.onclick = function(e) { e.stopPropagation(); nav(-1); };
+        nextBtn.onclick = function(e) { e.stopPropagation(); nav(1); };
+
+        doc.addEventListener('keydown', function(e) {
+            if (overlay.style.display === 'flex') {
+                if (e.key === 'ArrowLeft')  { nav(-1); e.preventDefault(); }
+                if (e.key === 'ArrowRight') { nav(1);  e.preventDefault(); }
+                if (e.key === 'Escape')     { close(); e.preventDefault(); }
+            }
+        });
+
+        // --- Attach click handlers to Streamlit images ---
+        function attach() {
+            var allImgs = doc.querySelectorAll('[data-testid="stImage"] img, [data-testid="stImageContainer"] img');
+            if (!allImgs.length) {
+                allImgs = doc.querySelectorAll('img[style*="width"]');
+            }
+            allImgs.forEach(function(el) {
+                if (el.dataset.lbReady) return;
+                if (!el.src || el.src.indexOf('data:') === 0 && el.src.length < 200) return;
+                el.dataset.lbReady = '1';
+                el.style.cursor = 'zoom-in';
+                el.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    // Find sibling images — walk up DOM to find the best container
+                    // Keep climbing to find the container with the MOST images (not just first with >1)
+                    var container = null;
+                    var bestCount = 0;
+                    var walk = el.parentElement;
+                    for (var d = 0; d < 20 && walk; d++) {
+                        // Stop at major boundaries
+                        if (walk.tagName === 'MAIN' || walk === doc.body) break;
+                        var testId = walk.getAttribute('data-testid');
+                        if (testId === 'stVerticalBlockBorderWrapper' || testId === 'stExpander' || walk.tagName === 'DETAILS') {
+                            var cnt = walk.querySelectorAll('img[data-lb-ready="1"]').length;
+                            if (cnt > bestCount) { container = walk; bestCount = cnt; }
+                            break;
+                        }
+                        var cnt = walk.querySelectorAll('img[data-lb-ready="1"]').length;
+                        if (cnt > bestCount) { container = walk; bestCount = cnt; }
+                        walk = walk.parentElement;
+                    }
+                    if (!container) container = el.closest('main') || doc.body;
+                    var siblings = container ? container.querySelectorAll('img[data-lb-ready="1"]') : [el];
+                    images = [];
+                    captions = [];
+                    idx = 0;
+                    siblings.forEach(function(sib, i) {
+                        images.push(sib.src);
+                        // Try to find caption text
+                        var cap = sib.parentElement.querySelector('[data-testid="stCaptionContainer"]');
+                        if (!cap) {
+                            var next = sib.closest('[data-testid="stImage"], [data-testid="stImageContainer"]');
+                            if (next) cap = next.nextElementSibling;
+                        }
+                        captions.push(cap ? cap.textContent.trim() : '');
+                        if (sib === el) idx = i;
+                    });
+                    if (images.length === 0) { images = [el.src]; captions = ['']; idx = 0; }
+                    show();
+                });
+            });
+        }
+
+        attach();
+        var obs = new MutationObserver(function() { setTimeout(attach, 300); });
+        obs.observe(doc.body, { childList: true, subtree: true });
+    })();
+    </script>
+    """, height=0)
+
 
 def inject_css():
     st.markdown("""
@@ -781,7 +1132,7 @@ def page_review():
             cols = st.columns(min(len(variants), 4))
             for vi, vpath in enumerate(variants):
                 with cols[vi % 4]:
-                    st.image(str(vpath), use_container_width=True)
+                    _show_local_image(vpath, use_container_width=True)
                     st.caption(f"Вариант {vi + 1}")
 
         # Selection controls
@@ -913,101 +1264,45 @@ def _normalize_manifest(m: dict) -> dict:
     return m
 
 
-# Cache for R2 manifests — avoids per-clip requests
-_r2_manifest_cache: dict = {}
-_r2_cache_loaded: bool = False
-
-
-@st.cache_data(ttl=300, show_spinner="Загрузка манифестов из R2...")
-def _fetch_all_manifests_r2(prefix: str) -> dict:
-    """Fetch all manifests from R2 in parallel (cached 5min by Streamlit)."""
-    import concurrent.futures
-    keys = r2_storage.list_prefix(prefix)
-    manifest_keys = [k for k in keys if k.endswith("/manifest.json")]
-    result = {}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=12) as pool:
-        futures = {pool.submit(r2_storage.read_json, mk): mk for mk in manifest_keys}
-        for fut in concurrent.futures.as_completed(futures):
-            m = fut.result()
-            if m and "clip_id" in m:
-                result[m["clip_id"]] = _normalize_manifest(m)
-    return result
-
-
-def _load_all_manifests_r2():
-    """Bulk-load all manifests from R2 into cache."""
-    global _r2_manifest_cache, _r2_cache_loaded
-    if _r2_cache_loaded:
-        return
-    _r2_cache_loaded = True
-    if not _R2_OK:
-        return
-    prefix = _r2_key(REVIEW_DIR) + "/"
-    _r2_manifest_cache = _fetch_all_manifests_r2(prefix)
-
-
 def _load_manifest(clip_id: str) -> dict:
-    """Load manifest.json for a clip — from R2 cache (primary) or local fallback."""
-    # Try R2 cache
-    if _R2_OK:
-        if not _r2_cache_loaded:
-            _load_all_manifests_r2()
-        if clip_id in _r2_manifest_cache:
-            return _r2_manifest_cache[clip_id]
-        # Single fetch fallback
-        r2_key = _r2_key(REVIEW_DIR / clip_id / "manifest.json")
-        m = r2_storage.read_json(r2_key)
-        if m:
-            return _normalize_manifest(m)
-    # Local fallback
-    path = REVIEW_DIR / clip_id / "manifest.json"
-    if path.exists():
-        with open(path) as f:
-            m = json.load(f)
-        return _normalize_manifest(m)
+    """Load manifest.json for a clip from local batch cache."""
+    batch = _batch_load_manifests_local(str(REVIEW_DIR))
+    if clip_id in batch:
+        return batch[clip_id]
     return _default_manifest(clip_id)
 
 
 def _save_manifest(clip_id: str, manifest: dict):
-    """Save manifest.json — to R2 (primary) and local."""
-    if _R2_OK:
-        r2_key = _r2_key(REVIEW_DIR / clip_id / "manifest.json")
-        r2_storage.write_json(r2_key, manifest)
-        _r2_manifest_cache[clip_id] = manifest
+    """Save manifest.json locally."""
     path = REVIEW_DIR / clip_id / "manifest.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
         json.dump(manifest, f, indent=2, ensure_ascii=False)
+    _clear_local_caches()
 
 
 def _chain_select_variant(clip_id: str, component: str, attempt: int, variant_idx: int):
-    """Accept a variant: update manifest + copy to frames/clips (local + R2)."""
+    """Accept a variant: update manifest + copy to frames/clips."""
     suffixes = {"nb_first": "first", "nb_mid": "mid", "nb_last": "last"}
     manifest = _load_manifest(clip_id)
 
-    # Determine source and destination paths
     attempt_dir = REVIEW_DIR / clip_id / component / f"attempt_{attempt}"
     if component in suffixes:
         ext = ".png"
         variant_file = attempt_dir / f"variant_{variant_idx + 1}{ext}"
-        if not variant_file.exists() and not _R2_OK:
+        if not variant_file.exists():
             variant_file = attempt_dir / "prompt_a" / f"variant_{variant_idx + 1}{ext}"
         dest = FRAMES_DIR / f"{clip_id}_{suffixes[component]}{ext}"
     elif component == "veo":
         ext = ".mp4"
         variant_file = attempt_dir / f"variant_{variant_idx + 1}{ext}"
-        if not variant_file.exists() and not _R2_OK:
+        if not variant_file.exists():
             variant_file = attempt_dir / "prompt_a" / f"variant_{variant_idx + 1}{ext}"
         dest = CLIPS_DIR / f"{clip_id}_clip{ext}"
     else:
         dest = None
 
-    # Copy: R2-to-R2 (on Railway) or local copy
-    if dest and _R2_OK:
-        src_key = _r2_key(variant_file)
-        dest_key = _r2_key(dest)
-        r2_storage.copy_object(src_key, dest_key)
-    elif dest and variant_file.exists():
+    if dest and variant_file.exists():
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(variant_file, dest)
 
@@ -1028,13 +1323,73 @@ def _chain_reject_variant(clip_id: str, component: str, feedback: str = ""):
     _save_manifest(clip_id, manifest)
 
 
+def _manual_upload_frame(clip_id: str, component: str, uploaded_file):
+    """Save a manually uploaded frame and mark component as accepted.
+
+    Supports nb_first and nb_last.  Converts any image format to PNG.
+    """
+    from PIL import Image
+    import io
+
+    suffixes = {"nb_first": "first", "nb_last": "last"}
+    suffix = suffixes.get(component)
+    if not suffix:
+        raise ValueError(f"Manual upload not supported for {component}")
+
+    # Save to review directory under a special 'manual' attempt
+    attempt_dir = REVIEW_DIR / clip_id / component / "manual"
+    attempt_dir.mkdir(parents=True, exist_ok=True)
+    dest_review = attempt_dir / "variant_1.png"
+    img = Image.open(io.BytesIO(uploaded_file.getvalue()))
+    img.save(str(dest_review), "PNG")
+
+    # Copy to frames directory
+    FRAMES_DIR.mkdir(parents=True, exist_ok=True)
+    dest_frame = FRAMES_DIR / f"{clip_id}_{suffix}.png"
+    shutil.copy2(dest_review, dest_frame)
+
+    # Update manifest
+    manifest = _load_manifest(clip_id)
+    comp = manifest["components"][component]
+    comp["status"] = "accepted"
+    comp["selected_variant_a"] = {"attempt": "manual", "variant": 0}
+    comp["attempts"].append({
+        "attempt": "manual",
+        "prompt": "manual_upload",
+        "variants": [{"file": "variant_1.png", "scores": None, "avg": None}],
+        "best_variant": 0,
+        "best_avg": None,
+    })
+    _save_manifest(clip_id, manifest)
+
+
 def page_chain_review():
     """Chain review page — shows clips by manifest status, not commands.json.
 
     Works with --chain mode: each clip can be at a different stage.
     Shows only clips that need review (have generated variants not yet accepted).
     """
+    import time as _t
+    _timers = {}
+    _timers["start"] = _t.time()
+
+    # Show notification from previous submit (survives st.rerun)
+    if "_chain_notify" in st.session_state:
+        msg = st.session_state.pop("_chain_notify")
+        st.toast(msg)
+
     all_clips = load_clips()
+    _timers["load_clips"] = _t.time()
+
+    # --- Warning: missing locations ---
+    locations_spec = _load_locations_spec()
+    if locations_spec:
+        ready, total = _locations_ready_count(locations_spec)
+        if ready < total:
+            st.warning(
+                f"Не все локации сгенерированы ({ready}/{total}). "
+                f"Сначала подготовьте все референсы в разделе Референсы > Генерация локаций."
+            )
 
     # --- Scene filter ---
     all_scene_ids = list(dict.fromkeys(c["scene_id"] for c in all_clips))
@@ -1054,7 +1409,7 @@ def page_chain_review():
     with filter_col2:
         view_mode = st.selectbox(
             "Показать",
-            ["Ожидает ревью", "Все клипы", "Принятые", "Заблокированные"],
+            ["Ревью фото", "Ревью видео", "Ожидает ревью", "Все фото", "Все видео", "Все клипы", "Принятые", "Заблокированные"],
             key="chain_view_mode",
         )
 
@@ -1077,19 +1432,29 @@ def page_chain_review():
         # Check each component
         clip_info = {"clip": clip, "manifest": manifest, "review_items": []}
 
+        skip_last = manifest.get("skip_last", True)
+
         for comp in ("nb_first", "nb_last", "veo"):
+            # Skip nb_last entirely when skip_last is enabled
+            if comp == "nb_last" and skip_last:
+                continue
+
             comp_data = manifest["components"].get(comp, {})
             status = comp_data.get("status", "pending")
 
             if status == "accepted":
                 continue
 
-            # VEO only reviewable when both frames are accepted
+            # VEO only reviewable when required frames are accepted
             if comp == "veo":
                 first_ok = manifest["components"]["nb_first"].get("status") == "accepted"
-                last_ok = manifest["components"]["nb_last"].get("status") == "accepted"
-                if not (first_ok and last_ok):
-                    continue
+                if skip_last:
+                    if not first_ok:
+                        continue
+                else:
+                    last_ok = manifest["components"]["nb_last"].get("status") == "accepted"
+                    if not (first_ok and last_ok):
+                        continue
 
             # Has generated variants waiting for review?
             all_attempts = get_all_attempt_variants(cid, comp)
@@ -1101,7 +1466,7 @@ def page_chain_review():
         else:
             # Check if all components are accepted
             first_ok = manifest["components"]["nb_first"].get("status") == "accepted"
-            last_ok = manifest["components"]["nb_last"].get("status") == "accepted"
+            last_ok = manifest["components"]["nb_last"].get("status") == "accepted" or manifest.get("skip_last", True)
             veo_ok = manifest["components"].get("veo", {}).get("status") == "accepted"
             if first_ok and last_ok and veo_ok:
                 accepted_clips.append(clip_info)
@@ -1109,6 +1474,8 @@ def page_chain_review():
                 accepted_clips.append(clip_info)
             else:
                 blocked_clips.append(clip_info)
+
+    _timers["classification"] = _t.time()
 
     # --- Stats ---
     total = len(clips)
@@ -1119,38 +1486,59 @@ def page_chain_review():
     total_last_accepted = sum(
         1 for c in clips
         if all_manifests[c["clip_id"]]["components"]["nb_last"].get("status") == "accepted"
+        or all_manifests[c["clip_id"]].get("skip_last", True)
     )
     total_both = sum(
         1 for c in clips
         if all_manifests[c["clip_id"]]["components"]["nb_first"].get("status") == "accepted"
-        and all_manifests[c["clip_id"]]["components"]["nb_last"].get("status") == "accepted"
+        and (all_manifests[c["clip_id"]]["components"]["nb_last"].get("status") == "accepted"
+             or all_manifests[c["clip_id"]].get("skip_last", True))
     )
 
     st.header("Chain Ревью")
 
     # Debug info
-    with st.expander("Debug R2", expanded=False):
-        st.write(f"HAS_BOTO3: {r2_storage.HAS_BOTO3}")
-        st.write(f"_ACCOUNT_ID len: {len(r2_storage._ACCOUNT_ID)}, val: {r2_storage._ACCOUNT_ID[:8]}...")
-        st.write(f"_ACCESS_KEY len: {len(r2_storage._ACCESS_KEY)}")
-        st.write(f"_SECRET_KEY len: {len(r2_storage._SECRET_KEY)}")
-        st.write(f"_BUCKET: {r2_storage._BUCKET}")
-        st.write(f"_PUBLIC_URL: {r2_storage._PUBLIC_URL}")
-        st.write(f"is_configured(): {r2_storage.is_configured()}")
-        st.write(f"_R2_OK (module): {_R2_OK}")
-        st.write(f"ENV keys with R2: {[k for k in os.environ if 'R2' in k]}")
-        st.write(f"Cache: loaded={_r2_cache_loaded}, manifests={len(_r2_manifest_cache)}")
+    with st.expander("Debug", expanded=False):
         st.write(f"needs_review={len(needs_review)}, accepted={len(accepted_clips)}, blocked={len(blocked_clips)}")
 
-    col1, col2, col3, col4 = st.columns(4)
+    # Count unique scenes and first-clips-per-scene
+    scene_ids = sorted(set(c.get("scene_id", c["clip_id"][:5]) for c in clips))
+    num_scenes = len(scene_ids)
+    # First clip of each scene = the one that can be generated without dependencies
+    first_clip_per_scene = {}
+    for c in clips:
+        sid = c.get("scene_id", c["clip_id"][:5])
+        if sid not in first_clip_per_scene:
+            first_clip_per_scene[sid] = c["clip_id"]
+    first_clip_ids = set(first_clip_per_scene.values())
+    first_clips_generated = sum(
+        1 for cid in first_clip_ids
+        if all_manifests[cid]["components"]["nb_first"].get("status") in ("generated", "accepted", "rejected")
+    )
+    first_clips_accepted = sum(
+        1 for cid in first_clip_ids
+        if all_manifests[cid]["components"]["nb_first"].get("status") == "accepted"
+    )
+
+    col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         st.metric("Всего клипов", total)
     with col2:
-        st.metric("First принято", f"{total_first_accepted}/{total}")
+        st.metric("Сцен (SC)", num_scenes, help="Первый проход = first-кадр первого клипа каждой SC")
     with col3:
-        st.metric("Last принято", f"{total_last_accepted}/{total}")
+        st.metric("First принято", f"{total_first_accepted}/{total}")
     with col4:
+        st.metric("Last принято", f"{total_last_accepted}/{total}")
+    with col5:
         st.metric("Ожидает ревью", len(needs_review))
+
+    # Current pass info
+    if first_clips_accepted < num_scenes:
+        st.caption(f"🔄 **Текущий проход:** first-кадры первых клипов — {first_clips_generated}/{num_scenes} сгенерировано, {first_clips_accepted}/{num_scenes} принято. После принятия → генерация last-кадров.")
+    elif total_first_accepted < total:
+        st.caption(f"🔄 **Текущий проход:** last-кадры + first-кадры следующих клипов в цепочке.")
+    else:
+        st.caption(f"🔄 **Текущий проход:** VEO-видео для принятых пар first+last.")
 
     # Progress bar
     progress = total_both / total if total else 0
@@ -1159,10 +1547,45 @@ def page_chain_review():
     st.markdown("---")
 
     # --- Determine which clips to show ---
-    if view_mode == "Ожидает ревью":
+    # Helper: filter review_items to only photo or video components
+    def _filter_review_items(items, keep):
+        """Filter clip list, keeping only review_items matching 'keep' ('photo' or 'video')."""
+        filtered = []
+        for item in items:
+            if keep == "photo":
+                ri = [(c, a) for c, a in item.get("review_items", []) if c in ("nb_first", "nb_last")]
+            else:
+                ri = [(c, a) for c, a in item.get("review_items", []) if c == "veo"]
+            if ri:
+                filtered.append({**item, "review_items": ri})
+        return filtered
+
+    if view_mode == "Ревью фото":
+        display_items = _filter_review_items(needs_review, "photo")
+        if not display_items:
+            st.info("Нет фото, ожидающих ревью.")
+    elif view_mode == "Ревью видео":
+        display_items = _filter_review_items(needs_review, "video")
+        if not display_items:
+            st.info("Нет видео, ожидающих ревью.")
+    elif view_mode == "Ожидает ревью":
         display_items = needs_review
         if not display_items:
             st.info("Нет клипов, ожидающих ревью. Запустите бота: `./scripts/run_safe.sh --chain --account 1`")
+    elif view_mode == "Все фото":
+        # Show all clips but only photo review items (hide video variants)
+        all_items = needs_review + accepted_clips + blocked_clips
+        display_items = []
+        for item in all_items:
+            ri = [(c, a) for c, a in item.get("review_items", []) if c in ("nb_first", "nb_last")]
+            display_items.append({**item, "review_items": ri})
+    elif view_mode == "Все видео":
+        # Show all clips but only video review items (hide photo variants)
+        all_items = needs_review + accepted_clips + blocked_clips
+        display_items = []
+        for item in all_items:
+            ri = [(c, a) for c, a in item.get("review_items", []) if c == "veo"]
+            display_items.append({**item, "review_items": ri})
     elif view_mode == "Принятые":
         display_items = accepted_clips
         if not display_items:
@@ -1174,153 +1597,236 @@ def page_chain_review():
     else:
         display_items = needs_review + accepted_clips + blocked_clips
 
-    # --- Render clips inside form (batches all decisions until submit) ---
+    # --- Pagination ---
+    CLIPS_PER_PAGE = 40
+    total_pages = max(1, (len(display_items) + CLIPS_PER_PAGE - 1) // CLIPS_PER_PAGE)
+
+    st.sidebar.markdown("---")
+    page_num = st.sidebar.number_input(
+        f"Страница (из {total_pages})",
+        min_value=1, max_value=total_pages, value=1,
+        key="chain_page_num",
+    )
+    submit_all = st.sidebar.button("Отправить решения", type="primary", use_container_width=True)
+
+    start_idx = (page_num - 1) * CLIPS_PER_PAGE
+    page_items = display_items[start_idx:start_idx + CLIPS_PER_PAGE]
+
+    # --- Collect review_items_map for submit processing ---
+    review_items_map = {}  # cid -> [(comp, latest_attempt_num, variants)]
+    upload_map = {}  # cid -> (component, uploaded_file) for manual uploads
+
+    # --- Render clips (display only, no saves on interaction) ---
     current_scene = None
-    _review_keys = []
 
-    # Show videos BEFORE form (form blocks video playback)
-    _video_urls = {}  # (cid, comp) -> [(vi, url), ...]
+    for item in page_items:
+        clip = item["clip"]
+        cid = clip["clip_id"]
+        manifest = item["manifest"]
 
-    with st.form("chain_review_form"):
-        for item in display_items:
-            clip = item["clip"]
-            cid = clip["clip_id"]
-            manifest = item["manifest"]
-
-            # Scene header
-            if clip["scene_id"] != current_scene:
-                current_scene = clip["scene_id"]
-                color = SCENE_COLORS.get(current_scene, "#49B6E8")
-                label = SCENE_LABELS.get(current_scene, current_scene)
-                st.markdown(
-                    f'<h4 style="border-left:4px solid {color};padding-left:12px;'
-                    f'margin-top:24px;margin-bottom:8px;">{label}</h4>',
-                    unsafe_allow_html=True,
-                )
-
-            # Component status badges
-            first_status = manifest["components"]["nb_first"].get("status", "pending")
-            last_status = manifest["components"]["nb_last"].get("status", "pending")
-            veo_status = manifest["components"].get("veo", {}).get("status", "pending")
-
-            status_icons = {"accepted": "🟢", "pending": "⚪", "rejected": "🔴", "generated": "🟡"}
-            status_labels = {"accepted": "Принято", "pending": "Ожидание", "rejected": "Отклонено", "generated": "На ревью"}
-
-            desc = clip.get("scene_description_ru", "")[:120]
-            veo_badge = ""
-            if first_status == "accepted" and last_status == "accepted":
-                veo_badge = f" &nbsp; `veo:` {status_icons.get(veo_status, '⚪')} {status_labels.get(veo_status, veo_status)}"
+        # Scene header
+        if clip["scene_id"] != current_scene:
+            current_scene = clip["scene_id"]
+            color = SCENE_COLORS.get(current_scene, "#49B6E8")
+            label = SCENE_LABELS.get(current_scene, current_scene)
             st.markdown(
-                f"**{cid}** — {desc} &nbsp; "
-                f"`first:` {status_icons.get(first_status, '⚪')} {status_labels.get(first_status, first_status)} &nbsp; "
-                f"`last:` {status_icons.get(last_status, '⚪')} {status_labels.get(last_status, last_status)}"
-                f"{veo_badge}"
+                f'<h4 style="border-left:4px solid {color};padding-left:12px;'
+                f'margin-top:24px;margin-bottom:8px;">{label}</h4>',
+                unsafe_allow_html=True,
             )
 
-            # Show accepted frames as thumbnails
-            if first_status == "accepted":
-                first_frame = FRAMES_DIR / f"{cid}_first.png"
-                first_src = _r2_image_url(first_frame) or (str(first_frame) if first_frame.exists() else None)
-                if first_src:
-                    fc1, fc2 = st.columns([1, 5])
-                    with fc1:
-                        st.markdown(f'<img src="{first_src}" loading="lazy" style="width:150px;border-radius:4px;" /><br><small>First (принято)</small>', unsafe_allow_html=True)
-                    if last_status == "accepted":
-                        last_frame = FRAMES_DIR / f"{cid}_last.png"
-                        last_src = _r2_image_url(last_frame) or (str(last_frame) if last_frame.exists() else None)
-                        if last_src:
-                            with fc2:
-                                st.markdown(f'<img src="{last_src}" loading="lazy" style="width:150px;border-radius:4px;" /><br><small>Last (принято)</small>', unsafe_allow_html=True)
+        # Component status badges
+        first_status = manifest["components"]["nb_first"].get("status", "pending")
+        last_status = manifest["components"]["nb_last"].get("status", "pending")
+        veo_status = manifest["components"].get("veo", {}).get("status", "pending")
+        is_skip_last = manifest.get("skip_last", True)  # default: skip last
 
-            # Show review items (variants awaiting selection)
-            review_items = item.get("review_items", [])
-            for comp, all_attempts in review_items:
-                comp_label = {"nb_first": "Первый кадр", "nb_last": "Последний кадр", "veo": "Видео"}.get(comp, comp)
-                latest_attempt_num, variants = all_attempts[-1]
+        status_icons = {"accepted": "🟢", "pending": "⚪", "rejected": "🔴", "generated": "🟡", "skipped": "⏭"}
+        status_labels = {"accepted": "Принято", "pending": "Ожидание", "rejected": "Отклонено", "generated": "На ревью", "skipped": "Пропущен"}
 
-                st.markdown(f"**{comp_label}** — попытка {latest_attempt_num} ({len(variants)} вариантов)")
+        desc = clip.get("scene_description_ru", "")[:120]
+        veo_badge = ""
+        veo_ready = first_status == "accepted" and (last_status == "accepted" or is_skip_last)
+        if veo_ready:
+            veo_badge = f" &nbsp; `veo:` {status_icons.get(veo_status, '⚪')} {status_labels.get(veo_status, veo_status)}"
 
-                # Show variant images/videos
-                is_video = comp == "veo"
-                cols = st.columns(min(len(variants), 4))
-                for vi, vpath in enumerate(variants):
-                    with cols[vi % 4]:
-                        src = str(vpath)
-                        if is_video:
-                            st.video(src)
-                        else:
-                            st.markdown(
-                                f'<img src="{src}" loading="lazy" style="width:100%;border-radius:4px;" />',
-                                unsafe_allow_html=True,
-                            )
-                        st.caption(f"Вариант {vi + 1}")
+        if is_skip_last:
+            last_badge = f"`last:` ⏭ Пропущен"
+        else:
+            last_badge = f"`last:` {status_icons.get(last_status, '⚪')} {status_labels.get(last_status, last_status)}"
 
-                # Selection controls — single radio with reject option
-                options = ["Не выбрано"] + [f"Вариант {i+1}" for i in range(len(variants))] + ["Отклонить все"]
-                st.radio(
-                    f"Выбор для {cid}/{comp}", options, index=0,
-                    key=f"chain_radio_{cid}_{comp}", horizontal=True, label_visibility="collapsed",
-                )
-                st.text_area(
-                    "Причина отклонения (заполните если отклоняете)",
-                    placeholder="Что исправить?",
-                    key=f"chain_feedback_{cid}_{comp}",
-                    height=68,
-                    label_visibility="collapsed",
-                )
-
-                _review_keys.append((cid, comp, latest_attempt_num, len(variants)))
-
-            if review_items:
-                st.divider()
-
-        # Submit button inside form
-        submitted = st.form_submit_button(
-            "Отправить решения", type="primary", use_container_width=True,
+        st.markdown(
+            f"**{cid}** — {desc} &nbsp; "
+            f"`first:` {status_icons.get(first_status, '⚪')} {status_labels.get(first_status, first_status)} &nbsp; "
+            f"{last_badge}"
+            f"{veo_badge}"
         )
 
-    # --- Process decisions after form submit ---
-    if submitted:
-        import concurrent.futures
-        selected_count = 0
+        # "Needs last frame" checkbox (inverted: unchecked = skip_last=True)
+        st.checkbox(
+            "Нужен последний кадр",
+            value=not is_skip_last,
+            key=f"needs_last_{cid}",
+        )
+
+        # Manual upload for first frame (when not yet accepted)
+        if first_status != "accepted" and view_mode not in ("Ревью видео", "Все видео"):
+            uploaded = st.file_uploader(
+                "Загрузить first кадр вручную",
+                type=["png", "jpg", "jpeg"],
+                key=f"upload_{cid}_nb_first",
+            )
+            if uploaded:
+                upload_map[cid] = ("nb_first", uploaded)
+
+        # Show accepted frames as thumbnails (skip in video-only modes)
+        if first_status == "accepted" and view_mode not in ("Ревью видео", "Все видео"):
+            first_frame = FRAMES_DIR / f"{cid}_first.png"
+            last_frame = FRAMES_DIR / f"{cid}_last.png"
+            frames_to_show = []
+            if first_frame.exists():
+                frames_to_show.append((first_frame, "First (принято)"))
+            if last_status == "accepted" and last_frame.exists():
+                frames_to_show.append((last_frame, "Last (принято)"))
+            if frames_to_show:
+                cols = st.columns(max(len(frames_to_show), 2))
+                for idx, (fpath, label_text) in enumerate(frames_to_show):
+                    with cols[idx]:
+                        _show_image_with_lightbox(fpath, caption=label_text, width="250px")
+
+        # Show review items (variants awaiting selection)
+        review_items = item.get("review_items", [])
+        for comp, all_attempts in review_items:
+            comp_label = {"nb_first": "Первый кадр", "nb_last": "Последний кадр", "veo": "Видео"}.get(comp, comp)
+            latest_attempt_num, variants = all_attempts[-1]
+
+            # Store for submit processing
+            review_items_map.setdefault(cid, []).append((comp, latest_attempt_num, variants))
+
+            st.markdown(f"**{comp_label}** — попытка {latest_attempt_num} ({len(variants)} вариантов)")
+
+            # Show variants with checkbox under each
+            is_video = comp == "veo"
+            for row_start in range(0, len(variants), 2):
+                row_items = variants[row_start:row_start+2]
+                cols = st.columns(2)
+                for j, vpath in enumerate(row_items):
+                    vi = row_start + j
+                    with cols[j]:
+                        if is_video:
+                            st.video(str(vpath))
+                            vpath_p = Path(vpath) if not isinstance(vpath, Path) else vpath
+                            if vpath_p.exists():
+                                with open(vpath_p, "rb") as vf:
+                                    st.download_button(
+                                        f"📥 Скачать",
+                                        vf.read(),
+                                        file_name=vpath_p.name,
+                                        mime="video/mp4",
+                                        key=f"dl_{cid}_{comp}_{vi}",
+                                    )
+                        else:
+                            _show_local_image(vpath, use_container_width=True)
+                        st.checkbox(
+                            f"Выбрать вариант {vi+1}",
+                            key=f"chk_{cid}_{comp}_{vi}",
+                        )
+
+            # Feedback field
+            st.text_area(
+                "Фидбек (заполни чтобы отклонить):",
+                placeholder="Оставь пустым чтобы принять выбранный вариант",
+                key=f"chain_feedback_{cid}_{comp}",
+                height=68,
+            )
+
+        if review_items:
+            st.divider()
+
+    # --- Process all decisions on submit ---
+    if submit_all:
+        accepted_count = 0
         rejected_count = 0
-        tasks = []
+        errors = []
 
-        for cid, comp, attempt_num, n_variants in _review_keys:
-            choice = st.session_state.get(f"chain_radio_{cid}_{comp}", "Не выбрано")
+        # Process needs_last changes for ALL displayed clips
+        for item in page_items:
+            cid = item["clip"]["clip_id"]
+            manifest = item["manifest"]
+            old_skip = manifest.get("skip_last", True)
+            needs_last = st.session_state.get(f"needs_last_{cid}", False)
+            new_skip = not needs_last
+            if new_skip != old_skip:
+                manifest["skip_last"] = new_skip
+                if new_skip:
+                    manifest["components"]["nb_last"]["status"] = "skipped"
+                else:
+                    if manifest["components"]["nb_last"].get("status") == "skipped":
+                        manifest["components"]["nb_last"]["status"] = "pending"
+                _save_manifest(cid, manifest)
 
-            if choice == "Отклонить все":
-                feedback = st.session_state.get(f"chain_feedback_{cid}_{comp}", "")
-                tasks.append(("reject", cid, comp, feedback, 0, 0))
-                rejected_count += 1
-            elif choice not in ("Не выбрано", "Отклонить все"):
-                variant_idx = int(choice.split()[-1]) - 1
-                tasks.append(("select", cid, comp, "", attempt_num, variant_idx))
-                selected_count += 1
+        # Process manual uploads
+        for cid, (comp, uploaded_file) in upload_map.items():
+            try:
+                _manual_upload_frame(cid, comp, uploaded_file)
+                accepted_count += 1
+            except Exception as e:
+                errors.append(f"{cid}/загрузка: {e}")
 
-        # Execute all R2 operations in parallel
-        def _do_task(t):
-            if t[0] == "reject":
-                _chain_reject_variant(t[1], t[2], t[3])
-            else:
-                _chain_select_variant(t[1], t[2], t[4], t[5])
+        # Process review decisions
+        for cid, comp_items in review_items_map.items():
+            manifest = all_manifests[cid]
+            for comp, latest_attempt_num, variants in comp_items:
+                comp_label = {"nb_first": "Первый кадр", "nb_last": "Последний кадр", "veo": "Видео"}.get(comp, comp)
+                feedback = st.session_state.get(f"chain_feedback_{cid}_{comp}", "").strip()
+                if feedback:
+                    try:
+                        manifest["components"][comp]["status"] = "rejected"
+                        manifest["components"][comp]["feedback"] = feedback
+                        _save_manifest(cid, manifest)
+                        rejected_count += 1
+                    except Exception as e:
+                        errors.append(f"{cid}/{comp_label}: {e}")
+                else:
+                    selected_vi = None
+                    for vi in range(len(variants)):
+                        if st.session_state.get(f"chk_{cid}_{comp}_{vi}", False):
+                            selected_vi = vi
+                            break
+                    if selected_vi is not None:
+                        try:
+                            _chain_select_variant(cid, comp, latest_attempt_num, selected_vi)
+                            accepted_count += 1
+                        except Exception as e:
+                            errors.append(f"{cid}/{comp_label}: {e}")
 
-        if tasks:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
-                list(pool.map(_do_task, tasks))
-
-        # Invalidate manifest cache so rerun shows fresh data
-        _fetch_all_manifests_r2.clear()
-
-        msg_parts = []
-        if selected_count:
-            msg_parts.append(f"Принято: {selected_count}")
+        parts = []
+        if accepted_count:
+            parts.append(f"✅ Принято: {accepted_count}")
         if rejected_count:
-            msg_parts.append(f"Отклонено: {rejected_count}")
-        if msg_parts:
-            st.success(" | ".join(msg_parts))
-
+            parts.append(f"❌ Отклонено: {rejected_count}")
+        if errors:
+            parts.append(f"⚠️ Ошибки: {len(errors)}")
+        if parts:
+            st.session_state["_chain_notify"] = " | ".join(parts)
+        if errors:
+            for err in errors:
+                st.error(err)
+        _clear_local_caches()
         st.rerun()
+
+    _timers["render"] = _t.time()
+    # Show timing debug
+    t0 = _timers["start"]
+    timing_parts = []
+    prev = t0
+    for label in ("load_clips", "classification", "render"):
+        if label in _timers:
+            dt = (_timers[label] - prev) * 1000
+            timing_parts.append(f"{label}: {dt:.0f}ms")
+            prev = _timers[label]
+    total = (_timers.get("render", t0) - t0) * 1000
+    st.caption(f"⏱ {' | '.join(timing_parts)} | **total: {total:.0f}ms**")
 
 
 def page_clips():
@@ -1370,14 +1876,14 @@ def page_clips():
     st.sidebar.progress(done_count / total if total else 0)
 
     # --- Overview stats ---
-    # Count total VEO review videos
+    # Count total VEO review videos (from batch cache)
     total_veo_videos = 0
+    _variants_cache = _batch_scan_variants(str(REVIEW_DIR))
     for c in clips:
         cid = c["clip_id"]
-        veo_dir = REVIEW_DIR / cid / "veo"
-        if veo_dir.exists():
-            total_veo_videos += len(list(veo_dir.glob("attempt_*/*.mp4")))
-            total_veo_videos += len(list(veo_dir.glob("attempt_*/*/*.mp4")))
+        veo_attempts = _variants_cache.get(cid, {}).get("veo", [])
+        for _att_num, files in veo_attempts:
+            total_veo_videos += len(files)
 
     # Count clips with both frames
     frames_done = sum(
@@ -1492,11 +1998,12 @@ def render_nb_review_variants(clip_id: str, component: str = "nb_first"):
                 )
                 st.markdown(f'<div class="prompt-label">{label} ({len(imgs)} фото)</div>',
                             unsafe_allow_html=True)
-                cols = st.columns(4)
-                for i, ipath in enumerate(imgs):
-                    with cols[i % 4]:
-                        st.image(str(ipath), use_container_width=True)
-                        st.caption(ipath.name)
+                for row_start in range(0, len(imgs), 2):
+                    cols = st.columns(2)
+                    for j, ipath in enumerate(imgs[row_start:row_start+2]):
+                        with cols[j]:
+                            st.image(str(ipath), use_container_width=True)
+                            st.caption(ipath.name)
 
 
 def render_veo_variants(clip_id: str):
@@ -1744,12 +2251,25 @@ def page_scenario():
     st.header("Сценарий")
 
     if SCENARIO_FILE.exists():
-        text = SCENARIO_FILE.read_text(encoding="utf-8")
+        # Read text — handle .docx and plain text
+        if str(SCENARIO_FILE).endswith(".docx"):
+            try:
+                import docx
+                doc = docx.Document(str(SCENARIO_FILE))
+                text = "\n".join(p.text for p in doc.paragraphs)
+            except Exception as e:
+                st.error(f"Ошибка чтения .docx: {e}")
+                return
+            dl_name = SCENARIO_FILE.stem + ".txt"
+        else:
+            text = SCENARIO_FILE.read_text(encoding="utf-8")
+            dl_name = SCENARIO_FILE.name
+
         # Split into scenes for better navigation
         st.download_button(
             "Скачать сценарий",
             text.encode("utf-8"),
-            file_name="scenario_signal.txt",
+            file_name=dl_name,
             mime="text/plain",
             key="dl_scenario",
         )
@@ -1785,29 +2305,300 @@ def page_scenario():
         else:
             st.text(text)
     else:
-        st.warning("Файл сценария не найден (scenario_signal.txt)")
+        st.warning(f"Файл сценария не найден ({SCENARIO_FILE.name})")
+
+
+def _load_ref_manifest(ref_type: str, name: str) -> dict:
+    """Load manifest for a reference (character or location) variant review."""
+    cfg = _get_series_config()
+    base = BASE_DIR / cfg.get("output_dir", "output")
+    manifest_path = base / "ref_review" / ref_type / name / "manifest.json"
+    if manifest_path.exists():
+        return json.loads(manifest_path.read_text())
+    return {}
+
+def _save_ref_manifest(ref_type: str, name: str, data: dict):
+    cfg = _get_series_config()
+    base = BASE_DIR / cfg.get("output_dir", "output")
+    manifest_path = base / "ref_review" / ref_type / name / "manifest.json"
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+
+
+def _render_location_generation_tab(locations_spec: list, cfg: dict):
+    """Render the location generation/review tab content."""
+    st.subheader("Референсы локаций")
+
+    base = BASE_DIR / cfg.get("output_dir", "output")
+    review_locs_dir = base / "review" / "locations"
+    manifest = _load_locations_manifest()
+    prompts_dir = (BASE_DIR / cfg["prompts_file"]).parent
+    spec_path = prompts_dir / "locations_spec.json"
+
+    # Classify locations
+    ready_locs = []
+    needs_review_locs = []
+    missing_locs = []
+
+    for loc in locations_spec:
+        loc_id = loc["location_id"]
+        file_path = Path(loc["file_path"])
+        if not file_path.is_absolute():
+            file_path = BASE_DIR / file_path
+
+        if file_path.exists():
+            ready_locs.append((loc, file_path))
+        else:
+            # Check if variants exist in review
+            loc_review_dir = review_locs_dir / loc_id
+            variants = sorted(loc_review_dir.glob("variant_*.png")) if loc_review_dir.exists() else []
+            loc_manifest = manifest.get(loc_id, {})
+            if variants and loc_manifest.get("status") != "rejected":
+                needs_review_locs.append((loc, variants, loc_manifest))
+            else:
+                missing_locs.append(loc)
+
+    total = len(locations_spec)
+    ready_count = len(ready_locs)
+    review_count = len(needs_review_locs)
+    missing_count = len(missing_locs)
+
+    # Progress bar
+    progress = ready_count / total if total else 0
+    st.progress(progress, text=f"{ready_count} из {total} локаций готовы")
+
+    # Stats
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Готово", ready_count)
+    with col2:
+        st.metric("На ревью", review_count)
+    with col3:
+        st.metric("Не сгенерировано", missing_count)
+    with col4:
+        st.metric("Всего", total)
+
+    # Generate command
+    if missing_count > 0:
+        st.markdown("---")
+        st.warning(
+            f"Не все локации сгенерированы ({missing_count} осталось). "
+            f"Запустите бота для генерации недостающих."
+        )
+        output_dir = cfg.get("output_dir", "output")
+        cmd = (
+            f"./scripts/run_safe.sh --generate-locations --account 1 --chromium "
+            f"--prompts {spec_path.relative_to(BASE_DIR)} --output-dir {output_dir}"
+        )
+        st.code(cmd, language="bash")
+
+    st.markdown("---")
+
+    # --- Locations needing review ---
+    if needs_review_locs:
+        st.markdown("### На ревью")
+        submit_loc = st.button(
+            "Отправить решения по локациям",
+            type="primary",
+            key="btn_submit_locs",
+            use_container_width=True,
+        )
+
+        for loc, variants, loc_manifest in needs_review_locs:
+            loc_id = loc["location_id"]
+            desc = loc.get("description_ru", loc_id)
+
+            st.markdown(f"**{loc_id}** -- {desc}")
+
+            # Show variants in a row
+            num_variants = len(variants)
+            cols = st.columns(min(num_variants, 4))
+            for vi, vpath in enumerate(variants):
+                with cols[vi % 4]:
+                    _show_local_image(vpath, use_container_width=True)
+                    st.checkbox(
+                        f"Выбрать {vi+1}",
+                        key=f"loc_chk_{loc_id}_{vi}",
+                    )
+
+            # Feedback field for rejection
+            st.text_area(
+                "Фидбек (заполни чтобы отк��онить):",
+                placeholder="Оставь пустым чтобы принять выбранный вариант",
+                key=f"loc_feedback_{loc_id}",
+                height=68,
+            )
+            st.divider()
+
+        # Process decisions on submit
+        if submit_loc:
+            accepted_count = 0
+            rejected_count = 0
+
+            for loc, variants, loc_manifest_data in needs_review_locs:
+                loc_id = loc["location_id"]
+                feedback = st.session_state.get(f"loc_feedback_{loc_id}", "").strip()
+
+                if feedback:
+                    # Reject
+                    if loc_id not in manifest:
+                        manifest[loc_id] = {"status": "rejected", "attempts": []}
+                    manifest[loc_id]["status"] = "rejected"
+                    manifest[loc_id]["feedback"] = feedback
+                    rejected_count += 1
+                else:
+                    # Find selected variant
+                    selected_vi = None
+                    for vi in range(len(variants)):
+                        if st.session_state.get(f"loc_chk_{loc_id}_{vi}", False):
+                            selected_vi = vi
+                            break
+
+                    if selected_vi is not None:
+                        # Accept: copy variant to target file_path
+                        src = variants[selected_vi]
+                        file_path = Path(loc["file_path"])
+                        if not file_path.is_absolute():
+                            file_path = BASE_DIR / file_path
+                        file_path.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(src, file_path)
+
+                        # Update manifest
+                        if loc_id not in manifest:
+                            manifest[loc_id] = {"status": "accepted", "attempts": []}
+                        manifest[loc_id]["status"] = "accepted"
+                        manifest[loc_id]["selected_variant"] = selected_vi
+                        accepted_count += 1
+
+            _save_locations_manifest(manifest)
+
+            parts = []
+            if accepted_count:
+                parts.append(f"Принято: {accepted_count}")
+            if rejected_count:
+                parts.append(f"Отклонено: {rejected_count}")
+            if parts:
+                st.success(" | ".join(parts))
+            st.rerun()
+
+    # --- Ready locations grid ---
+    if ready_locs:
+        st.markdown("### Готовые локации")
+        for row_start in range(0, len(ready_locs), 4):
+            row = ready_locs[row_start:row_start + 4]
+            cols = st.columns(4)
+            for i, (loc, fpath) in enumerate(row):
+                with cols[i]:
+                    desc = loc.get("description_ru", loc["location_id"])
+                    _show_local_image(
+                        fpath,
+                        caption=f"{loc['location_id']}\n{desc}",
+                        use_container_width=True,
+                    )
+
+    # --- Missing locations list ---
+    if missing_locs:
+        st.markdown("### Не сгенерированы")
+        for row_start in range(0, len(missing_locs), 4):
+            row = missing_locs[row_start:row_start + 4]
+            cols = st.columns(4)
+            for i, loc in enumerate(row):
+                with cols[i]:
+                    desc = loc.get("description_ru", loc["location_id"])
+                    st.markdown(
+                        f'<div style="background:#1A1D26;border:2px dashed #B71C1C;'
+                        f'border-radius:8px;padding:30px 10px;text-align:center;'
+                        f'min-height:120px;display:flex;flex-direction:column;'
+                        f'justify-content:center;align-items:center;">'
+                        f'<span style="color:#EF5350;font-weight:600;font-size:0.85em;">'
+                        f'Не сгенерирована</span><br>'
+                        f'<span style="color:#888;font-size:0.75em;">{loc["location_id"]}</span><br>'
+                        f'<span style="color:#666;font-size:0.7em;">{desc}</span>'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+
+
+def _load_locations_spec() -> list | None:
+    """Load locations_spec.json for the current series (if it exists)."""
+    cfg = _get_series_config()
+    prompts_dir = (BASE_DIR / cfg["prompts_file"]).parent
+    spec_path = prompts_dir / "locations_spec.json"
+    if spec_path.exists():
+        try:
+            with open(spec_path, encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return None
+    return None
+
+
+def _load_locations_manifest() -> dict:
+    """Load locations_manifest.json for the current series."""
+    cfg = _get_series_config()
+    base = BASE_DIR / cfg.get("output_dir", "output")
+    manifest_path = base / "review" / "locations" / "locations_manifest.json"
+    if manifest_path.exists():
+        try:
+            with open(manifest_path, encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return {}
+    return {}
+
+
+def _save_locations_manifest(manifest: dict):
+    """Save locations_manifest.json for the current series."""
+    cfg = _get_series_config()
+    base = BASE_DIR / cfg.get("output_dir", "output")
+    manifest_path = base / "review" / "locations" / "locations_manifest.json"
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(manifest_path, "w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2, ensure_ascii=False)
+
+
+def _locations_ready_count(spec: list) -> tuple[int, int]:
+    """Return (ready_count, total_count) for locations in spec."""
+    total = len(spec)
+    ready = 0
+    for loc in spec:
+        file_path = Path(loc["file_path"])
+        if not file_path.is_absolute():
+            file_path = BASE_DIR / file_path
+        if file_path.exists():
+            ready += 1
+    return ready, total
 
 
 def page_references():
-    """Reference gallery — characters and locations."""
+    """Reference gallery — characters and locations with variant review."""
     st.header("Референсы")
 
-    tab_chars, tab_locs = st.tabs(["Персонажи", "Локации"])
+    cfg = _get_series_config()
+    base = BASE_DIR / cfg.get("output_dir", "output")
+    ref_review_dir = base / "ref_review"
 
+    # Determine tabs based on whether locations_spec.json exists
+    locations_spec = _load_locations_spec()
+    if locations_spec:
+        tab_chars, tab_locs, tab_loc_gen, tab_review = st.tabs(
+            ["Персонажи", "Локации", "Генерация локаций", "Ревью вариантов"]
+        )
+    else:
+        tab_chars, tab_locs, tab_review = st.tabs(["Персонажи", "Локации", "Ревью вариантов"])
+
+    # --- Accepted references ---
     with tab_chars:
         st.subheader("Персонажи")
         if CHARS_DIR.exists():
             files = sorted(CHARS_DIR.glob("char_*"))
             if files:
-                # Group by character name
                 groups: dict[str, list[Path]] = {}
                 for f in files:
-                    # Extract character name: char_amin_full.png -> amin
                     parts = f.stem.split("_")
                     if len(parts) >= 2:
-                        char_key = parts[1]  # e.g. "amin", "karim"
+                        char_key = parts[1]
                         groups.setdefault(char_key, []).append(f)
-
                 for char_key in sorted(groups):
                     display_name = CHAR_DISPLAY.get(
                         char_key.capitalize(), char_key.capitalize()
@@ -1828,25 +2619,13 @@ def page_references():
         if LOCS_DIR.exists():
             files = sorted(LOCS_DIR.glob("loc_*"))
             if files:
-                # Group by location name
                 groups: dict[str, list[Path]] = {}
                 for f in files:
-                    parts = f.stem.split("_")
-                    if len(parts) >= 2:
-                        loc_key = parts[1]  # e.g. "garazh", "amin", "kabinet"
-                        groups.setdefault(loc_key, []).append(f)
-
-                loc_display = {
-                    "garazh": "Гараж",
-                    "amin": "Комната Амина",
-                    "kabinet": "Кабинет Папы",
-                    "besedka": "Беседка",
-                    "dom": "Дом (экстерьер)",
-                }
-                for loc_key in sorted(groups):
-                    display_name = loc_display.get(loc_key, loc_key.capitalize())
-                    st.markdown(f"#### {display_name}")
-                    loc_files = groups[loc_key]
+                    group_name = _loc_group(f.stem)
+                    groups.setdefault(group_name, []).append(f)
+                for group_name in sorted(groups):
+                    st.markdown(f"#### {group_name}")
+                    loc_files = groups[group_name]
                     cols = st.columns(min(len(loc_files), 4))
                     for i, fpath in enumerate(loc_files):
                         with cols[i % len(cols)]:
@@ -1856,6 +2635,133 @@ def page_references():
         else:
             st.warning("Папка локаций не найдена.")
 
+    # --- Location generation tab (only if locations_spec.json exists) ---
+    if locations_spec:
+        with tab_loc_gen:
+            _render_location_generation_tab(locations_spec, cfg)
+
+    # --- Variant review tab ---
+    with tab_review:
+        st.subheader("Ревью вариантов")
+
+        if not ref_review_dir.exists():
+            st.info("Нет вариантов для ревью. Боты ещё не генерировали референсы.")
+            return
+
+        # Collect all pending reviews
+        for ref_type_label, ref_type_key in [("Персонажи", "chars"), ("Локации", "locs")]:
+            type_dir = ref_review_dir / ref_type_key
+            if not type_dir.exists():
+                continue
+
+            items = sorted(type_dir.iterdir())
+            if not items:
+                continue
+
+            st.markdown(f"### {ref_type_label}")
+
+            for item_dir in items:
+                if not item_dir.is_dir():
+                    continue
+                name = item_dir.name
+                manifest = _load_ref_manifest(ref_type_key, name)
+                status = manifest.get("status", "pending")
+
+                # Display name (Russian for locations, character names for chars)
+                if ref_type_key == "locs":
+                    display = _loc_group(name)
+                else:
+                    display = CHAR_DISPLAY.get(name.capitalize(), name.replace("_", " ").title())
+                status_badge = {"accepted": "✅", "rejected": "❌", "pending": "⏳"}.get(status, "⏳")
+                st.markdown(f"#### {status_badge} {display}")
+
+                if manifest.get("prompt_a"):
+                    st.caption(f"Промпт A: {manifest['prompt_a'][:120]}...")
+                if manifest.get("prompt_b"):
+                    st.caption(f"Промпт B: {manifest['prompt_b'][:120]}...")
+
+                # Find variant images
+                variants_a = sorted(item_dir.glob("prompt_a/variant_*.png"))
+                variants_b = sorted(item_dir.glob("prompt_b/variant_*.png"))
+
+                if not variants_a and not variants_b:
+                    # Try flat structure
+                    variants_a = sorted(item_dir.glob("variant_*.png"))
+
+                if not variants_a and not variants_b:
+                    st.warning("Нет вариантов")
+                    continue
+
+                # Build combined variant list
+                all_variants = [(f"A-{i+1}", vpath) for i, vpath in enumerate(variants_a)] + \
+                               [(f"B-{i+1}", vpath) for i, vpath in enumerate(variants_b)]
+
+                # Show prompt A variants with accept buttons under each
+                if variants_a:
+                    st.markdown("**Промпт A:**")
+                    cols = st.columns(min(len(variants_a), 4))
+                    for i, vpath in enumerate(variants_a):
+                        with cols[i % len(cols)]:
+                            st.image(str(vpath), caption=f"A-{i+1}", use_container_width=True)
+                            if status == "pending":
+                                if st.button(f"Принять A-{i+1}", key=f"ref_acc_{ref_type_key}_{name}_a{i}"):
+                                    import shutil
+                                    target_dir = CHARS_DIR if ref_type_key == "chars" else LOCS_DIR
+                                    target_dir.mkdir(parents=True, exist_ok=True)
+                                    target_name = f"{name}_full.png" if ref_type_key == "chars" else f"{name}.png"
+                                    target_path = target_dir / target_name
+                                    shutil.copy2(vpath, target_path)
+                                    manifest["status"] = "accepted"
+                                    manifest["selected_variant"] = f"A-{i+1}"
+                                    _save_ref_manifest(ref_type_key, name, manifest)
+                                    st.rerun()
+
+                # Show prompt B variants with accept buttons under each
+                if variants_b:
+                    st.markdown("**Промпт B:**")
+                    cols = st.columns(min(len(variants_b), 4))
+                    for i, vpath in enumerate(variants_b):
+                        with cols[i % len(cols)]:
+                            st.image(str(vpath), caption=f"B-{i+1}", use_container_width=True)
+                            if status == "pending":
+                                if st.button(f"Принять B-{i+1}", key=f"ref_acc_{ref_type_key}_{name}_b{i}"):
+                                    import shutil
+                                    target_dir = CHARS_DIR if ref_type_key == "chars" else LOCS_DIR
+                                    target_dir.mkdir(parents=True, exist_ok=True)
+                                    target_name = f"{name}_full.png" if ref_type_key == "chars" else f"{name}.png"
+                                    target_path = target_dir / target_name
+                                    shutil.copy2(vpath, target_path)
+                                    manifest["status"] = "accepted"
+                                    manifest["selected_variant"] = f"B-{i+1}"
+                                    _save_ref_manifest(ref_type_key, name, manifest)
+                                    st.rerun()
+
+                # Reject button + feedback (only for pending)
+                if status == "pending":
+                    reject_key = f"ref_rejecting_{ref_type_key}_{name}"
+                    if st.button("Отклонить все", key=f"ref_rej_btn_{ref_type_key}_{name}"):
+                        st.session_state[reject_key] = True
+                    if st.session_state.get(reject_key, False):
+                        with st.form(f"ref_reject_form_{ref_type_key}_{name}"):
+                            feedback = st.text_area("Фидбек (для перегенерации)", key=f"ref_fb_{ref_type_key}_{name}", height=80)
+                            if st.form_submit_button("Отправить"):
+                                manifest["status"] = "rejected"
+                                manifest["feedback"] = feedback
+                                _save_ref_manifest(ref_type_key, name, manifest)
+                                st.session_state.pop(reject_key, None)
+                                st.rerun()
+                elif status == "accepted":
+                    st.success(f"Принят: {manifest.get('selected_variant', '?')}")
+                elif status == "rejected":
+                    fb = manifest.get("feedback", "")
+                    st.error(f"Отклонён. Фидбек: {fb}")
+                    if st.button(f"Сбросить статус", key=f"ref_reset_{ref_type_key}_{name}"):
+                        manifest["status"] = "pending"
+                        _save_ref_manifest(ref_type_key, name, manifest)
+                        st.rerun()
+
+                st.markdown("---")
+
 
 def page_keyframe_pairs():
     """Overview of all clips with first+last keyframe pairs for quick review."""
@@ -1863,21 +2769,15 @@ def page_keyframe_pairs():
 
     clips = load_clips()
 
-    # Stats
+    # Stats (use batch cache)
     total = len(clips)
     pairs_done = sum(
         1 for c in clips
         if (FRAMES_DIR / f"{c['clip_id']}_first.png").exists()
         and (FRAMES_DIR / f"{c['clip_id']}_last.png").exists()
     )
-    veo_done = 0
-    for c in clips:
-        veo_dir = REVIEW_DIR / c["clip_id"] / "veo"
-        if veo_dir.exists():
-            for ad in veo_dir.glob("attempt_*"):
-                if list(ad.glob("*.mp4")) or list(ad.glob("*/*.mp4")):
-                    veo_done += 1
-                    break
+    _vc = _batch_scan_variants(str(REVIEW_DIR))
+    veo_done = sum(1 for c in clips if _vc.get(c["clip_id"], {}).get("veo"))
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -1889,9 +2789,28 @@ def page_keyframe_pairs():
 
     st.markdown("---")
 
+    # --- Pagination ---
+    KP_PER_PAGE = 20
+    total_clips = len(clips)
+    total_kp_pages = max(1, (total_clips + KP_PER_PAGE - 1) // KP_PER_PAGE)
+    if total_clips > KP_PER_PAGE:
+        kp_col1, kp_col2 = st.columns([3, 1])
+        with kp_col1:
+            kp_page = st.number_input(
+                f"Страница (всего {total_kp_pages}, по {KP_PER_PAGE} клипов)",
+                min_value=1, max_value=total_kp_pages, value=1,
+                key="kp_page",
+            )
+        with kp_col2:
+            st.markdown(f"**{total_clips}** клипов")
+        kp_start = (kp_page - 1) * KP_PER_PAGE
+        page_clips_list = clips[kp_start:kp_start + KP_PER_PAGE]
+    else:
+        page_clips_list = clips
+
     # Group by scene
     current_scene = None
-    for clip in clips:
+    for clip in page_clips_list:
         if clip["scene_id"] != current_scene:
             current_scene = clip["scene_id"]
             color = SCENE_COLORS.get(current_scene, "#888")
@@ -1908,14 +2827,9 @@ def page_keyframe_pairs():
 
         has_first = first_frame.exists()
         has_last = last_frame.exists()
-        has_veo = False
-        veo_count = 0
-        veo_dir = REVIEW_DIR / clip_id / "veo"
-        if veo_dir.exists():
-            for ad in veo_dir.glob("attempt_*"):
-                vids = list(ad.glob("*.mp4")) + list(ad.glob("*/*.mp4"))
-                veo_count += len(vids)
-            has_veo = veo_count > 0
+        veo_attempts = _vc.get(clip_id, {}).get("veo", [])
+        veo_count = sum(len(files) for _, files in veo_attempts)
+        has_veo = veo_count > 0
 
         # Status badge
         if has_first and has_last and has_veo:
@@ -1975,14 +2889,80 @@ def _find_veo_videos(clip_id):
     return videos
 
 
+def _find_accepted_veo_video(clip_id):
+    """Find the accepted VEO video for a clip. Returns path or None."""
+    manifest = _load_manifest(clip_id)
+    veo_comp = manifest["components"].get("veo", {})
+    if veo_comp.get("status") != "accepted":
+        return None
+    sel = veo_comp.get("selected_variant_a")
+    if not sel:
+        return None
+    attempt = sel["attempt"]
+    variant_idx = sel["variant"]
+    attempt_dir = REVIEW_DIR / clip_id / "veo" / f"attempt_{attempt}"
+    if not attempt_dir.exists():
+        return None
+    # Find variant file
+    attempts_data = veo_comp.get("attempts", [])
+    if attempt <= len(attempts_data):
+        entry = attempts_data[attempt - 1]
+        variants = entry.get("variants", [])
+        if variant_idx < len(variants):
+            vfile = variants[variant_idx].get("file", "")
+            vpath = attempt_dir / vfile
+            if vpath.exists():
+                return vpath
+    # Fallback: find by index in sorted mp4s
+    mp4s = sorted(attempt_dir.rglob("*.mp4"))
+    if variant_idx < len(mp4s):
+        return mp4s[variant_idx]
+    return None
+
+
 def page_timeline():
-    """Visual timeline with VEO videos."""
+    """Visual timeline — only accepted VEO videos."""
     st.header("Таймлайн")
 
     clips = load_clips()
-    current_scene = None
 
+    # Collect clips that have accepted VEO videos
+    video_clips = []
     for clip in clips:
+        clip_id = clip["clip_id"]
+        video_path = _find_accepted_veo_video(clip_id)
+        if video_path:
+            video_clips.append((clip, video_path))
+
+    if not video_clips:
+        st.info("Пока нет принятых VEO-видео. Выберите видео в Chain Ревью, и они появятся здесь.")
+        return
+
+    # --- Pagination ---
+    TL_PER_PAGE = 30
+    total_pages = max(1, (len(video_clips) + TL_PER_PAGE - 1) // TL_PER_PAGE)
+
+    st.sidebar.markdown("---")
+    st.sidebar.markdown(f"**Таймлайн:** {len(video_clips)} видео, {total_pages} стр.")
+
+    # Page selector — selectbox for direct page jump
+    page_options = [f"Страница {i}" for i in range(1, total_pages + 1)]
+    selected = st.sidebar.selectbox(
+        "Перейти на страницу",
+        options=page_options,
+        index=0,
+        key="tl_page_select",
+    )
+    page_num = page_options.index(selected) + 1
+
+    start_idx = (page_num - 1) * TL_PER_PAGE
+    page_video_clips = video_clips[start_idx:start_idx + TL_PER_PAGE]
+
+    st.caption(f"Страница {page_num} из {total_pages} (клипы {start_idx + 1}–{start_idx + len(page_video_clips)} из {len(video_clips)})")
+
+    # --- Render ---
+    current_scene = None
+    for clip, video_path in page_video_clips:
         if clip["scene_id"] != current_scene:
             current_scene = clip["scene_id"]
             color = SCENE_COLORS.get(current_scene, "#888")
@@ -1993,38 +2973,9 @@ def page_timeline():
             )
 
         clip_id = clip["clip_id"]
-        status = get_status(clip_id)
-        _, status_icon = STATUS_MAP[status]
-
-        # Header row
-        cols = st.columns([1.5, 5, 0.5])
-        with cols[0]:
-            st.markdown(f"**{status_icon} {clip_id}**")
-        with cols[1]:
-            st.markdown(clip["scene_description_ru"])
-
-        # VEO videos — max 2 per row for comfortable viewing
-        videos = _find_veo_videos(clip_id)
-        if videos:
-            for row_start in range(0, len(videos), 2):
-                row_videos = videos[row_start:row_start + 2]
-                vid_cols = st.columns(2)
-                for i, vpath in enumerate(row_videos):
-                    with vid_cols[i]:
-                        st.video(str(vpath))
-        else:
-            # Fallback: show keyframes if no videos
-            first_frame = FRAMES_DIR / f"{clip_id}_first.png"
-            last_frame = FRAMES_DIR / f"{clip_id}_last.png"
-            if first_frame.exists() or last_frame.exists():
-                thumb_cols = st.columns(2)
-                with thumb_cols[0]:
-                    if first_frame.exists():
-                        st.image(str(first_frame), caption="First")
-                with thumb_cols[1]:
-                    if last_frame.exists():
-                        st.image(str(last_frame), caption="Last")
-
+        desc = clip.get("scene_description_ru", "")[:120]
+        st.markdown(f"**{clip_id}** — {desc}")
+        st.video(str(video_path))
         st.divider()
 
 
@@ -2041,6 +2992,7 @@ def main():
     )
 
     inject_css()
+    inject_lightbox()
 
     # --- Sidebar header ---
     st.sidebar.markdown(
@@ -2064,9 +3016,7 @@ def main():
     )
     if selected_series != st.session_state.current_series:
         st.session_state.current_series = selected_series
-        global _r2_cache_loaded, _r2_manifest_cache
-        _r2_cache_loaded = False
-        _r2_manifest_cache = {}
+        _clear_local_caches()
         st.rerun()
 
     # Apply series config to globals
@@ -2075,8 +3025,6 @@ def main():
 
     # --- Check if series is configured ---
     prompts_available = PROMPTS_FILE.exists()
-    if not prompts_available and _R2_OK:
-        prompts_available = r2_storage.file_exists(_r2_key(PROMPTS_FILE))
     if not prompts_available:
         st.sidebar.markdown("---")
         st.header(f'{cfg["icon"]} Серия: {cfg["title"]}')
