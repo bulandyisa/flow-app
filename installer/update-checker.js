@@ -252,6 +252,14 @@ async function main() {
     // Переименовываем extracted → app
     fs.renameSync(extractDir, APP_DIR);
 
+    // Переносим node_modules из старой версии если в новой их нет
+    const oldServerNM = path.join(appOld, 'packages', 'server', 'node_modules');
+    const newServerNM = path.join(APP_DIR, 'packages', 'server', 'node_modules');
+    if (fs.existsSync(oldServerNM) && !fs.existsSync(newServerNM)) {
+      log('  Preserving server node_modules from previous version...');
+      fs.renameSync(oldServerNM, newServerNM);
+    }
+
     // Записываем version.json
     fs.writeFileSync(
       path.join(APP_DIR, 'version.json'),

@@ -46,9 +46,11 @@ jobs:
           cp -r packages/server/dist/* bundle/packages/server/dist/
           cp packages/server/package.json bundle/packages/server/
 
-          # server production deps (need shared symlink for workspace resolution)
+          # server production deps
+          # Remove workspace dependency before npm install (shared is bundled as dist/)
           cd bundle/packages/server
-          npm install --omit=dev --install-links 2>/dev/null || true
+          node -e "const p=require('./package.json'); delete p.dependencies['@flow-app/shared']; require('fs').writeFileSync('package.json', JSON.stringify(p,null,2))"
+          npm install --omit=dev 2>&1 || echo "WARN: npm install failed"
           cd ../../..
 
           # client
