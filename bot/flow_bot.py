@@ -1291,6 +1291,88 @@ def _find_ref_fallback(missing_path: Path):
     return None
 
 
+def _map_flat_to_structured(rel_path):
+    """Map flat legacy ingredient paths to structured references/ paths.
+
+    Examples:
+      camera_персонажи_hq/char_tako_full.jpeg -> references/characters/tako/{id}_base.*
+      sosed_персонажи_hq/simba.jpg            -> references/characters/simba/{id}_base.*
+      camera_локации_hq/loc_night_alley.png    -> references/locations/night_alley/{id}_base.*
+    """
+    import re
+    rel = str(rel_path).replace('\\', '/')
+    refs_base = REFS_DIR / 'references'
+    if not refs_base.is_dir():
+        return None
+
+    # Character: *персонажи*/char_NAME_full.ext or *персонажи*/NAME.ext
+    if 'персонажи' in rel:
+        filename = rel.split('/')[-1]
+        m = re.match(r'^char_(.+?)(?:_full)?\.[^.]+$', filename)
+        if m:
+            char_id = m.group(1)
+        else:
+            char_id = filename.rsplit('.', 1)[0]
+
+        char_dir = refs_base / 'characters' / char_id
+        if char_dir.is_dir():
+            # Try {id}_base.*, base.*, then any image
+            for prefix in (f'{char_id}_base', 'base'):
+                for ext in ('png', 'jpg', 'jpeg', 'webp'):
+                    candidate = char_dir / f'{prefix}.{ext}'
+                    if candidate.exists():
+                        return candidate
+            for f in sorted(char_dir.iterdir()):
+                if f.suffix.lower() in ('.png', '.jpg', '.jpeg', '.webp') and f.is_file():
+                    return f
+        return None
+
+    # Location: *локации*/loc_NAME.ext
+    if 'локации' in rel:
+        filename = rel.split('/')[-1]
+        m = re.match(r'^loc_(.+)\.[^.]+$', filename)
+        if not m:
+            return None
+        loc_full_name = m.group(1)
+
+        # Try exact match first, then progressively shorter prefixes
+        # e.g. "night_alley" -> try locations/night_alley/, then scan all locations
+        loc_dir = refs_base / 'locations' / loc_full_name
+        if loc_dir.is_dir():
+            return _find_best_image_in_loc(loc_dir, loc_full_name)
+
+        # Scan all location directories for a partial match
+        locs_dir = refs_base / 'locations'
+        if locs_dir.is_dir():
+            for d in sorted(locs_dir.iterdir()):
+                if d.is_dir() and (loc_full_name.startswith(d.name) or d.name.startswith(loc_full_name)):
+                    return _find_best_image_in_loc(d, d.name)
+
+        return None
+
+    return None
+
+
+def _find_best_image_in_loc(loc_dir, loc_id):
+    """Find the best image in a location directory: angles first, then base."""
+    angles_dir = loc_dir / 'angles'
+    if angles_dir.is_dir():
+        for f in sorted(angles_dir.iterdir()):
+            if f.suffix.lower() in ('.png', '.jpg', '.jpeg', '.webp') and f.is_file():
+                return f
+    # Base image
+    for prefix in (f'{loc_id}_base', 'base'):
+        for ext in ('png', 'jpg', 'jpeg', 'webp'):
+            candidate = loc_dir / f'{prefix}.{ext}'
+            if candidate.exists():
+                return candidate
+    # Any image
+    for f in sorted(loc_dir.iterdir()):
+        if f.suffix.lower() in ('.png', '.jpg', '.jpeg', '.webp') and f.is_file():
+            return f
+    return None
+
+
 def upload_ingredients(page, ingredient_paths):
     """Upload ingredient images, reusing already-attached ones when possible.
 
@@ -1312,13 +1394,19 @@ def upload_ingredients(page, ingredient_paths):
             if p.exists():
                 resolved.append(p)
             else:
-                # Fallback: try alternative file names (base vs {id}_base, different extensions)
-                fallback = _find_ref_fallback(full)
-                if fallback:
-                    print(f'  FALLBACK: {Path(rel).name} not found, using base: {fallback.name}')
-                    resolved.append(fallback)
+                # Try mapping flat legacy paths to structured references/ paths
+                mapped = _map_flat_to_structured(rel)
+                if mapped:
+                    print(f'  MAPPED: {Path(rel).name} -> {mapped.relative_to(REFS_DIR)}')
+                    resolved.append(mapped)
                 else:
-                    print(f'  WARNING: ingredient not found: {full}')
+                    # Fallback: try alternative file names (base vs {id}_base, different extensions)
+                    fallback = _find_ref_fallback(full)
+                    if fallback:
+                        print(f'  FALLBACK: {Path(rel).name} not found, using base: {fallback.name}')
+                        resolved.append(fallback)
+                    else:
+                        print(f'  WARNING: ingredient not found: {full}')
     if not resolved:
         return 0
 
