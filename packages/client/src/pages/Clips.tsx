@@ -1,8 +1,8 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
-import { FileText, ChevronDown, ChevronRight, Send, Loader2, Search, X } from 'lucide-react';
+import { FileText, ChevronDown, ChevronRight, Send, Loader2, Search, X, Image as ImageIcon, Replace } from 'lucide-react';
 
 interface Clip {
   clip_id: string;
@@ -11,6 +11,42 @@ interface Clip {
   nano_banana_ingredients: string[];
   nano_banana_prompt_first: string;
   veo_prompt: string;
+}
+
+interface Angle {
+  id: string;
+  file: string;
+  description: string;
+  status: string;
+}
+
+interface Character {
+  id: string;
+  name: string;
+  nameRu: string;
+  baseImage: string | null;
+  angles: Angle[];
+}
+
+interface Location {
+  id: string;
+  name: string;
+  nameRu: string;
+  baseImage: string | null;
+  angles: Angle[];
+}
+
+interface ProjectData {
+  id: string;
+  characters: Character[];
+  locations: Location[];
+}
+
+/** Один элемент библиотеки референсов проекта */
+interface RefOption {
+  path: string;
+  label: string;
+  group: string;
 }
 
 export function Clips() {
@@ -22,13 +58,45 @@ export function Clips() {
     enabled: !!projectId,
   });
 
+  const { data: project } = useQuery({
+    queryKey: ['project', projectId],
+    queryFn: () => api.getProject(projectId!) as Promise<ProjectData>,
+    enabled: !!projectId,
+  });
+
   const [expandedClip, setExpandedClip] = useState<string | null>(null);
+  const [showRefs, setShowRefs] = useState<Record<string, boolean>>({});
   const [feedbacks, setFeedbacks] = useState<Record<string, Record<string, string>>>({});
   const [fixing, setFixing] = useState<string | null>(null); // clip_id currently fixing
   const [model, setModel] = useState<'sonnet' | 'opus'>('sonnet');
   const [search, setSearch] = useState('');
   const [translations, setTranslations] = useState<Record<string, Record<string, string>>>({});
   const [translating, setTranslating] = useState<string | null>(null);
+
+  // Полный список доступных референсов проекта (персонажи + локации с ракурсами)
+  const refLibrary = useMemo<RefOption[]>(() => {
+    if (!project) return [];
+    const opts: RefOption[] = [];
+    for (const c of project.characters) {
+      const who = c.nameRu || c.name;
+      if (c.baseImage) opts.push({ path: c.baseImage, label: `${who} — базовый образ`, group: `Персонаж: ${who}` });
+      for (const a of c.angles) {
+        if (a.status === 'accepted' && a.file) {
+          opts.push({ path: a.file, label: `${who} — ${a.description || a.id}`, group: `Персонаж: ${who}` });
+        }
+      }
+    }
+    for (const l of project.locations) {
+      const where = l.nameRu || l.name;
+      if (l.baseImage) opts.push({ path: l.baseImage, label: `${where} — базовый образ`, group: `Локация: ${where}` });
+      for (const a of l.angles) {
+        if (a.status === 'accepted' && a.file) {
+          opts.push({ path: a.file, label: `${where} — ${a.description || a.id}`, group: `Локация: ${where}` });
+        }
+      }
+    }
+    return opts;
+  }, [project]);
 
   const allClips = (clips || []) as Clip[];
 
@@ -223,6 +291,32 @@ export function Clips() {
                             </button>
                           </div>
 
+                          {/* Референсы (свёрнуты по умолчанию) */}
+                          <div>
+                            <button
+                              onClick={() =>
+                                setShowRefs((prev) => ({ ...prev, [clip.clip_id]: !prev[clip.clip_id] }))
+                              }
+                              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-accent transition-colors mb-1.5"
+                            >
+                              {showRefs[clip.clip_id] ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                              <ImageIcon size={12} />
+                              {showRefs[clip.clip_id] ? 'Скрыть референсы' : 'Показать референсы'}
+                              <span className="text-gray-600">({clip.nano_banana_ingredients.length})</span>
+                            </button>
+                            {showRefs[clip.clip_id] && (
+                              <IngredientThumbnails
+                                clipId={clip.clip_id}
+                                ingredients={clip.nano_banana_ingredients}
+                                projectId={projectId!}
+                                library={refLibrary}
+                                onReplaced={() =>
+                                  queryClient.invalidateQueries({ queryKey: ['clips', projectId] })
+                                }
+                              />
+                            )}
+                          </div>
+
                           {/* First */}
                           <PromptBlock
                             label="First"
@@ -236,12 +330,6 @@ export function Clips() {
                               queryClient.invalidateQueries({ queryKey: ['clips', projectId] });
                             }}
                             isFixing={fixing === `${clip.clip_id}_nb_first`}
-                          />
-
-                          {/* Ингредиенты — миниатюры */}
-                          <IngredientThumbnails
-                            ingredients={clip.nano_banana_ingredients}
-                            projectId={projectId!}
                           />
 
                           {/* VEO */}
@@ -403,38 +491,93 @@ function PromptBlock({
 }
 
 
-/** Миниатюры ингредиентов с лайтбоксом */
-function IngredientThumbnails({ ingredients, projectId }: { ingredients: string[]; projectId: string }) {
+/** Миниатюры ингредиентов с лайтбоксом и возможностью смены референса */
+function IngredientThumbnails({
+  clipId,
+  ingredients,
+  projectId,
+  library,
+  onReplaced,
+}: {
+  clipId: string;
+  ingredients: string[];
+  projectId: string;
+  library: RefOption[];
+  onReplaced: () => void;
+}) {
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [pickerFor, setPickerFor] = useState<number | null>(null);
+  const [replacing, setReplacing] = useState<number | null>(null);
 
   if (!ingredients.length) return null;
 
+  const handleReplace = async (index: number, newPath: string) => {
+    setReplacing(index);
+    setPickerFor(null);
+    try {
+      await api.updateClipIngredient(projectId, clipId, index, newPath);
+      onReplaced();
+    } catch (err) {
+      alert(`Ошибка смены референса: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setReplacing(null);
+    }
+  };
+
   return (
     <>
-      <div className="flex flex-wrap gap-2 -mt-2">
+      <div className="flex flex-wrap gap-3">
         {ingredients.map((ing, i) => {
           const url = api.mediaUrl(projectId, ing);
           const filename = ing.split('/').pop() || '';
           return (
-            <div
-              key={i}
-              className="group relative cursor-pointer"
-              onClick={() => setLightbox(url)}
-            >
-              <img
-                src={url}
-                alt={filename}
-                className="w-14 h-14 object-cover rounded border border-surface-lighter hover:border-accent transition-colors"
-                loading="lazy"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
-              <span className="absolute -top-1 -left-1 bg-surface-lighter text-[9px] text-gray-400 rounded px-1">
-                {i + 1}
-              </span>
+            <div key={i} className="flex flex-col items-center gap-1 w-20">
+              <div
+                className="group relative cursor-pointer"
+                onClick={() => setLightbox(url)}
+              >
+                <img
+                  src={url}
+                  alt={filename}
+                  className="w-20 h-20 object-cover rounded border border-surface-lighter hover:border-accent transition-colors"
+                  loading="lazy"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+                <span className="absolute -top-1 -left-1 bg-surface-lighter text-[9px] text-gray-400 rounded px-1">
+                  {i + 1}
+                </span>
+                {replacing === i && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded">
+                    <Loader2 size={16} className="animate-spin text-white" />
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPickerFor(pickerFor === i ? null : i);
+                }}
+                disabled={replacing != null}
+                className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-accent transition-colors disabled:opacity-40"
+              >
+                <Replace size={10} />
+                Сменить
+              </button>
             </div>
           );
         })}
       </div>
+
+      {/* Модалка выбора референса */}
+      {pickerFor != null && (
+        <ReferencePicker
+          currentPath={ingredients[pickerFor]}
+          library={library}
+          projectId={projectId}
+          onPick={(path) => handleReplace(pickerFor, path)}
+          onClose={() => setPickerFor(null)}
+        />
+      )}
 
       {/* Лайтбокс */}
       {lightbox && (
@@ -456,5 +599,121 @@ function IngredientThumbnails({ ingredients, projectId }: { ingredients: string[
         </div>
       )}
     </>
+  );
+}
+
+/** Выпадающий список всех референсов проекта для смены ингредиента */
+function ReferencePicker({
+  currentPath,
+  library,
+  projectId,
+  onPick,
+  onClose,
+}: {
+  currentPath: string;
+  library: RefOption[];
+  projectId: string;
+  onPick: (path: string) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Закрытие по Escape и клику вне
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const filtered = useMemo(() => {
+    if (!query.trim()) return library;
+    const q = query.toLowerCase();
+    return library.filter((o) => o.label.toLowerCase().includes(q) || o.group.toLowerCase().includes(q));
+  }, [library, query]);
+
+  const groups = useMemo(() => {
+    const map = new Map<string, RefOption[]>();
+    for (const o of filtered) {
+      if (!map.has(o.group)) map.set(o.group, []);
+      map.get(o.group)!.push(o);
+    }
+    return Array.from(map.entries());
+  }, [filtered]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        ref={ref}
+        className="bg-surface rounded-lg border border-surface-lighter w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-surface-lighter">
+          <h3 className="text-sm font-medium">Сменить референс</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-white">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="px-4 py-2 border-b border-surface-lighter">
+          <div className="relative">
+            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500" />
+            <input
+              type="text"
+              autoFocus
+              placeholder="Поиск по имени или ракурсу..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full pl-7 pr-3 py-1.5 bg-surface-light rounded border border-surface-lighter focus:border-accent outline-none text-xs"
+            />
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-3 space-y-4">
+          {groups.length === 0 ? (
+            <p className="text-center text-gray-500 text-sm py-8">
+              {library.length === 0 ? 'В проекте пока нет принятых референсов.' : 'Ничего не найдено.'}
+            </p>
+          ) : (
+            groups.map(([groupName, items]) => (
+              <div key={groupName}>
+                <h4 className="text-[11px] uppercase text-gray-500 mb-1.5 font-medium">{groupName}</h4>
+                <div className="grid grid-cols-4 gap-2">
+                  {items.map((o) => {
+                    const isCurrent = o.path === currentPath;
+                    return (
+                      <button
+                        key={o.path}
+                        onClick={() => onPick(o.path)}
+                        className={`flex flex-col items-start gap-1 p-1.5 rounded border transition-colors text-left ${
+                          isCurrent
+                            ? 'border-accent bg-accent/10'
+                            : 'border-surface-lighter hover:border-accent'
+                        }`}
+                      >
+                        <img
+                          src={api.mediaUrl(projectId, o.path)}
+                          alt={o.label}
+                          className="w-full h-20 object-cover rounded"
+                          loading="lazy"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                        <span className="text-[10px] text-gray-300 line-clamp-2 leading-tight">
+                          {o.label}
+                        </span>
+                        {isCurrent && (
+                          <span className="text-[9px] text-accent">текущий</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

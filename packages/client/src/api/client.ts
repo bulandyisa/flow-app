@@ -282,6 +282,13 @@ export const api = {
       body: JSON.stringify({ projectId, clipId, component, prompt }),
     }),
 
+  // Замена одного ингредиента клипа по индексу
+  updateClipIngredient: (projectId: string, clipId: string, index: number, path: string) =>
+    request<{ success: boolean }>('/clips/update-ingredient', {
+      method: 'PATCH',
+      body: JSON.stringify({ projectId, clipId, index, path }),
+    }),
+
   // Боты
   getBotStatus: () => request<{
     bots: Array<{

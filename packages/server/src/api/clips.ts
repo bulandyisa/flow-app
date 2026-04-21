@@ -147,5 +147,45 @@ export function clipsRouter(config: AppConfig): Router {
     res.json({ success: true, clipId, component, prompt });
   });
 
+  // PATCH /api/clips/update-ingredient — заменить один ингредиент клипа по индексу
+  router.patch('/update-ingredient', (req, res) => {
+    const { projectId, clipId, index, path } = req.body as {
+      projectId: string;
+      clipId: string;
+      index: number;
+      path: string;
+    };
+
+    if (!projectId || !clipId || index == null || !path) {
+      res.status(400).json({ error: 'projectId, clipId, index и path обязательны' });
+      return;
+    }
+
+    const promptsFile = resolve(store.projectDir(projectId), 'prompts', 'all_prompts.json');
+    if (!existsSync(promptsFile)) {
+      res.status(404).json({ error: 'Файл промптов не найден' });
+      return;
+    }
+
+    const clips: Clip[] = JSON.parse(readFileSync(promptsFile, 'utf-8'));
+    const clipIdx = clips.findIndex((c) => c.clip_id === clipId);
+    if (clipIdx < 0) {
+      res.status(404).json({ error: `Клип ${clipId} не найден` });
+      return;
+    }
+
+    const ingredients = [...clips[clipIdx].nano_banana_ingredients];
+    if (index < 0 || index >= ingredients.length) {
+      res.status(400).json({ error: `Индекс вне диапазона (${ingredients.length} ингр.)` });
+      return;
+    }
+
+    ingredients[index] = path;
+    clips[clipIdx].nano_banana_ingredients = ingredients;
+
+    writeFileSync(promptsFile, JSON.stringify(clips, null, 2), 'utf-8');
+    res.json({ success: true, clipId, index, path });
+  });
+
   return router;
 }
