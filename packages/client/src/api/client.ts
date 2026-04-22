@@ -289,6 +289,20 @@ export const api = {
       body: JSON.stringify({ projectId, clipId, index, path }),
     }),
 
+  // Добавление нового ингредиента (до 14)
+  addClipIngredient: (projectId: string, clipId: string, path: string) =>
+    request<{ success: boolean; index: number }>('/clips/add-ingredient', {
+      method: 'POST',
+      body: JSON.stringify({ projectId, clipId, path }),
+    }),
+
+  // Удаление ингредиента по индексу
+  removeClipIngredient: (projectId: string, clipId: string, index: number) =>
+    request<{ success: boolean; remaining: number }>('/clips/remove-ingredient', {
+      method: 'DELETE',
+      body: JSON.stringify({ projectId, clipId, index }),
+    }),
+
   // Боты
   getBotStatus: () => request<{
     bots: Array<{

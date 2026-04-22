@@ -187,5 +187,83 @@ export function clipsRouter(config: AppConfig): Router {
     res.json({ success: true, clipId, index, path });
   });
 
+  // POST /api/clips/add-ingredient — добавить ингредиент в конец массива
+  router.post('/add-ingredient', (req, res) => {
+    const { projectId, clipId, path } = req.body as {
+      projectId: string;
+      clipId: string;
+      path: string;
+    };
+
+    if (!projectId || !clipId || !path) {
+      res.status(400).json({ error: 'projectId, clipId и path обязательны' });
+      return;
+    }
+
+    const promptsFile = resolve(store.projectDir(projectId), 'prompts', 'all_prompts.json');
+    if (!existsSync(promptsFile)) {
+      res.status(404).json({ error: 'Файл промптов не найден' });
+      return;
+    }
+
+    const clips: Clip[] = JSON.parse(readFileSync(promptsFile, 'utf-8'));
+    const clipIdx = clips.findIndex((c) => c.clip_id === clipId);
+    if (clipIdx < 0) {
+      res.status(404).json({ error: `Клип ${clipId} не найден` });
+      return;
+    }
+
+    const ingredients = [...clips[clipIdx].nano_banana_ingredients];
+    if (ingredients.length >= 14) {
+      res.status(400).json({ error: 'Достигнут лимит NB Pro (14 ингредиентов)' });
+      return;
+    }
+
+    ingredients.push(path);
+    clips[clipIdx].nano_banana_ingredients = ingredients;
+
+    writeFileSync(promptsFile, JSON.stringify(clips, null, 2), 'utf-8');
+    res.json({ success: true, clipId, index: ingredients.length - 1, path });
+  });
+
+  // DELETE /api/clips/remove-ingredient — удалить ингредиент по индексу
+  router.delete('/remove-ingredient', (req, res) => {
+    const { projectId, clipId, index } = req.body as {
+      projectId: string;
+      clipId: string;
+      index: number;
+    };
+
+    if (!projectId || !clipId || index == null) {
+      res.status(400).json({ error: 'projectId, clipId и index обязательны' });
+      return;
+    }
+
+    const promptsFile = resolve(store.projectDir(projectId), 'prompts', 'all_prompts.json');
+    if (!existsSync(promptsFile)) {
+      res.status(404).json({ error: 'Файл промптов не найден' });
+      return;
+    }
+
+    const clips: Clip[] = JSON.parse(readFileSync(promptsFile, 'utf-8'));
+    const clipIdx = clips.findIndex((c) => c.clip_id === clipId);
+    if (clipIdx < 0) {
+      res.status(404).json({ error: `Клип ${clipId} не найден` });
+      return;
+    }
+
+    const ingredients = [...clips[clipIdx].nano_banana_ingredients];
+    if (index < 0 || index >= ingredients.length) {
+      res.status(400).json({ error: `Индекс вне диапазона (${ingredients.length} ингр.)` });
+      return;
+    }
+
+    ingredients.splice(index, 1);
+    clips[clipIdx].nano_banana_ingredients = ingredients;
+
+    writeFileSync(promptsFile, JSON.stringify(clips, null, 2), 'utf-8');
+    res.json({ success: true, clipId, index, remaining: ingredients.length });
+  });
+
   return router;
 }

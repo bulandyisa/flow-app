@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
-import { FileText, ChevronDown, ChevronRight, Send, Loader2, Search, X, Image as ImageIcon, Replace } from 'lucide-react';
+import { FileText, ChevronDown, ChevronRight, Send, Loader2, Search, X, Image as ImageIcon, Replace, Plus, Trash2 } from 'lucide-react';
 
 interface Clip {
   clip_id: string;
@@ -491,7 +491,7 @@ function PromptBlock({
 }
 
 
-/** Миниатюры ингредиентов с лайтбоксом и возможностью смены референса */
+/** Миниатюры ингредиентов с лайтбоксом, сменой/добавлением/удалением референса */
 function IngredientThumbnails({
   clipId,
   ingredients,
@@ -506,23 +506,54 @@ function IngredientThumbnails({
   onReplaced: () => void;
 }) {
   const [lightbox, setLightbox] = useState<string | null>(null);
-  const [pickerFor, setPickerFor] = useState<number | null>(null);
-  const [replacing, setReplacing] = useState<number | null>(null);
+  const [picker, setPicker] = useState<{ mode: 'replace'; index: number } | { mode: 'add' } | null>(null);
+  const [busy, setBusy] = useState<{ kind: 'replace' | 'remove'; index: number } | { kind: 'add' } | null>(null);
 
-  if (!ingredients.length) return null;
+  const MAX_INGREDIENTS = 14;
+  const atLimit = ingredients.length >= MAX_INGREDIENTS;
 
   const handleReplace = async (index: number, newPath: string) => {
-    setReplacing(index);
-    setPickerFor(null);
+    setBusy({ kind: 'replace', index });
+    setPicker(null);
     try {
       await api.updateClipIngredient(projectId, clipId, index, newPath);
       onReplaced();
     } catch (err) {
       alert(`Ошибка смены референса: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
-      setReplacing(null);
+      setBusy(null);
     }
   };
+
+  const handleAdd = async (newPath: string) => {
+    setBusy({ kind: 'add' });
+    setPicker(null);
+    try {
+      await api.addClipIngredient(projectId, clipId, newPath);
+      onReplaced();
+    } catch (err) {
+      alert(`Ошибка добавления референса: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleRemove = async (index: number) => {
+    if (!confirm(`Удалить ингредиент ${index + 1}?`)) return;
+    setBusy({ kind: 'remove', index });
+    try {
+      await api.removeClipIngredient(projectId, clipId, index);
+      onReplaced();
+    } catch (err) {
+      alert(`Ошибка удаления референса: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const isBusy = (index: number, kind: 'replace' | 'remove') =>
+    busy != null && 'index' in busy && busy.kind === kind && busy.index === index;
+  const anyBusy = busy != null;
 
   return (
     <>
@@ -546,7 +577,15 @@ function IngredientThumbnails({
                 <span className="absolute -top-1 -left-1 bg-surface-lighter text-[9px] text-gray-400 rounded px-1">
                   {i + 1}
                 </span>
-                {replacing === i && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleRemove(i); }}
+                  disabled={anyBusy}
+                  title="Удалить"
+                  className="absolute -top-1 -right-1 bg-red-600/90 hover:bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-40"
+                >
+                  <X size={10} />
+                </button>
+                {(isBusy(i, 'replace') || isBusy(i, 'remove')) && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded">
                     <Loader2 size={16} className="animate-spin text-white" />
                   </div>
@@ -555,9 +594,9 @@ function IngredientThumbnails({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setPickerFor(pickerFor === i ? null : i);
+                  setPicker(picker && picker.mode === 'replace' && picker.index === i ? null : { mode: 'replace', index: i });
                 }}
-                disabled={replacing != null}
+                disabled={anyBusy}
                 className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-accent transition-colors disabled:opacity-40"
               >
                 <Replace size={10} />
@@ -566,16 +605,34 @@ function IngredientThumbnails({
             </div>
           );
         })}
+
+        {/* Кнопка добавления */}
+        <button
+          onClick={() => !atLimit && setPicker({ mode: 'add' })}
+          disabled={atLimit || anyBusy}
+          title={atLimit ? `Лимит ${MAX_INGREDIENTS} ингредиентов` : 'Добавить референс'}
+          className="w-20 h-20 flex flex-col items-center justify-center gap-1 rounded border border-dashed border-surface-lighter text-gray-500 hover:border-accent hover:text-accent transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {busy?.kind === 'add' ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <>
+              <Plus size={16} />
+              <span className="text-[10px]">Добавить</span>
+            </>
+          )}
+        </button>
       </div>
 
       {/* Модалка выбора референса */}
-      {pickerFor != null && (
+      {picker != null && (
         <ReferencePicker
-          currentPath={ingredients[pickerFor]}
+          title={picker.mode === 'add' ? 'Добавить референс' : 'Сменить референс'}
+          currentPath={picker.mode === 'replace' ? ingredients[picker.index] : null}
           library={library}
           projectId={projectId}
-          onPick={(path) => handleReplace(pickerFor, path)}
-          onClose={() => setPickerFor(null)}
+          onPick={(path) => picker.mode === 'add' ? handleAdd(path) : handleReplace(picker.index, path)}
+          onClose={() => setPicker(null)}
         />
       )}
 
@@ -602,15 +659,17 @@ function IngredientThumbnails({
   );
 }
 
-/** Выпадающий список всех референсов проекта для смены ингредиента */
+/** Выпадающий список всех референсов проекта для смены/добавления ингредиента */
 function ReferencePicker({
+  title = 'Сменить референс',
   currentPath,
   library,
   projectId,
   onPick,
   onClose,
 }: {
-  currentPath: string;
+  title?: string;
+  currentPath: string | null;
   library: RefOption[];
   projectId: string;
   onPick: (path: string) => void;
@@ -652,7 +711,7 @@ function ReferencePicker({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-surface-lighter">
-          <h3 className="text-sm font-medium">Сменить референс</h3>
+          <h3 className="text-sm font-medium">{title}</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-white">
             <X size={16} />
           </button>
