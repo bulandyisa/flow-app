@@ -94,7 +94,7 @@ export function Review() {
     }
   });
   const [submitResult, setSubmitResult] = useState<string | null>(null);
-  const [model, setModel] = useState<'sonnet' | 'opus'>('sonnet');
+  const [model, setModel] = useState<'sonnet' | 'opus'>('opus');
 
   // Сохраняем в localStorage при изменениях
   useEffect(() => {
