@@ -19,19 +19,6 @@ export interface ManagedBot {
   currentAction: string | null;
   completedCount: number;
   errorCount: number;
-  errors: string[];
-}
-
-const MAX_ERRORS_KEPT = 50;
-
-function pushError(managed: ManagedBot, detail: string | undefined, clipId: string | null): void {
-  const msg = (detail || '').trim();
-  if (!msg) return;
-  const entry = clipId ? `[${clipId}] ${msg}` : msg;
-  managed.errors.push(entry);
-  if (managed.errors.length > MAX_ERRORS_KEPT) {
-    managed.errors = managed.errors.slice(-MAX_ERRORS_KEPT);
-  }
 }
 
 /**
@@ -180,7 +167,6 @@ export class BotManager {
       currentAction: null,
       completedCount: 0,
       errorCount: 0,
-      errors: [],
     };
 
     const projectStore = projectId ? new ProjectStore(this.config.dataDir) : null;
@@ -206,10 +192,7 @@ export class BotManager {
         if (progress.clipId) managed.currentClip = progress.clipId;
         if (progress.action) managed.currentAction = progress.action;
         if (progress.action === 'done') managed.completedCount++;
-        if (progress.action === 'error') {
-          managed.errorCount++;
-          pushError(managed, progress.detail, managed.currentClip);
-        }
+        if (progress.action === 'error') managed.errorCount++;
 
         broadcast({
           type: 'bot_status',
@@ -218,7 +201,6 @@ export class BotManager {
             ...progress,
             completedCount: managed.completedCount,
             errorCount: managed.errorCount,
-            errors: managed.errors,
           },
         });
       }
@@ -274,7 +256,6 @@ export class BotManager {
       cwd: resolve(botScript, '..', '..'),
       env: botEnv,
       timeoutMs: 3600_000, // 1 час
-      logFile: resolve(this.config.dataDir, 'logs', `bot_${botId}.log`),
     });
 
     return { success: true };
@@ -311,7 +292,6 @@ export class BotManager {
       currentAction: null,
       completedCount: 0,
       errorCount: 0,
-      errors: [],
     };
 
     // Парсим вывод для статуса (REF-specific patterns)
@@ -328,14 +308,8 @@ export class BotManager {
       if (refMatch) {
         const action = refMatch[3] === 'OK' ? 'done' : 'error';
         if (action === 'done') managed.completedCount++;
-        if (action === 'error') {
-          managed.errorCount++;
-          pushError(managed, text.trim().substring(0, 300), managed.currentClip);
-        }
+        if (action === 'error') managed.errorCount++;
         managed.currentAction = action;
-      } else if (progress?.action === 'error') {
-        // Обычные ошибки парсера (не [REF])
-        pushError(managed, progress.detail, managed.currentClip);
       }
 
       const refGenerating = text.match(/\[REF\].*Generating\s+(.+)/);
@@ -408,7 +382,6 @@ export class BotManager {
       cwd: resolve(botScript, '..', '..'),
       env: botEnv,
       timeoutMs: 3600_000, // 1 час
-      logFile: resolve(this.config.dataDir, 'logs', `bot_${botId}.log`),
     });
 
     return { success: true };
@@ -510,7 +483,6 @@ export class BotManager {
     currentAction: string | null;
     completedCount: number;
     errorCount: number;
-    errors: string[];
     startedAt: string | null;
     exitCode: number | null;
   }> {
@@ -524,7 +496,6 @@ export class BotManager {
         currentAction: managed.currentAction,
         completedCount: managed.completedCount,
         errorCount: managed.errorCount,
-        errors: managed.errors,
         startedAt: managed.runner.startedAt,
         exitCode: managed.runner.exitCode,
       });
