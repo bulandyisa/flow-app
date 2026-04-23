@@ -319,8 +319,22 @@ def dismiss_popups(page):
     return dismissed
 
 
+_FLOW_PROJECT_ID_RE = re.compile(r'/project/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', re.I)
+
+
+def _register_current_flow_project(page):
+    """Print marker with current Flow project UUID so flow-app can persist it."""
+    m = _FLOW_PROJECT_ID_RE.search(page.url or '')
+    if m:
+        print(f'[FLOW_PROJECT_REGISTERED] {m.group(1)}')
+
+
 def ensure_project(page, project_id=None):
-    """Navigate to Flow and enter a project. If project_id given, navigate directly."""
+    """Navigate to Flow and enter a project. If project_id given, navigate directly.
+
+    On every successful entry prints [FLOW_PROJECT_REGISTERED] <uuid> so
+    flow-app can persist the bound project for future runs.
+    """
     if project_id:
         project_url = f'{FLOW_URL}/project/{project_id}'
         print(f'  Opening project {project_id[:8]}...')
@@ -332,6 +346,7 @@ def ensure_project(page, project_id=None):
             human_delay(0.5, 1.0)
         if '/project/' in page.url:
             print(f'  In project: {page.url[-50:]}')
+            _register_current_flow_project(page)
             return
         print(f'  WARNING: project navigation failed, falling back...')
 
@@ -368,6 +383,7 @@ def ensure_project(page, project_id=None):
             page.goto(project_url, wait_until='domcontentloaded')
             human_delay_long(5, 8)
         print(f'  In project: {page.url[-50:]}')
+        _register_current_flow_project(page)
         return
 
     # On main page — wait for projects to load (page shows "Загрузка..." initially)
@@ -422,6 +438,7 @@ def ensure_project(page, project_id=None):
 
     if '/project/' in page.url:
         print(f'  In project: {page.url[-50:]}')
+        _register_current_flow_project(page)
         # Wait for project to fully load (not "Загрузка...")
         human_delay_long(3, 6)
     else:

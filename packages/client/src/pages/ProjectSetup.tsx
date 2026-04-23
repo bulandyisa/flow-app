@@ -221,14 +221,13 @@ function FlowProjectBinding({
   flowProjectId?: string;
   onSaved: () => void;
 }) {
-  const [value, setValue] = useState(flowProjectId || '');
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const extractUuid = (input: string): string | null => {
-    const trimmed = input.trim();
-    if (!trimmed) return null;
-    const match = trimmed.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    const match = input.trim().match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
     return match ? match[0].toLowerCase() : null;
   };
 
@@ -242,7 +241,8 @@ function FlowProjectBinding({
     setError(null);
     try {
       await api.updateProject(projectId, { flowProjectId: uuid });
-      setValue(uuid);
+      setEditing(false);
+      setValue('');
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -256,30 +256,56 @@ function FlowProjectBinding({
   return (
     <div className="mb-6 p-4 bg-surface-light rounded-lg border border-surface-lighter">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-medium">Привязка к проекту Google Flow</h3>
-        <span className={`text-xs px-2 py-0.5 rounded ${isBound ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
-          {isBound ? `Привязан: ${flowProjectId!.slice(0, 8)}…` : 'Не привязан — бот не запустится'}
-        </span>
+        <h3 className="text-sm font-medium">Проект Google Flow</h3>
+        {isBound ? (
+          <span className="text-xs px-2 py-0.5 rounded bg-green-900/30 text-green-400" title={flowProjectId}>
+            Привязан: {flowProjectId!.slice(0, 8)}…
+          </span>
+        ) : (
+          <span className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400">
+            Будет выбран автоматически при первом запуске
+          </span>
+        )}
       </div>
-      <p className="text-xs text-gray-500 mb-3">
-        Вставьте URL проекта Flow (например, <code className="text-gray-400">https://labs.google/fx/ru/tools/flow/project/&lt;uuid&gt;</code>) или просто UUID. Бот будет заходить только в этот проект и не трогать чужие.
+      <p className="text-xs text-gray-500 mb-2">
+        {isBound
+          ? 'Боты работают только в этом проекте Flow. Если вдруг не тот — нажмите «Сменить» и вставьте URL нужного проекта.'
+          : 'При первом запуске бот зайдёт в проект Flow и запомнит его. В дальнейшем будет работать строго там.'}
       </p>
-      <div className="flex items-center gap-2">
-        <input
-          type="text"
-          placeholder="https://labs.google/fx/ru/tools/flow/project/..."
-          value={value}
-          onChange={(e) => { setValue(e.target.value); setError(null); }}
-          className="flex-1 px-3 py-2 bg-surface rounded border border-surface-lighter focus:border-accent outline-none text-sm font-mono"
-        />
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="px-4 py-2 bg-accent hover:bg-accent-hover rounded text-sm transition-colors disabled:opacity-50"
-        >
-          {saving ? 'Сохранение…' : 'Сохранить'}
-        </button>
-      </div>
+      {editing ? (
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            autoFocus
+            placeholder="https://labs.google/fx/ru/tools/flow/project/..."
+            value={value}
+            onChange={(e) => { setValue(e.target.value); setError(null); }}
+            className="flex-1 px-3 py-2 bg-surface rounded border border-surface-lighter focus:border-accent outline-none text-sm font-mono"
+          />
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-4 py-2 bg-accent hover:bg-accent-hover rounded text-sm transition-colors disabled:opacity-50"
+          >
+            {saving ? 'Сохранение…' : 'Сохранить'}
+          </button>
+          <button
+            onClick={() => { setEditing(false); setValue(''); setError(null); }}
+            className="px-3 py-2 text-gray-400 hover:text-white text-sm"
+          >
+            Отмена
+          </button>
+        </div>
+      ) : (
+        isBound && (
+          <button
+            onClick={() => setEditing(true)}
+            className="text-xs text-gray-400 hover:text-accent underline-offset-2 hover:underline"
+          >
+            Сменить вручную
+          </button>
+        )
+      )}
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
     </div>
   );
