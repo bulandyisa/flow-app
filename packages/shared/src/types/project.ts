@@ -56,6 +56,7 @@ export interface Project {
   locations: Location[];
   seating: Seating;
   screenplayFile: string | null;
+  flowProjectId?: string; // UUID проекта в Google Flow — чтобы бот не лез в чужие проекты
   createdAt: string;      // ISO date
   updatedAt: string;
 }

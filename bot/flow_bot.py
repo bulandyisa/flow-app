@@ -3946,7 +3946,7 @@ def do_phase_select(phase, clip_commands):
     return selected_count
 
 
-def do_chain(pw, scenes_filter=None, clip_filter=None, use_builtin_chromium=False):
+def do_chain(pw, scenes_filter=None, clip_filter=None, use_builtin_chromium=False, project_id=None):
     """Chain workflow: process clips sequentially within each scene (first→last→first→last).
 
     For each scene, processes clips in order:
@@ -4002,7 +4002,7 @@ def do_chain(pw, scenes_filter=None, clip_filter=None, use_builtin_chromium=Fals
             print(f'  [CONSOLE {msg.type.upper()}] {msg.text[:300]}')
     page.on('console', _on_console)
 
-    ensure_project(page)
+    ensure_project(page, project_id=project_id)
     wait_for_flow_ready(page)
 
     summary = {'generated': [], 'skipped': [], 'blocked': []}
@@ -4236,7 +4236,7 @@ def do_chain(pw, scenes_filter=None, clip_filter=None, use_builtin_chromium=Fals
     ctx.close()
 
 
-def do_phase(pw, use_builtin_chromium=False):
+def do_phase(pw, use_builtin_chromium=False, project_id=None):
     """Execute phase-based workflow from commands.json."""
     cmd = _load_commands()
     if not cmd:
@@ -4287,7 +4287,7 @@ def do_phase(pw, use_builtin_chromium=False):
             print(f'  [CONSOLE {msg.type.upper()}] {msg.text[:300]}')
     page.on('console', _on_console)
 
-    ensure_project(page)
+    ensure_project(page, project_id=project_id)
     wait_for_flow_ready(page)
 
     summary = {'generated': [], 'failed': []}
@@ -5216,7 +5216,7 @@ def main():
             print(f'  Timeout: {timeout}s (no SIGALRM on Windows, relying on launcher timeout)')
         with sync_playwright() as pw:
             try:
-                do_chain(pw, scenes_filter=args.scenes, clip_filter=args.clip, use_builtin_chromium=args.chromium)
+                do_chain(pw, scenes_filter=args.scenes, clip_filter=args.clip, use_builtin_chromium=args.chromium, project_id=args.project)
             finally:
                 if hasattr(signal, 'alarm'): signal.alarm(0)
                 if _active_context:
@@ -5232,7 +5232,7 @@ def main():
             print(f'  Timeout: {timeout}s (no SIGALRM on Windows, relying on launcher timeout)')
         with sync_playwright() as pw:
             try:
-                do_phase(pw, use_builtin_chromium=args.chromium)
+                do_phase(pw, use_builtin_chromium=args.chromium, project_id=args.project)
             finally:
                 if hasattr(signal, 'alarm'): signal.alarm(0)
                 if _active_context:

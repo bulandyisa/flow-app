@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
-import { FileText, ChevronDown, ChevronRight, Send, Loader2, Search, X, Image as ImageIcon, Replace, Plus, Trash2 } from 'lucide-react';
+import { FileText, ChevronDown, ChevronRight, Send, Loader2, Search, X, Image as ImageIcon, Replace, Plus, Trash2, Upload } from 'lucide-react';
 
 interface Clip {
   clip_id: string;
@@ -676,6 +676,8 @@ function ReferencePicker({
   onClose: () => void;
 }) {
   const [query, setQuery] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   // Закрытие по Escape и клику вне
@@ -684,6 +686,21 @@ function ReferencePicker({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { path } = await api.uploadReferenceImage(projectId, file);
+      onPick(path);
+    } catch (err) {
+      alert(`Ошибка загрузки файла: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const filtered = useMemo(() => {
     if (!query.trim()) return library;
@@ -716,8 +733,8 @@ function ReferencePicker({
             <X size={16} />
           </button>
         </div>
-        <div className="px-4 py-2 border-b border-surface-lighter">
-          <div className="relative">
+        <div className="px-4 py-2 border-b border-surface-lighter flex items-center gap-2">
+          <div className="relative flex-1">
             <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500" />
             <input
               type="text"
@@ -728,6 +745,22 @@ function ReferencePicker({
               className="w-full pl-7 pr-3 py-1.5 bg-surface-light rounded border border-surface-lighter focus:border-accent outline-none text-xs"
             />
           </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleUpload}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            title="Загрузить свой файл"
+            className="flex items-center gap-1 px-3 py-1.5 text-xs bg-surface-light hover:bg-surface-lighter rounded border border-surface-lighter hover:border-accent transition-colors disabled:opacity-50"
+          >
+            {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+            <span>Загрузить файл</span>
+          </button>
         </div>
         <div className="flex-1 overflow-y-auto p-3 space-y-4">
           {groups.length === 0 ? (

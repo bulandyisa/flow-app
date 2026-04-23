@@ -303,6 +303,19 @@ export const api = {
       body: JSON.stringify({ projectId, clipId, index }),
     }),
 
+  // Загрузка произвольного файла как референса (возвращает rel path в проекте)
+  uploadReferenceImage: async (projectId: string, file: File): Promise<{ success: boolean; path: string }> => {
+    const fd = new FormData();
+    fd.append('projectId', projectId);
+    fd.append('file', file);
+    const res = await fetch(`${BASE_URL}/clips/upload-reference`, { method: 'POST', body: fd });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+
   // Боты
   getBotStatus: () => request<{
     bots: Array<{

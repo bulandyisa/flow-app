@@ -12,6 +12,7 @@ interface ProjectData {
   nameRu: string;
   phase: string;
   screenplayFile: string | null;
+  flowProjectId?: string;
   characters: Array<{
     id: string;
     name: string;
@@ -81,6 +82,9 @@ export function ProjectSetup() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">{proj.nameRu}</h1>
+
+      {/* Привязка к проекту Google Flow — чтобы бот не заходил в чужие проекты */}
+      <FlowProjectBinding projectId={proj.id} flowProjectId={proj.flowProjectId} onSaved={refreshProject} />
 
       {/* Stepper — кликабельный */}
       <div className="flex items-center gap-2 mb-8">
@@ -203,6 +207,80 @@ export function ProjectSetup() {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Привязка flow-app проекта к проекту в Google Flow по UUID. */
+function FlowProjectBinding({
+  projectId,
+  flowProjectId,
+  onSaved,
+}: {
+  projectId: string;
+  flowProjectId?: string;
+  onSaved: () => void;
+}) {
+  const [value, setValue] = useState(flowProjectId || '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const extractUuid = (input: string): string | null => {
+    const trimmed = input.trim();
+    if (!trimmed) return null;
+    const match = trimmed.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    return match ? match[0].toLowerCase() : null;
+  };
+
+  const handleSave = async () => {
+    const uuid = extractUuid(value);
+    if (!uuid) {
+      setError('Вставьте URL проекта Google Flow или его UUID');
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await api.updateProject(projectId, { flowProjectId: uuid });
+      setValue(uuid);
+      onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const isBound = !!flowProjectId;
+
+  return (
+    <div className="mb-6 p-4 bg-surface-light rounded-lg border border-surface-lighter">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-medium">Привязка к проекту Google Flow</h3>
+        <span className={`text-xs px-2 py-0.5 rounded ${isBound ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
+          {isBound ? `Привязан: ${flowProjectId!.slice(0, 8)}…` : 'Не привязан — бот не запустится'}
+        </span>
+      </div>
+      <p className="text-xs text-gray-500 mb-3">
+        Вставьте URL проекта Flow (например, <code className="text-gray-400">https://labs.google/fx/ru/tools/flow/project/&lt;uuid&gt;</code>) или просто UUID. Бот будет заходить только в этот проект и не трогать чужие.
+      </p>
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          placeholder="https://labs.google/fx/ru/tools/flow/project/..."
+          value={value}
+          onChange={(e) => { setValue(e.target.value); setError(null); }}
+          className="flex-1 px-3 py-2 bg-surface rounded border border-surface-lighter focus:border-accent outline-none text-sm font-mono"
+        />
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="px-4 py-2 bg-accent hover:bg-accent-hover rounded text-sm transition-colors disabled:opacity-50"
+        >
+          {saving ? 'Сохранение…' : 'Сохранить'}
+        </button>
+      </div>
+      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
     </div>
   );
 }

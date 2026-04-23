@@ -49,7 +49,13 @@ export function botRouter(config: AppConfig): Router {
       return;
     }
 
-    const extraArgs = numBots ? ['--num-bots', String(numBots)] : [];
+    if (!project.flowProjectId) {
+      res.status(400).json({ error: 'Проект Google Flow не привязан. Откройте «Настройка» и укажите URL проекта Flow, чтобы бот не заходил в чужие проекты.' });
+      return;
+    }
+
+    const extraArgs: string[] = ['--project', project.flowProjectId];
+    if (numBots) extraArgs.push('--num-bots', String(numBots));
     const result = manager.startBot(botId, account, projectDir, promptsFile, extraArgs);
     if (result.success) {
       res.json({ success: true, message: `Бот ${botId} запущен на аккаунте ${account}` });

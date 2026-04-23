@@ -1,11 +1,15 @@
 import { Router } from 'express';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import multer from 'multer';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from 'node:fs';
+import { resolve, extname, basename } from 'node:path';
+import { tmpdir } from 'node:os';
 import type { AppConfig } from '../config.js';
 import { ProjectStore } from '../data/project-store.js';
 import { askClaudeJson } from '../ai/client.js';
 import { fixPromptByFeedback } from '../ai/feedback.js';
 import type { Clip } from '@flow-app/shared';
+
+const upload = multer({ dest: resolve(tmpdir(), 'flow-app-uploads') });
 
 export function clipsRouter(config: AppConfig): Router {
   const router = Router();
@@ -263,6 +267,37 @@ export function clipsRouter(config: AppConfig): Router {
 
     writeFileSync(promptsFile, JSON.stringify(clips, null, 2), 'utf-8');
     res.json({ success: true, clipId, index, remaining: ingredients.length });
+  });
+
+  // POST /api/clips/upload-reference — загрузить произвольную картинку как референс.
+  // Сохраняет в <projectDir>/references/custom/<timestamp>_<name> и возвращает относительный path.
+  router.post('/upload-reference', upload.single('file'), (req, res) => {
+    const { projectId } = req.body as { projectId?: string };
+    if (!projectId) {
+      res.status(400).json({ error: 'projectId обязателен' });
+      return;
+    }
+    if (!req.file) {
+      res.status(400).json({ error: 'Файл не загружен' });
+      return;
+    }
+
+    const project = store.get(projectId);
+    if (!project) {
+      res.status(404).json({ error: 'Проект не найден' });
+      return;
+    }
+
+    const ext = extname(req.file.originalname).toLowerCase() || '.png';
+    const safeName = basename(req.file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40) || 'upload';
+    const fileName = `${Date.now()}_${safeName}${ext}`;
+    const customDir = resolve(store.projectDir(projectId), 'references', 'custom');
+    mkdirSync(customDir, { recursive: true });
+    const destPath = resolve(customDir, fileName);
+    renameSync(req.file.path, destPath);
+
+    const relPath = `references/custom/${fileName}`;
+    res.json({ success: true, path: relPath });
   });
 
   return router;
