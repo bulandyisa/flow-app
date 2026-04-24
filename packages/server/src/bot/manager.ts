@@ -6,6 +6,7 @@ import { parseBotOutput, type BotProgress } from './parser.js';
 import { broadcast } from '../ws/events.js';
 import type { AppConfig } from '../config.js';
 import { ProjectStore } from '../data/project-store.js';
+import { gaForBot } from '@flow-app/shared';
 
 const FLOW_PROJECT_REGISTERED_RE = /\[FLOW_PROJECT_REGISTERED\]\s+([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
 
@@ -173,16 +174,23 @@ export class BotManager {
 
     // Парсим вывод для статуса
     runner.on('log', ({ text }: { stream: string; text: string }) => {
-      // Если бот сообщил, в каком проекте Flow он оказался — сохраняем UUID
+      // Если бот сообщил, в каком проекте Flow он оказался — сохраняем UUID в слот GA
       if (projectStore && projectId) {
         const m = text.match(FLOW_PROJECT_REGISTERED_RE);
         if (m) {
           const uuid = m[1].toLowerCase();
           const proj = projectStore.get(projectId);
-          if (proj && proj.flowProjectId !== uuid) {
-            proj.flowProjectId = uuid;
-            projectStore.save(proj);
-            broadcast({ type: 'bot_status', data: { botId, action: 'flow_project_registered', flowProjectId: uuid } });
+          if (proj) {
+            const ga = gaForBot(account);
+            if (!proj.flowProjectIdByGA) proj.flowProjectIdByGA = {};
+            if (proj.flowProjectIdByGA[ga] !== uuid) {
+              proj.flowProjectIdByGA[ga] = uuid;
+              projectStore.save(proj);
+              broadcast({
+                type: 'bot_status',
+                data: { botId, action: 'flow_project_registered', ga, flowProjectId: uuid },
+              });
+            }
           }
         }
       }

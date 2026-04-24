@@ -13,6 +13,7 @@ interface ProjectData {
   phase: string;
   screenplayFile: string | null;
   flowProjectId?: string;
+  flowProjectIdByGA?: { 1?: string; 2?: string };
   characters: Array<{
     id: string;
     name: string;
@@ -83,8 +84,13 @@ export function ProjectSetup() {
     <div>
       <h1 className="text-2xl font-bold mb-6">{proj.nameRu}</h1>
 
-      {/* Привязка к проекту Google Flow — чтобы бот не заходил в чужие проекты */}
-      <FlowProjectBinding projectId={proj.id} flowProjectId={proj.flowProjectId} onSaved={refreshProject} />
+      {/* Привязка к проекту Google Flow — по одному UUID на Google-аккаунт */}
+      <FlowProjectBinding
+        projectId={proj.id}
+        flowProjectId={proj.flowProjectId}
+        flowProjectIdByGA={proj.flowProjectIdByGA}
+        onSaved={refreshProject}
+      />
 
       {/* Stepper — кликабельный */}
       <div className="flex items-center gap-2 mb-8">
@@ -211,14 +217,71 @@ export function ProjectSetup() {
   );
 }
 
-/** Привязка flow-app проекта к проекту в Google Flow по UUID. */
+/** Привязка flow-app проекта к проектам Google Flow — по одному UUID на Google-аккаунт. */
 function FlowProjectBinding({
   projectId,
   flowProjectId,
+  flowProjectIdByGA,
   onSaved,
 }: {
   projectId: string;
   flowProjectId?: string;
+  flowProjectIdByGA?: { 1?: string; 2?: string };
+  onSaved: () => void;
+}) {
+  // Legacy UUID показываем только если нет значения для GA1 (предыдущее поведение).
+  const effective: { 1?: string; 2?: string } = {
+    1: flowProjectIdByGA?.[1] || flowProjectId,
+    2: flowProjectIdByGA?.[2],
+  };
+
+  const rows: Array<{ ga: 1 | 2; label: string; bots: string }> = [
+    { ga: 1, label: 'Google-аккаунт 1', bots: 'Боты 1, 2, 5' },
+    { ga: 2, label: 'Google-аккаунт 2', bots: 'Боты 3, 4, 6' },
+  ];
+
+  return (
+    <div className="mb-6 p-4 bg-surface-light rounded-lg border border-surface-lighter">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-medium">Проекты Google Flow</h3>
+      </div>
+      <p className="text-xs text-gray-500 mb-3">
+        Каждый Google-аккаунт хранит свои проекты Flow отдельно. Боты одного аккаунта работают
+        только в своём UUID. При первом запуске бот сам запомнит проект.
+      </p>
+      <div className="space-y-2">
+        {rows.map((row) => (
+          <GAFlowRow
+            key={row.ga}
+            projectId={projectId}
+            ga={row.ga}
+            label={row.label}
+            bots={row.bots}
+            currentUuid={effective[row.ga]}
+            existingMap={flowProjectIdByGA}
+            onSaved={onSaved}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GAFlowRow({
+  projectId,
+  ga,
+  label,
+  bots,
+  currentUuid,
+  existingMap,
+  onSaved,
+}: {
+  projectId: string;
+  ga: 1 | 2;
+  label: string;
+  bots: string;
+  currentUuid?: string;
+  existingMap?: { 1?: string; 2?: string };
   onSaved: () => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -240,7 +303,9 @@ function FlowProjectBinding({
     setSaving(true);
     setError(null);
     try {
-      await api.updateProject(projectId, { flowProjectId: uuid });
+      // Мержим с существующей картой, чтобы не затереть другой GA-слот.
+      const merged = { ...(existingMap || {}), [ga]: uuid };
+      await api.updateProject(projectId, { flowProjectIdByGA: merged });
       setEditing(false);
       setValue('');
       onSaved();
@@ -251,36 +316,43 @@ function FlowProjectBinding({
     }
   };
 
-  const isBound = !!flowProjectId;
+  const isBound = !!currentUuid;
 
   return (
-    <div className="mb-6 p-4 bg-surface-light rounded-lg border border-surface-lighter">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-medium">Проект Google Flow</h3>
-        {isBound ? (
-          <span className="text-xs px-2 py-0.5 rounded bg-green-900/30 text-green-400" title={flowProjectId}>
-            Привязан: {flowProjectId!.slice(0, 8)}…
-          </span>
-        ) : (
-          <span className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400">
-            Будет выбран автоматически при первом запуске
-          </span>
+    <div className="p-3 bg-surface rounded border border-surface-lighter">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-sm font-medium">
+            {label} <span className="text-gray-500 font-normal">— {bots}</span>
+          </div>
+          <div className="text-xs mt-0.5">
+            {isBound ? (
+              <span className="text-green-400 font-mono" title={currentUuid}>
+                {currentUuid!.slice(0, 8)}…{currentUuid!.slice(-4)}
+              </span>
+            ) : (
+              <span className="text-gray-500">Будет выбран автоматически при первом запуске</span>
+            )}
+          </div>
+        </div>
+        {!editing && (
+          <button
+            onClick={() => setEditing(true)}
+            className="text-xs text-gray-400 hover:text-accent underline-offset-2 hover:underline shrink-0"
+          >
+            Сменить вручную
+          </button>
         )}
       </div>
-      <p className="text-xs text-gray-500 mb-2">
-        {isBound
-          ? 'Боты работают только в этом проекте Flow. Если вдруг не тот — нажмите «Сменить» и вставьте URL нужного проекта.'
-          : 'При первом запуске бот зайдёт в проект Flow и запомнит его. В дальнейшем будет работать строго там.'}
-      </p>
-      {editing ? (
-        <div className="flex items-center gap-2">
+      {editing && (
+        <div className="mt-3 flex items-center gap-2">
           <input
             type="text"
             autoFocus
             placeholder="https://labs.google/fx/ru/tools/flow/project/..."
             value={value}
             onChange={(e) => { setValue(e.target.value); setError(null); }}
-            className="flex-1 px-3 py-2 bg-surface rounded border border-surface-lighter focus:border-accent outline-none text-sm font-mono"
+            className="flex-1 px-3 py-2 bg-surface-light rounded border border-surface-lighter focus:border-accent outline-none text-sm font-mono"
           />
           <button
             onClick={handleSave}
@@ -296,15 +368,6 @@ function FlowProjectBinding({
             Отмена
           </button>
         </div>
-      ) : (
-        isBound && (
-          <button
-            onClick={() => setEditing(true)}
-            className="text-xs text-gray-400 hover:text-accent underline-offset-2 hover:underline"
-          >
-            Сменить вручную
-          </button>
-        )
       )}
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
     </div>

@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import type { AppConfig } from '../config.js';
 import { ProjectStore } from '../data/project-store.js';
 import { getBotManager } from '../bot/manager.js';
+import { gaForBot } from '@flow-app/shared';
 
 export function botRouter(config: AppConfig): Router {
   const router = Router();
@@ -50,8 +51,11 @@ export function botRouter(config: AppConfig): Router {
     }
 
     const extraArgs: string[] = [];
-    if (project.flowProjectId) {
-      extraArgs.push('--project', project.flowProjectId);
+    const ga = gaForBot(account);
+    const perGA = project.flowProjectIdByGA?.[ga];
+    const uuid = perGA || project.flowProjectId; // fallback to legacy single-uuid
+    if (uuid) {
+      extraArgs.push('--project', uuid);
     }
     if (numBots) extraArgs.push('--num-bots', String(numBots));
     const result = manager.startBot(botId, account, projectDir, promptsFile, extraArgs, projectId);
