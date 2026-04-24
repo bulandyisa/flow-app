@@ -37,13 +37,23 @@ export function GenerationPanel({ projectId, pendingPhotos, pendingVideos, isFix
   const hasIssue = status && (!status.pythonFound || !status.botScriptFound);
   const canStart = !hasIssue && !isFixingPrompts && (pendingPhotos > 0 || pendingVideos > 0);
 
+  const [startingBot, setStartingBot] = useState<number | null>(null);
   const handleStart = async () => {
+    // Между стартами даём 15 секунд — иначе 6 Chromium одновременно упираются в
+    // ERR_INSUFFICIENT_RESOURCES (лимиты сокетов и памяти на Windows).
+    const STAGGER_MS = 15000;
     try {
       for (let i = 1; i <= botCount; i++) {
+        setStartingBot(i);
         await api.startBot(projectId, i, i, botCount);
+        if (i < botCount) {
+          await new Promise((r) => setTimeout(r, STAGGER_MS));
+        }
       }
+      setStartingBot(null);
       refetch();
     } catch (err) {
+      setStartingBot(null);
       alert(String(err));
     }
   };
@@ -139,12 +149,26 @@ export function GenerationPanel({ projectId, pendingPhotos, pendingVideos, isFix
             {/* Кнопка запуска + подпись */}
             <button
               onClick={handleStart}
-              disabled={!canStart}
+              disabled={!canStart || startingBot != null}
               className="w-full py-2 bg-accent hover:bg-accent-hover rounded-lg text-sm font-medium transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
             >
-              <Play size={14} />
-              Запустить генерацию
+              {startingBot != null ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  Бот {startingBot} из {botCount} запускается…
+                </>
+              ) : (
+                <>
+                  <Play size={14} />
+                  Запустить генерацию
+                </>
+              )}
             </button>
+            {startingBot != null && (
+              <p className="text-[10px] text-gray-500 text-center">
+                15-сек пауза между ботами, чтобы Chromium не захлебнулся
+              </p>
+            )}
             {isFixingPrompts && (
               <p className="text-[10px] text-amber-400 text-center">
                 Идёт составление промптов...
