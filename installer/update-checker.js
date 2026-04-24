@@ -20,6 +20,8 @@ const APP_DIR = path.join(APP_ROOT, 'app');
 const VERSION_FILE = path.join(APP_DIR, 'version.json');
 const GITHUB_REPO = 'bulandyisa/flow-app';
 const TEMP_DIR = path.join(APP_ROOT, '_update_temp');
+const CACHE_FILE = path.join(APP_ROOT, 'update-cache.json');
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 часа
 
 function getCurrentVersion() {
   try {
@@ -86,6 +88,58 @@ function httpsGet(url) {
   });
 }
 
+// Fetch latest release tag via GitHub HTML redirect — не считается API-вызовом,
+// не ограничен 60 req/hour, работает без авторизации.
+// https://github.com/<repo>/releases/latest → 302 → /releases/tag/vX.Y.Z
+const TAG_FROM_URL_RE = /\/releases\/tag\/(v?\d+\.\d+\.\d+)/;
+
+function fetchLatestTagViaRedirect() {
+  return new Promise((resolve, reject) => {
+    const url = `https://github.com/${GITHUB_REPO}/releases/latest`;
+    const req = https.get(url, { headers: { 'User-Agent': 'FlowApp-Updater' } }, (res) => {
+      if (res.statusCode === 301 || res.statusCode === 302) {
+        const loc = res.headers.location || '';
+        const m = loc.match(TAG_FROM_URL_RE);
+        res.resume();
+        if (m) return resolve(m[1].replace(/^v/, ''));
+        return reject(new Error(`redirect без тега: ${loc.slice(0, 120)}`));
+      }
+      // Иногда GitHub отдаёт 200 + HTML — ищем тег прямо в теле.
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        if (res.statusCode !== 200) return reject(new Error(`HTTP ${res.statusCode}`));
+        const body = Buffer.concat(chunks).toString('utf8');
+        const m = body.match(TAG_FROM_URL_RE);
+        if (m) resolve(m[1].replace(/^v/, ''));
+        else reject(new Error('тег не найден в HTML'));
+      });
+      res.on('error', reject);
+    });
+    req.on('error', reject);
+    req.setTimeout(15000, () => { req.destroy(); reject(new Error('Timeout')); });
+  });
+}
+
+function readCache() {
+  try {
+    if (!fs.existsSync(CACHE_FILE)) return null;
+    const data = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8'));
+    if (!data.version || !data.checkedAt) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(version) {
+  try {
+    fs.writeFileSync(CACHE_FILE, JSON.stringify({ version, checkedAt: Date.now() }, null, 2));
+  } catch {
+    // ignore
+  }
+}
+
 function downloadFile(url, destPath) {
   return new Promise((resolve, reject) => {
     const options = {
@@ -145,17 +199,23 @@ async function main() {
   const currentVersion = getCurrentVersion();
   log(`Current version: ${currentVersion}, APP_ROOT: ${APP_ROOT}, APP_DIR: ${APP_DIR}`);
 
-  // 1. Проверяем последний релиз на GitHub
-  let release;
+  // 1. Получаем последний релиз через HTML-редирект (без API rate-limit).
+  //    Если не вышло — проверяем свежий кеш, чтобы решить, стоит ли вообще беспокоиться.
+  let latestVersion = null;
   try {
-    const data = await httpsGet(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
-    release = JSON.parse(data.toString());
+    latestVersion = await fetchLatestTagViaRedirect();
+    writeCache(latestVersion);
   } catch (e) {
     log(`Нет подключения к серверу обновлений: ${e.message}`);
-    process.exit(1);
+    const cache = readCache();
+    if (cache && (Date.now() - cache.checkedAt) < CACHE_TTL_MS) {
+      log(`  Использую кеш: последняя известная версия ${cache.version} (проверено ${new Date(cache.checkedAt).toISOString()}).`);
+      latestVersion = cache.version;
+    } else {
+      // Ни сети, ни свежего кеша — запускаемся на текущей версии, но не падаем.
+      process.exit(0);
+    }
   }
-
-  const latestVersion = (release.tag_name || '').replace(/^v/, '');
 
   if (!latestVersion) {
     log(`  Релизы не найдены.`);
@@ -170,15 +230,11 @@ async function main() {
 
   log(`  Доступно обновление: ${currentVersion} → ${latestVersion}`);
 
-  // 3. Ищем code-bundle.zip в assets релиза
-  const asset = (release.assets || []).find(a => a.name === 'code-bundle.zip');
-  if (!asset) {
-    log(`  Файл обновления не найден в релизе.`);
-    process.exit(1);
-  }
+  // 3. Прямая ссылка на code-bundle.zip — тоже не API-вызов, без rate-limit.
+  const downloadUrl = `https://github.com/${GITHUB_REPO}/releases/download/v${latestVersion}/code-bundle.zip`;
 
   // 4. Скачиваем
-  log(`  Скачиваю обновление (${(asset.size / 1024 / 1024).toFixed(1)} МБ)...`);
+  log(`  Скачиваю обновление...`);
 
   rmDir(TEMP_DIR);
   fs.mkdirSync(TEMP_DIR, { recursive: true });
@@ -186,17 +242,17 @@ async function main() {
   const zipPath = path.join(TEMP_DIR, 'code-bundle.zip');
 
   try {
-    await downloadFile(asset.browser_download_url, zipPath);
+    await downloadFile(downloadUrl, zipPath);
   } catch (e) {
     log(`  Download error: ${e.message}`);
     rmDir(TEMP_DIR);
     process.exit(1);
   }
 
-  // 4b. Verify downloaded file size matches expected
+  // 4b. Sanity-check: файл должен быть хотя бы 100 КБ (реальный bundle ~3-5 МБ).
   const actualSize = fs.statSync(zipPath).size;
-  if (asset.size && Math.abs(actualSize - asset.size) > 1024) {
-    log(`  Incomplete download (${actualSize} vs ${asset.size} bytes). Skipping.`);
+  if (actualSize < 100 * 1024) {
+    log(`  Подозрительно маленький файл (${actualSize} bytes). Skipping.`);
     rmDir(TEMP_DIR);
     process.exit(1);
   }
