@@ -44,14 +44,20 @@ export function projectsRouter(config: AppConfig): Router {
 
   // PATCH /api/projects/:id — обновить проект
   router.patch('/:id', (req, res) => {
-    const project = store.get(req.params.id);
-    if (!project) {
-      res.status(404).json({ error: 'Проект не найден' });
-      return;
+    try {
+      const project = store.get(req.params.id);
+      if (!project) {
+        res.status(404).json({ error: 'Проект не найден' });
+        return;
+      }
+      Object.assign(project, req.body);
+      store.save(project);
+      res.json(project);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[PATCH /projects/${req.params.id}] ${message}`, err);
+      res.status(500).json({ error: `Ошибка сохранения: ${message}` });
     }
-    Object.assign(project, req.body);
-    store.save(project);
-    res.json(project);
   });
 
   // GET /api/projects/:id/clips — все клипы

@@ -1,10 +1,19 @@
 const BASE_URL = '/api';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options,
+    });
+  } catch (err) {
+    // TypeError: Failed to fetch — сервер не ответил. Даём внятный текст вместо голого сообщения.
+    if (err instanceof TypeError) {
+      throw new Error('Сервер не ответил. Закройте приложение полностью и запустите через лаунчер заново.');
+    }
+    throw err;
+  }
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: res.statusText }));
