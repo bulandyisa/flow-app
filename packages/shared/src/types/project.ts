@@ -56,8 +56,9 @@ export interface Project {
   locations: Location[];
   seating: Seating;
   screenplayFile: string | null;
-  flowProjectId?: string; // LEGACY: единый UUID проекта Flow (fallback). Используй flowProjectIdByGA.
-  flowProjectIdByGA?: { 1?: string; 2?: string }; // UUID проекта Flow по номеру Google-аккаунта
+  flowProjectId?: string; // LEGACY: единый UUID проекта Flow (fallback). Используй flowProjectIdByBot.
+  flowProjectIdByGA?: { 1?: string; 2?: string }; // LEGACY: UUID проекта Flow по Google-аккаунту (fallback для ботов, у которых нет собственного UUID).
+  flowProjectIdByBot?: { [bot: number]: string }; // UUID проекта Flow по номеру бота (1..6). Приоритетный источник.
   flowAccountEmailByGA?: { 1?: string; 2?: string }; // email Google-аккаунта (genvid25@…, 2026genvid@…)
   createdAt: string;      // ISO date
   updatedAt: string;

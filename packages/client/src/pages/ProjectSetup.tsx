@@ -6,6 +6,7 @@ import { api } from '@/api/client';
 import { Upload, Users, FileText, ArrowRight, CheckCircle, Loader2 } from 'lucide-react';
 import { ScreenplayUpload } from '@/components/project/ScreenplayUpload';
 import { ReferencesStep } from '@/components/project/ReferencesStep';
+import { GAS, botsForGa, gaForBot } from '@flow-app/shared';
 
 interface ProjectData {
   id: string;
@@ -14,6 +15,7 @@ interface ProjectData {
   screenplayFile: string | null;
   flowProjectId?: string;
   flowProjectIdByGA?: { 1?: string; 2?: string };
+  flowProjectIdByBot?: { [bot: number]: string };
   flowAccountEmailByGA?: { 1?: string; 2?: string };
   characters: Array<{
     id: string;
@@ -85,11 +87,12 @@ export function ProjectSetup() {
     <div>
       <h1 className="text-2xl font-bold mb-6">{proj.nameRu}</h1>
 
-      {/* Привязка к проекту Google Flow — по одному UUID на Google-аккаунт */}
+      {/* Привязка к проектам Google Flow — по одному UUID на каждого бота */}
       <FlowProjectBinding
         projectId={proj.id}
         flowProjectId={proj.flowProjectId}
         flowProjectIdByGA={proj.flowProjectIdByGA}
+        flowProjectIdByBot={proj.flowProjectIdByBot}
         flowAccountEmailByGA={proj.flowAccountEmailByGA}
         onSaved={refreshProject}
       />
@@ -219,81 +222,90 @@ export function ProjectSetup() {
   );
 }
 
-/** Привязка flow-app проекта к проектам Google Flow — по одному UUID на Google-аккаунт. */
+/** Привязка flow-app проекта к проектам Google Flow — по одному UUID на каждого бота. */
 function FlowProjectBinding({
   projectId,
   flowProjectId,
   flowProjectIdByGA,
+  flowProjectIdByBot,
   flowAccountEmailByGA,
   onSaved,
 }: {
   projectId: string;
   flowProjectId?: string;
   flowProjectIdByGA?: { 1?: string; 2?: string };
+  flowProjectIdByBot?: { [bot: number]: string };
   flowAccountEmailByGA?: { 1?: string; 2?: string };
   onSaved: () => void;
 }) {
-  // Legacy UUID показываем только если нет значения для GA1 (предыдущее поведение).
-  const effective: { 1?: string; 2?: string } = {
-    1: flowProjectIdByGA?.[1] || flowProjectId,
-    2: flowProjectIdByGA?.[2],
-  };
-
-  const rows: Array<{ ga: 1 | 2; label: string; bots: string }> = [
-    { ga: 1, label: 'Google-аккаунт 1', bots: 'Боты 1, 2, 5' },
-    { ga: 2, label: 'Google-аккаунт 2', bots: 'Боты 3, 4, 6' },
-  ];
-
   return (
     <div className="mb-6 p-4 bg-surface-light rounded-lg border border-surface-lighter">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-medium">Проекты Google Flow</h3>
       </div>
       <p className="text-xs text-gray-500 mb-3">
-        Каждый Google-аккаунт хранит свои проекты Flow отдельно. Боты одного аккаунта работают
-        только в своём UUID. При первом запуске бот сам запомнит проект и email.
+        Каждый бот работает в своём Flow-проекте, чтобы не конкурировать за одну сессию.
+        Если у бота не задан URL — при первом запуске он сам запомнит текущий проект своего
+        аккаунта.
       </p>
-      <div className="space-y-2">
-        {rows.map((row) => (
-          <GAFlowRow
-            key={row.ga}
-            projectId={projectId}
-            ga={row.ga}
-            label={row.label}
-            bots={row.bots}
-            currentUuid={effective[row.ga]}
-            currentEmail={flowAccountEmailByGA?.[row.ga]}
-            existingMap={flowProjectIdByGA}
-            onSaved={onSaved}
-          />
-        ))}
+      <div className="space-y-4">
+        {GAS.map((ga) => {
+          const bots = botsForGa(ga);
+          const email = flowAccountEmailByGA?.[ga];
+          return (
+            <div key={ga} className="p-3 bg-surface rounded border border-surface-lighter">
+              <div className="text-sm font-medium mb-2">
+                Google-аккаунт {ga}
+                {email ? (
+                  <span className="text-gray-400 font-normal"> — {email}</span>
+                ) : (
+                  <span className="text-gray-600 font-normal italic"> — email появится после первого запуска</span>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                {bots.map((bot) => (
+                  <BotRow
+                    key={bot}
+                    projectId={projectId}
+                    bot={bot}
+                    ownUuid={flowProjectIdByBot?.[bot]}
+                    fallbackUuid={
+                      flowProjectIdByGA?.[gaForBot(bot)] ||
+                      (gaForBot(bot) === 1 ? flowProjectId : undefined)
+                    }
+                    existingMap={flowProjectIdByBot}
+                    onSaved={onSaved}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function GAFlowRow({
+/** Одна строка: бот N — UUID, [Сменить] [Отвязать]. */
+function BotRow({
   projectId,
-  ga,
-  label,
-  bots,
-  currentUuid,
-  currentEmail,
+  bot,
+  ownUuid,
+  fallbackUuid,
   existingMap,
   onSaved,
 }: {
   projectId: string;
-  ga: 1 | 2;
-  label: string;
-  bots: string;
-  currentUuid?: string;
-  currentEmail?: string;
-  existingMap?: { 1?: string; 2?: string };
+  bot: number;
+  ownUuid?: string;
+  fallbackUuid?: string;
+  existingMap?: { [bot: number]: string };
   onSaved: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState('');
   const [saving, setSaving] = useState(false);
+  const [detaching, setDetaching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const extractUuid = (input: string): string | null => {
@@ -310,9 +322,8 @@ function GAFlowRow({
     setSaving(true);
     setError(null);
     try {
-      // Мержим с существующей картой, чтобы не затереть другой GA-слот.
-      const merged = { ...(existingMap || {}), [ga]: uuid };
-      await api.updateProject(projectId, { flowProjectIdByGA: merged });
+      const merged = { ...(existingMap || {}), [bot]: uuid };
+      await api.updateProject(projectId, { flowProjectIdByBot: merged });
       setEditing(false);
       setValue('');
       onSaved();
@@ -323,65 +334,93 @@ function GAFlowRow({
     }
   };
 
-  const isBound = !!currentUuid;
+  const handleDetach = async () => {
+    if (!ownUuid) return;
+    if (!window.confirm(`Отвязать бота ${bot} от собственного Flow-проекта? Бот вернётся к общему проекту аккаунта.`)) {
+      return;
+    }
+    setDetaching(true);
+    setError(null);
+    try {
+      const { [bot]: _omit, ...rest } = existingMap || {};
+      await api.updateProject(projectId, { flowProjectIdByBot: rest });
+      onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setDetaching(false);
+    }
+  };
+
+  const shortUuid = (u: string) => `${u.slice(0, 8)}…${u.slice(-4)}`;
+  const hasOwn = !!ownUuid;
+  const hasFallback = !!fallbackUuid;
 
   return (
-    <div className="p-3 bg-surface rounded border border-surface-lighter">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-sm font-medium">
-            {label} <span className="text-gray-500 font-normal">— {bots}</span>
-          </div>
-          <div className="text-xs mt-0.5 flex flex-wrap items-center gap-x-2">
-            {isBound ? (
-              <span className="text-green-400 font-mono" title={currentUuid}>
-                {currentUuid!.slice(0, 8)}…{currentUuid!.slice(-4)}
-              </span>
-            ) : (
-              <span className="text-gray-500">Будет выбран автоматически при первом запуске</span>
-            )}
-            {currentEmail ? (
-              <span className="text-gray-400" title={currentEmail}>· {currentEmail}</span>
-            ) : (
-              <span className="text-gray-600 italic">· email будет определён при первом запуске</span>
-            )}
-          </div>
+    <div className="pl-3 border-l border-surface-lighter">
+      <div className="flex items-center justify-between gap-3 py-1">
+        <div className="min-w-0 flex items-center gap-3">
+          <span className="text-xs text-gray-400 w-14 shrink-0">Бот {bot}</span>
+          {hasOwn ? (
+            <span className="text-xs text-green-400 font-mono" title={ownUuid}>
+              {shortUuid(ownUuid!)}
+            </span>
+          ) : hasFallback ? (
+            <span
+              className="text-xs text-gray-500 font-mono"
+              title={`${fallbackUuid} — наследуется от аккаунта, нажмите «Сменить», чтобы задать свой`}
+            >
+              {shortUuid(fallbackUuid!)} <span className="text-gray-600 italic">(общий)</span>
+            </span>
+          ) : (
+            <span className="text-xs text-gray-600">—</span>
+          )}
         </div>
         {!editing && (
-          <button
-            onClick={() => setEditing(true)}
-            className="text-xs text-gray-400 hover:text-accent underline-offset-2 hover:underline shrink-0"
-          >
-            Сменить вручную
-          </button>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => setEditing(true)}
+              className="text-xs text-gray-400 hover:text-accent underline-offset-2 hover:underline"
+            >
+              Сменить
+            </button>
+            <button
+              onClick={handleDetach}
+              disabled={!hasOwn || detaching}
+              className="text-xs text-gray-500 hover:text-red-400 underline-offset-2 hover:underline disabled:opacity-30 disabled:hover:no-underline"
+              title={hasOwn ? 'Удалить собственный UUID этого бота' : 'Собственный UUID не задан'}
+            >
+              {detaching ? 'Отвязка…' : 'Отвязать'}
+            </button>
+          </div>
         )}
       </div>
       {editing && (
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-2 mb-1 flex items-center gap-2">
           <input
             type="text"
             autoFocus
             placeholder="https://labs.google/fx/ru/tools/flow/project/..."
             value={value}
             onChange={(e) => { setValue(e.target.value); setError(null); }}
-            className="flex-1 px-3 py-2 bg-surface-light rounded border border-surface-lighter focus:border-accent outline-none text-sm font-mono"
+            className="flex-1 px-3 py-1.5 bg-surface-light rounded border border-surface-lighter focus:border-accent outline-none text-xs font-mono"
           />
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-4 py-2 bg-accent hover:bg-accent-hover rounded text-sm transition-colors disabled:opacity-50"
+            className="px-3 py-1.5 bg-accent hover:bg-accent-hover rounded text-xs transition-colors disabled:opacity-50"
           >
             {saving ? 'Сохранение…' : 'Сохранить'}
           </button>
           <button
             onClick={() => { setEditing(false); setValue(''); setError(null); }}
-            className="px-3 py-2 text-gray-400 hover:text-white text-sm"
+            className="px-2 py-1.5 text-gray-400 hover:text-white text-xs"
           >
             Отмена
           </button>
         </div>
       )}
-      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+      {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
     </div>
   );
 }

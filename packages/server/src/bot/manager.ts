@@ -175,21 +175,21 @@ export class BotManager {
 
     // Парсим вывод для статуса
     runner.on('log', ({ text }: { stream: string; text: string }) => {
-      // Если бот сообщил, в каком проекте Flow он оказался — сохраняем UUID в слот GA
+      // Если бот сообщил, в каком проекте Flow он оказался — сохраняем UUID в слот конкретного бота.
+      // Email по-прежнему пишем в слот GA (email принадлежит Google-аккаунту, а не боту).
       if (projectStore && projectId) {
         const m = text.match(FLOW_PROJECT_REGISTERED_RE);
         if (m) {
           const uuid = m[1].toLowerCase();
           const proj = projectStore.get(projectId);
           if (proj) {
-            const ga = gaForBot(account);
-            if (!proj.flowProjectIdByGA) proj.flowProjectIdByGA = {};
-            if (proj.flowProjectIdByGA[ga] !== uuid) {
-              proj.flowProjectIdByGA[ga] = uuid;
+            if (!proj.flowProjectIdByBot) proj.flowProjectIdByBot = {};
+            if (proj.flowProjectIdByBot[account] !== uuid) {
+              proj.flowProjectIdByBot[account] = uuid;
               projectStore.save(proj);
               broadcast({
                 type: 'bot_status',
-                data: { botId, action: 'flow_project_registered', ga, flowProjectId: uuid },
+                data: { botId, action: 'flow_project_registered', bot: account, flowProjectId: uuid },
               });
             }
           }

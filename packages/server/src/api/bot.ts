@@ -52,8 +52,10 @@ export function botRouter(config: AppConfig): Router {
 
     const extraArgs: string[] = [];
     const ga = gaForBot(account);
-    const perGA = project.flowProjectIdByGA?.[ga];
-    const uuid = perGA || project.flowProjectId; // fallback to legacy single-uuid
+    const uuid =
+      project.flowProjectIdByBot?.[account] ||
+      project.flowProjectIdByGA?.[ga] ||
+      project.flowProjectId;
     if (uuid) {
       extraArgs.push('--project', uuid);
     }

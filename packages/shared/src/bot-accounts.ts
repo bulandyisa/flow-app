@@ -19,3 +19,14 @@ export const BOT_TO_GA: Record<number, GoogleAccount> = {
 export function gaForBot(botAccount: number): GoogleAccount {
   return BOT_TO_GA[botAccount] ?? 1;
 }
+
+/** Список всех Google-аккаунтов. */
+export const GAS: GoogleAccount[] = [1, 2];
+
+/** Список ботов, привязанных к данному Google-аккаунту, отсортированный по возрастанию. */
+export function botsForGa(ga: GoogleAccount): number[] {
+  return (Object.entries(BOT_TO_GA) as [string, GoogleAccount][])
+    .filter(([, g]) => g === ga)
+    .map(([b]) => Number(b))
+    .sort((a, b) => a - b);
+}
