@@ -9,6 +9,7 @@ import { ProjectStore } from '../data/project-store.js';
 import { gaForBot } from '@flow-app/shared';
 
 const FLOW_PROJECT_REGISTERED_RE = /\[FLOW_PROJECT_REGISTERED\]\s+([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
+const FLOW_ACCOUNT_EMAIL_RE = /\[FLOW_ACCOUNT_EMAIL\]\s+(\S+@\S+)/i;
 
 const isWindows = process.platform === 'win32';
 
@@ -189,6 +190,25 @@ export class BotManager {
               broadcast({
                 type: 'bot_status',
                 data: { botId, action: 'flow_project_registered', ga, flowProjectId: uuid },
+              });
+            }
+          }
+        }
+
+        // Если бот сообщил email залогиненного Google-аккаунта — сохраняем в слот GA
+        const em = text.match(FLOW_ACCOUNT_EMAIL_RE);
+        if (em) {
+          const email = em[1].trim();
+          const proj = projectStore.get(projectId);
+          if (proj) {
+            const ga = gaForBot(account);
+            if (!proj.flowAccountEmailByGA) proj.flowAccountEmailByGA = {};
+            if (proj.flowAccountEmailByGA[ga] !== email) {
+              proj.flowAccountEmailByGA[ga] = email;
+              projectStore.save(proj);
+              broadcast({
+                type: 'bot_status',
+                data: { botId, action: 'flow_account_email', ga, email },
               });
             }
           }

@@ -58,6 +58,7 @@ export interface Project {
   screenplayFile: string | null;
   flowProjectId?: string; // LEGACY: единый UUID проекта Flow (fallback). Используй flowProjectIdByGA.
   flowProjectIdByGA?: { 1?: string; 2?: string }; // UUID проекта Flow по номеру Google-аккаунта
+  flowAccountEmailByGA?: { 1?: string; 2?: string }; // email Google-аккаунта (genvid25@…, 2026genvid@…)
   createdAt: string;      // ISO date
   updatedAt: string;
 }

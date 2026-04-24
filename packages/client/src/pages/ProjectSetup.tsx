@@ -14,6 +14,7 @@ interface ProjectData {
   screenplayFile: string | null;
   flowProjectId?: string;
   flowProjectIdByGA?: { 1?: string; 2?: string };
+  flowAccountEmailByGA?: { 1?: string; 2?: string };
   characters: Array<{
     id: string;
     name: string;
@@ -89,6 +90,7 @@ export function ProjectSetup() {
         projectId={proj.id}
         flowProjectId={proj.flowProjectId}
         flowProjectIdByGA={proj.flowProjectIdByGA}
+        flowAccountEmailByGA={proj.flowAccountEmailByGA}
         onSaved={refreshProject}
       />
 
@@ -222,11 +224,13 @@ function FlowProjectBinding({
   projectId,
   flowProjectId,
   flowProjectIdByGA,
+  flowAccountEmailByGA,
   onSaved,
 }: {
   projectId: string;
   flowProjectId?: string;
   flowProjectIdByGA?: { 1?: string; 2?: string };
+  flowAccountEmailByGA?: { 1?: string; 2?: string };
   onSaved: () => void;
 }) {
   // Legacy UUID показываем только если нет значения для GA1 (предыдущее поведение).
@@ -247,7 +251,7 @@ function FlowProjectBinding({
       </div>
       <p className="text-xs text-gray-500 mb-3">
         Каждый Google-аккаунт хранит свои проекты Flow отдельно. Боты одного аккаунта работают
-        только в своём UUID. При первом запуске бот сам запомнит проект.
+        только в своём UUID. При первом запуске бот сам запомнит проект и email.
       </p>
       <div className="space-y-2">
         {rows.map((row) => (
@@ -258,6 +262,7 @@ function FlowProjectBinding({
             label={row.label}
             bots={row.bots}
             currentUuid={effective[row.ga]}
+            currentEmail={flowAccountEmailByGA?.[row.ga]}
             existingMap={flowProjectIdByGA}
             onSaved={onSaved}
           />
@@ -273,6 +278,7 @@ function GAFlowRow({
   label,
   bots,
   currentUuid,
+  currentEmail,
   existingMap,
   onSaved,
 }: {
@@ -281,6 +287,7 @@ function GAFlowRow({
   label: string;
   bots: string;
   currentUuid?: string;
+  currentEmail?: string;
   existingMap?: { 1?: string; 2?: string };
   onSaved: () => void;
 }) {
@@ -325,13 +332,18 @@ function GAFlowRow({
           <div className="text-sm font-medium">
             {label} <span className="text-gray-500 font-normal">— {bots}</span>
           </div>
-          <div className="text-xs mt-0.5">
+          <div className="text-xs mt-0.5 flex flex-wrap items-center gap-x-2">
             {isBound ? (
               <span className="text-green-400 font-mono" title={currentUuid}>
                 {currentUuid!.slice(0, 8)}…{currentUuid!.slice(-4)}
               </span>
             ) : (
               <span className="text-gray-500">Будет выбран автоматически при первом запуске</span>
+            )}
+            {currentEmail ? (
+              <span className="text-gray-400" title={currentEmail}>· {currentEmail}</span>
+            ) : (
+              <span className="text-gray-600 italic">· email будет определён при первом запуске</span>
             )}
           </div>
         </div>

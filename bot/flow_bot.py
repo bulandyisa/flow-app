@@ -329,6 +329,27 @@ def _register_current_flow_project(page):
         print(f'[FLOW_PROJECT_REGISTERED] {m.group(1)}')
 
 
+def _register_flow_account_email(page):
+    """Best-effort: extract the signed-in Google account email from the Flow UI and print a marker."""
+    try:
+        email = page.evaluate(r"""() => {
+            const nodes = Array.from(document.querySelectorAll('[aria-label], [title], [alt]'));
+            for (const n of nodes) {
+                for (const attr of ['aria-label', 'title', 'alt']) {
+                    const v = n.getAttribute(attr) || '';
+                    const m = v.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/);
+                    if (m) return m[0];
+                }
+            }
+            const m2 = (document.body.innerText || '').match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/);
+            return m2 ? m2[0] : null;
+        }""")
+        if email:
+            print(f'[FLOW_ACCOUNT_EMAIL] {email}')
+    except Exception:
+        pass
+
+
 def ensure_project(page, project_id=None):
     """Navigate to Flow and enter a project. If project_id given, navigate directly.
 
@@ -347,6 +368,7 @@ def ensure_project(page, project_id=None):
         if '/project/' in page.url:
             print(f'  In project: {page.url[-50:]}')
             _register_current_flow_project(page)
+            _register_flow_account_email(page)
             return
         print(f'  WARNING: project navigation failed, falling back...')
 
@@ -384,6 +406,7 @@ def ensure_project(page, project_id=None):
             human_delay_long(5, 8)
         print(f'  In project: {page.url[-50:]}')
         _register_current_flow_project(page)
+        _register_flow_account_email(page)
         return
 
     # On main page — wait for projects to load (page shows "Загрузка..." initially)
@@ -439,6 +462,7 @@ def ensure_project(page, project_id=None):
     if '/project/' in page.url:
         print(f'  In project: {page.url[-50:]}')
         _register_current_flow_project(page)
+        _register_flow_account_email(page)
         # Wait for project to fully load (not "Загрузка...")
         human_delay_long(3, 6)
     else:
