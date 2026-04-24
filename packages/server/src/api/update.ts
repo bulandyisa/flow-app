@@ -48,7 +48,10 @@ export function updateRouter(config: AppConfig): Router {
     res.json({ version, isInstalled });
   });
 
-  // GET /api/update/check — проверить наличие обновлений
+  // GET /api/update/check — проверить наличие обновлений через HTML-редирект
+  // (не api.github.com — у того анонимный лимит 60 req/hour на IP, легко исчерпывается
+  // в офисе с общим NAT + UpdateNotice бьёт каждые 30 мин у каждого).
+  const TAG_FROM_URL_RE = /\/releases\/tag\/(v?\d+\.\d+\.\d+)/;
   router.get('/check', async (_req, res) => {
     try {
       const currentVersion = getCurrentVersion(config);
@@ -58,27 +61,27 @@ export function updateRouter(config: AppConfig): Router {
         return;
       }
 
-      // Проверяем последний релиз
-      const headers: Record<string, string> = { Accept: 'application/vnd.github.v3+json' };
-      if (config.githubToken) headers.Authorization = `Bearer ${config.githubToken}`;
-
+      // github.com/<repo>/releases/latest → 302 → /releases/tag/<tag>
       const response = await fetch(
-        `https://api.github.com/repos/${config.githubRepo}/releases/latest`,
-        { headers },
+        `https://github.com/${config.githubRepo}/releases/latest`,
+        { redirect: 'manual', headers: { 'User-Agent': 'FlowApp' } },
       );
 
-      if (response.status === 404) {
-        res.json({ currentVersion, updateAvailable: false, message: 'No releases found' });
-        return;
+      let latestVersion: string | null = null;
+      if (response.status === 301 || response.status === 302) {
+        const loc = response.headers.get('location') || '';
+        const m = loc.match(TAG_FROM_URL_RE);
+        if (m) latestVersion = m[1].replace(/^v/, '');
+      } else if (response.ok) {
+        const body = await response.text();
+        const m = body.match(TAG_FROM_URL_RE);
+        if (m) latestVersion = m[1].replace(/^v/, '');
       }
 
-      if (!response.ok) {
-        res.json({ currentVersion, updateAvailable: false, message: `GitHub API error: ${response.status}` });
+      if (!latestVersion) {
+        res.json({ currentVersion, updateAvailable: false, message: `Нет данных о последнем релизе (HTTP ${response.status})` });
         return;
       }
-
-      const release: GitHubRelease = await response.json();
-      const latestVersion = release.tag_name.replace(/^v/, '');
 
       const updateAvailable = latestVersion !== currentVersion && compareVersions(latestVersion, currentVersion) > 0;
 
@@ -86,14 +89,11 @@ export function updateRouter(config: AppConfig): Router {
         currentVersion,
         latestVersion,
         updateAvailable,
-        releaseName: release.name,
-        releaseNotes: release.body,
-        releaseDate: release.published_at,
-        releaseUrl: release.html_url,
+        releaseUrl: `https://github.com/${config.githubRepo}/releases/tag/v${latestVersion}`,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      res.json({ currentVersion: '0.1.0', updateAvailable: false, message: `Error: ${message}` });
+      res.json({ currentVersion: getCurrentVersion(config), updateAvailable: false, message: `Error: ${message}` });
     }
   });
 
