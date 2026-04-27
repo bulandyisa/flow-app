@@ -6,10 +6,8 @@ import { parseBotOutput, type BotProgress } from './parser.js';
 import { broadcast } from '../ws/events.js';
 import type { AppConfig } from '../config.js';
 import { ProjectStore } from '../data/project-store.js';
-import { gaForBot } from '@flow-app/shared';
 
 const FLOW_PROJECT_REGISTERED_RE = /\[FLOW_PROJECT_REGISTERED\]\s+([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
-const FLOW_ACCOUNT_EMAIL_RE = /\[FLOW_ACCOUNT_EMAIL\]\s+(\S+@\S+)/i;
 
 const isWindows = process.platform === 'win32';
 
@@ -21,6 +19,19 @@ export interface ManagedBot {
   currentAction: string | null;
   completedCount: number;
   errorCount: number;
+  errors: string[];
+}
+
+const MAX_ERRORS_KEPT = 50;
+
+function pushError(managed: ManagedBot, detail: string | undefined, clipId: string | null): void {
+  const msg = (detail || '').trim();
+  if (!msg) return;
+  const entry = clipId ? `[${clipId}] ${msg}` : msg;
+  managed.errors.push(entry);
+  if (managed.errors.length > MAX_ERRORS_KEPT) {
+    managed.errors = managed.errors.slice(-MAX_ERRORS_KEPT);
+  }
 }
 
 /**
@@ -169,47 +180,26 @@ export class BotManager {
       currentAction: null,
       completedCount: 0,
       errorCount: 0,
+      errors: [],
     };
 
     const projectStore = projectId ? new ProjectStore(this.config.dataDir) : null;
 
     // Парсим вывод для статуса
     runner.on('log', ({ text }: { stream: string; text: string }) => {
-      // Если бот сообщил, в каком проекте Flow он оказался — сохраняем UUID в слот конкретного бота.
-      // Email по-прежнему пишем в слот GA (email принадлежит Google-аккаунту, а не боту).
+      // Если бот сообщил, в каком проекте Flow он оказался — сохраняем UUID для этого бота
       if (projectStore && projectId) {
         const m = text.match(FLOW_PROJECT_REGISTERED_RE);
         if (m) {
           const uuid = m[1].toLowerCase();
           const proj = projectStore.get(projectId);
           if (proj) {
-            if (!proj.flowProjectIdByBot) proj.flowProjectIdByBot = {};
-            if (proj.flowProjectIdByBot[account] !== uuid) {
-              proj.flowProjectIdByBot[account] = uuid;
+            const byBot = proj.flowProjectIdByBot || {};
+            if (byBot[account] !== uuid) {
+              byBot[account] = uuid;
+              proj.flowProjectIdByBot = byBot;
               projectStore.save(proj);
-              broadcast({
-                type: 'bot_status',
-                data: { botId, action: 'flow_project_registered', bot: account, flowProjectId: uuid },
-              });
-            }
-          }
-        }
-
-        // Если бот сообщил email залогиненного Google-аккаунта — сохраняем в слот GA
-        const em = text.match(FLOW_ACCOUNT_EMAIL_RE);
-        if (em) {
-          const email = em[1].trim();
-          const proj = projectStore.get(projectId);
-          if (proj) {
-            const ga = gaForBot(account);
-            if (!proj.flowAccountEmailByGA) proj.flowAccountEmailByGA = {};
-            if (proj.flowAccountEmailByGA[ga] !== email) {
-              proj.flowAccountEmailByGA[ga] = email;
-              projectStore.save(proj);
-              broadcast({
-                type: 'bot_status',
-                data: { botId, action: 'flow_account_email', ga, email },
-              });
+              broadcast({ type: 'bot_status', data: { botId, action: 'flow_project_registered', flowProjectId: uuid } });
             }
           }
         }
@@ -220,7 +210,10 @@ export class BotManager {
         if (progress.clipId) managed.currentClip = progress.clipId;
         if (progress.action) managed.currentAction = progress.action;
         if (progress.action === 'done') managed.completedCount++;
-        if (progress.action === 'error') managed.errorCount++;
+        if (progress.action === 'error') {
+          managed.errorCount++;
+          pushError(managed, progress.detail, managed.currentClip);
+        }
 
         broadcast({
           type: 'bot_status',
@@ -229,6 +222,7 @@ export class BotManager {
             ...progress,
             completedCount: managed.completedCount,
             errorCount: managed.errorCount,
+            errors: managed.errors,
           },
         });
       }
@@ -284,6 +278,7 @@ export class BotManager {
       cwd: resolve(botScript, '..', '..'),
       env: botEnv,
       timeoutMs: 3600_000, // 1 час
+      logFile: resolve(this.config.dataDir, 'logs', `bot_${botId}.log`),
     });
 
     return { success: true };
@@ -320,6 +315,7 @@ export class BotManager {
       currentAction: null,
       completedCount: 0,
       errorCount: 0,
+      errors: [],
     };
 
     // Парсим вывод для статуса (REF-specific patterns)
@@ -336,8 +332,14 @@ export class BotManager {
       if (refMatch) {
         const action = refMatch[3] === 'OK' ? 'done' : 'error';
         if (action === 'done') managed.completedCount++;
-        if (action === 'error') managed.errorCount++;
+        if (action === 'error') {
+          managed.errorCount++;
+          pushError(managed, text.trim().substring(0, 300), managed.currentClip);
+        }
         managed.currentAction = action;
+      } else if (progress?.action === 'error') {
+        // Обычные ошибки парсера (не [REF])
+        pushError(managed, progress.detail, managed.currentClip);
       }
 
       const refGenerating = text.match(/\[REF\].*Generating\s+(.+)/);
@@ -410,6 +412,7 @@ export class BotManager {
       cwd: resolve(botScript, '..', '..'),
       env: botEnv,
       timeoutMs: 3600_000, // 1 час
+      logFile: resolve(this.config.dataDir, 'logs', `bot_${botId}.log`),
     });
 
     return { success: true };
@@ -511,6 +514,7 @@ export class BotManager {
     currentAction: string | null;
     completedCount: number;
     errorCount: number;
+    errors: string[];
     startedAt: string | null;
     exitCode: number | null;
   }> {
@@ -524,6 +528,7 @@ export class BotManager {
         currentAction: managed.currentAction,
         completedCount: managed.completedCount,
         errorCount: managed.errorCount,
+        errors: managed.errors,
         startedAt: managed.runner.startedAt,
         exitCode: managed.runner.exitCode,
       });

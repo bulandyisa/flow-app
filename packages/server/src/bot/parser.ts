@@ -37,12 +37,30 @@ const PATTERNS = [
   { regex: /\[REF\]\s*Done\.\s*Generated\s+(\d+)/i, extract: (m: RegExpMatchArray): BotProgress => ({ action: 'finished', detail: `${m[1]} items` }) },
 ];
 
+/** Строки которые игнорируем полностью — это шум из консоли браузера, не ошибки бота */
+const IGNORED_PREFIXES = [
+  '[CONSOLE ERROR]',
+  '[CONSOLE WARNING]',
+  '[CONSOLE INFO]',
+  '[CONSOLE LOG]',
+];
+
 /** Парсит строку stdout бота и извлекает прогресс */
 export function parseBotOutput(line: string): BotProgress | null {
+  const trimmed = line.trim();
+  // Игнорируем эхо консоли Chromium — это внутренние ошибки Google Flow, не бага бота
+  for (const prefix of IGNORED_PREFIXES) {
+    if (trimmed.startsWith(prefix)) return null;
+  }
   for (const pattern of PATTERNS) {
     const match = line.match(pattern.regex);
     if (match) {
-      return pattern.extract(match);
+      const result = pattern.extract(match);
+      // Для ошибок сохраняем полную строку лога, а не только совпавшее слово
+      if (result.action === 'error') {
+        result.detail = trimmed.substring(0, 300);
+      }
+      return result;
     }
   }
   return null;

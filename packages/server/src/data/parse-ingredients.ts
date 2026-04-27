@@ -117,6 +117,77 @@ function parseFlatLocation(path: string): { id: string; angleId: string } | null
 }
 
 /**
+ * Find the longest common prefix among IDs at underscore-token boundaries.
+ * Example: ["amin_room_desk", "amin_room_full", "amin_room_bed"] -> "amin_room"
+ */
+function longestCommonTokenPrefix(ids: string[]): string {
+  if (ids.length === 0) return '';
+  if (ids.length === 1) return ids[0];
+
+  const tokensList = ids.map((id) => id.split('_'));
+  const minLen = Math.min(...tokensList.map((t) => t.length));
+  const prefix: string[] = [];
+  for (let i = 0; i < minLen; i++) {
+    const token = tokensList[0][i];
+    if (tokensList.every((t) => t[i] === token)) {
+      prefix.push(token);
+    } else {
+      break;
+    }
+  }
+  return prefix.join('_');
+}
+
+/**
+ * Group flat-format locations so different angles of the same place collapse into one location.
+ * Structured locations (already parsed with explicit angle) are returned unchanged.
+ *
+ * Algorithm: within each first-token bucket (size ≥ 2), find the longest common token prefix
+ * and use it as the location id, with the remainder as the angle.
+ */
+function groupFlatLocations(locations: ParsedLocationRef[]): ParsedLocationRef[] {
+  const flat: ParsedLocationRef[] = [];
+  const structured: ParsedLocationRef[] = [];
+  for (const loc of locations) {
+    if (loc.file.includes('локации')) {
+      flat.push(loc);
+    } else {
+      structured.push(loc);
+    }
+  }
+
+  if (flat.length === 0) return structured;
+
+  const byFirstToken = new Map<string, ParsedLocationRef[]>();
+  for (const loc of flat) {
+    const firstToken = loc.id.split('_')[0];
+    const bucket = byFirstToken.get(firstToken);
+    if (bucket) {
+      bucket.push(loc);
+    } else {
+      byFirstToken.set(firstToken, [loc]);
+    }
+  }
+
+  const regrouped: ParsedLocationRef[] = [];
+  for (const items of byFirstToken.values()) {
+    if (items.length === 1) {
+      regrouped.push(items[0]);
+      continue;
+    }
+    const ids = items.map((i) => i.id);
+    let root = longestCommonTokenPrefix(ids);
+    if (!root) root = ids[0].split('_')[0];
+    for (const item of items) {
+      const remainder = item.id.slice(root.length).replace(/^_/, '');
+      regrouped.push({ id: root, angleId: remainder || 'base', file: item.file });
+    }
+  }
+
+  return [...structured, ...regrouped];
+}
+
+/**
  * Parse all unique character and location references from an array of clips.
  */
 export function parseIngredientsFromPrompts(clips: ClipLike[]): ParsedIngredients {
@@ -174,6 +245,6 @@ export function parseIngredientsFromPrompts(clips: ClipLike[]): ParsedIngredient
 
   return {
     characters: [...charMap.values()],
-    locations: [...locMap.values()],
+    locations: groupFlatLocations([...locMap.values()]),
   };
 }

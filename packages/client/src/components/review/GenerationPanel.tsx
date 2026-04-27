@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/api/client';
-import { Play, Square, Minus, Plus, AlertTriangle, Image, Video, Loader2 } from 'lucide-react';
+import { Play, Square, Minus, Plus, AlertTriangle, Image, Video, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface BotStatus {
   id: number;
@@ -10,6 +10,7 @@ interface BotStatus {
   currentAction: string | null;
   completedCount: number;
   errorCount: number;
+  errors?: string[];
 }
 
 interface Props {
@@ -22,6 +23,7 @@ interface Props {
 
 export function GenerationPanel({ projectId, pendingPhotos, pendingVideos, isFixingPrompts, fixProgress }: Props) {
   const [botCount, setBotCount] = useState(6);
+  const [errorsExpanded, setErrorsExpanded] = useState(false);
 
   const { data: status, refetch } = useQuery({
     queryKey: ['bot-status'],
@@ -33,6 +35,9 @@ export function GenerationPanel({ projectId, pendingPhotos, pendingVideos, isFix
   const runningCount = bots.filter((b) => b.isRunning).length;
   const totalCompleted = bots.reduce((s, b) => s + b.completedCount, 0);
   const totalErrors = bots.reduce((s, b) => s + b.errorCount, 0);
+  const allErrors = bots.flatMap((b) =>
+    (b.errors || []).map((msg) => ({ botId: b.id, msg }))
+  );
   const isRunning = runningCount > 0;
   const hasIssue = status && (!status.pythonFound || !status.botScriptFound);
   const canStart = !hasIssue && !isFixingPrompts && (pendingPhotos > 0 || pendingVideos > 0);
@@ -166,7 +171,7 @@ export function GenerationPanel({ projectId, pendingPhotos, pendingVideos, isFix
             </button>
             {startingBot != null && (
               <p className="text-[10px] text-gray-500 text-center">
-                15-сек пауза между ботами, чтобы Chromium не захлебнулся
+                15-секундная пауза между ботами, чтобы Chromium не захлебнулся
               </p>
             )}
             {isFixingPrompts && (
@@ -202,7 +207,30 @@ export function GenerationPanel({ projectId, pendingPhotos, pendingVideos, isFix
                 </div>
               )}
               {totalErrors > 0 && (
-                <span className="text-[10px] text-red-400 mt-1 block">{totalErrors} ошибок</span>
+                <div className="mt-1">
+                  <button
+                    onClick={() => setErrorsExpanded((v) => !v)}
+                    className="text-[10px] text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
+                  >
+                    {totalErrors} ошибок
+                    {allErrors.length > 0 && (
+                      errorsExpanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />
+                    )}
+                  </button>
+                  {errorsExpanded && allErrors.length > 0 && (
+                    <div className="mt-1.5 max-h-24 overflow-y-auto space-y-1 pr-1">
+                      {allErrors.slice().reverse().map((e, i) => (
+                        <div
+                          key={i}
+                          className="text-[10px] text-red-300/90 bg-red-950/30 border border-red-900/30 rounded px-1.5 py-1 leading-tight break-words"
+                          title={e.msg}
+                        >
+                          <span className="text-red-500 font-medium">Бот {e.botId}:</span> {e.msg}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 

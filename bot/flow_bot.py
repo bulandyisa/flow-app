@@ -319,43 +319,50 @@ def dismiss_popups(page):
     return dismissed
 
 
-_FLOW_PROJECT_ID_RE = re.compile(r'/project/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', re.I)
+_PROJECT_ERROR_MARKERS = (
+    'что-то пошло не так',
+    'something went wrong',
+    'проект не найден',
+    'project not found',
+    'попробуйте ещё раз',
+    'попробуйте позже',
+    'try again later',
+)
+
+_FLOW_PROJECT_UUID_RE = re.compile(
+    r'/project/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})',
+    re.I,
+)
 
 
-def _register_current_flow_project(page):
-    """Print marker with current Flow project UUID so flow-app can persist it."""
-    m = _FLOW_PROJECT_ID_RE.search(page.url or '')
-    if m:
-        print(f'[FLOW_PROJECT_REGISTERED] {m.group(1)}')
-
-
-def _register_flow_account_email(page):
-    """Best-effort: extract the signed-in Google account email from the Flow UI and print a marker."""
+def _project_workspace_ready(page, timeout_ms=8000):
+    """Verify we're really in a working project (not on an error page)."""
     try:
-        email = page.evaluate(r"""() => {
-            const nodes = Array.from(document.querySelectorAll('[aria-label], [title], [alt]'));
-            for (const n of nodes) {
-                for (const attr of ['aria-label', 'title', 'alt']) {
-                    const v = n.getAttribute(attr) || '';
-                    const m = v.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/);
-                    if (m) return m[0];
-                }
-            }
-            const m2 = (document.body.innerText || '').match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/);
-            return m2 ? m2[0] : null;
-        }""")
-        if email:
-            print(f'[FLOW_ACCOUNT_EMAIL] {email}')
+        page_text = (page.evaluate('() => (document.body && document.body.innerText) || ""') or '').lower()
     except Exception:
-        pass
+        page_text = ''
+    for marker in _PROJECT_ERROR_MARKERS:
+        if marker in page_text:
+            return False
+    try:
+        page.wait_for_selector('[role="textbox"], [contenteditable="true"]', timeout=timeout_ms)
+        return True
+    except Exception:
+        return False
+
+
+def _report_flow_project_uuid(page):
+    """Print the current Flow project UUID so the server can save the binding."""
+    try:
+        m = _FLOW_PROJECT_UUID_RE.search(page.url or '')
+    except Exception:
+        m = None
+    if m:
+        print(f'  [FLOW_PROJECT_REGISTERED] {m.group(1).lower()}')
 
 
 def ensure_project(page, project_id=None):
-    """Navigate to Flow and enter a project. If project_id given, navigate directly.
-
-    On every successful entry prints [FLOW_PROJECT_REGISTERED] <uuid> so
-    flow-app can persist the bound project for future runs.
-    """
+    """Navigate to Flow and enter a project. If project_id given, navigate directly."""
     if project_id:
         project_url = f'{FLOW_URL}/project/{project_id}'
         print(f'  Opening project {project_id[:8]}...')
@@ -365,12 +372,12 @@ def ensure_project(page, project_id=None):
             dismiss_popups(page)
             page.keyboard.press('Escape')
             human_delay(0.5, 1.0)
-        if '/project/' in page.url:
+        if '/project/' in page.url and _project_workspace_ready(page):
             print(f'  In project: {page.url[-50:]}')
-            _register_current_flow_project(page)
-            _register_flow_account_email(page)
+            _report_flow_project_uuid(page)
             return
-        print(f'  WARNING: project navigation failed, falling back...')
+        take_screenshot(page, 'flow_project_error')
+        print(f'  WARNING: project {project_id[:8]} not accessible (error page or empty workspace), falling back to main page...')
 
     print(f'  Opening Flow...')
     page.goto(FLOW_URL, timeout=180000, wait_until='domcontentloaded')
@@ -405,8 +412,7 @@ def ensure_project(page, project_id=None):
             page.goto(project_url, wait_until='domcontentloaded')
             human_delay_long(5, 8)
         print(f'  In project: {page.url[-50:]}')
-        _register_current_flow_project(page)
-        _register_flow_account_email(page)
+        _report_flow_project_uuid(page)
         return
 
     # On main page — wait for projects to load (page shows "Загрузка..." initially)
@@ -461,10 +467,9 @@ def ensure_project(page, project_id=None):
 
     if '/project/' in page.url:
         print(f'  In project: {page.url[-50:]}')
-        _register_current_flow_project(page)
-        _register_flow_account_email(page)
         # Wait for project to fully load (not "Загрузка...")
         human_delay_long(3, 6)
+        _report_flow_project_uuid(page)
     else:
         take_screenshot(page, 'flow_no_project')
         print(f'  WARNING: not in a project. URL: {page.url[:80]}')
@@ -498,6 +503,27 @@ def wait_for_flow_ready(page):
             page.keyboard.press('Escape')
             human_delay(0.5, 1.0)
         dismiss_popups(page)
+        # If we're "in a project" by URL but the page actually rendered an error
+        # screen ("Что-то пошло не так"), fall back to the main page and pick a
+        # working project ourselves. The new UUID will be re-registered via
+        # _report_flow_project_uuid so the saved binding self-heals.
+        if '/project/' in page.url:
+            try:
+                page_text = (page.evaluate('() => (document.body && document.body.innerText) || ""') or '').lower()
+            except Exception:
+                page_text = ''
+            if any(marker in page_text for marker in _PROJECT_ERROR_MARKERS):
+                take_screenshot(page, 'flow_project_error')
+                print('  Detected Flow error screen inside project — falling back to main page...')
+                ensure_project(page, project_id=None)
+                try:
+                    page.wait_for_selector(sel, timeout=30000)
+                    human_delay(1.5, 3.0)
+                    dismiss_popups(page)
+                    print('  Flow workspace ready (after fallback).')
+                    return
+                except Exception:
+                    print('  WARNING: textbox still missing after fallback, continuing with long wait...')
         # Check if not logged in — give user time to log in manually
         if '/project/' not in page.url:
             print()
@@ -1925,6 +1951,40 @@ def _count_errors(page):
     }""", ['Что-то пошло не так', 'Не удалось сгенерировать', 'Произошла ошибка', 'Ошибка'])
 
 
+def _retry_on_server_error(page, max_retries=4, media='img', timeout_sec=None):
+    """Multiple retry attempts via 'Повторить' button with backoff.
+
+    Google Flow sometimes returns transient errors ('Ошибка', 'unusual activity',
+    server hiccups) that clear on retry. Try up to max_retries times with
+    progressive backoff before giving up.
+
+    Returns the final poll result ('success' or last error type).
+    """
+    backoffs = [15, 30, 60, 90]  # seconds between retry clicks
+    for i in range(1, max_retries + 1):
+        pause = backoffs[min(i - 1, len(backoffs) - 1)]
+        print(f'    Retry {i}/{max_retries} — waiting {pause}s before clicking "Повторить"...')
+        time.sleep(pause)
+        if not _click_retry_on_error(page):
+            print(f'    Retry {i}: "Повторить" button not found')
+            return 'retry_button_missing'
+        time.sleep(3)
+        errors_before = _count_errors(page)
+        poll_kwargs = {'errors_before': errors_before, 'media': media}
+        if timeout_sec is not None:
+            poll_kwargs['timeout_sec'] = timeout_sec
+        result = poll_generation(page, **poll_kwargs)
+        if result == 'success':
+            print(f'    Retry {i} succeeded.')
+            return 'success'
+        if result != 'server_error':
+            print(f'    Retry {i} returned {result} — stopping further retries.')
+            return result
+        print(f'    Retry {i} still server_error.')
+    print(f'    All {max_retries} retries exhausted — giving up.')
+    return 'server_error'
+
+
 def _click_retry_on_error(page):
     """Click 'Повторить' (retry) button on the last error card.
 
@@ -2867,18 +2927,10 @@ def generate_nb_batch(page, clip_id, component, prompt, attempt, ingredients, de
     click_generate(page)
     result = poll_generation(page, errors_before=errors_before)
 
-    # On server_error: try clicking "Повторить" button once
+    # On server_error: click "Повторить" multiple times with backoff
     if result == 'server_error':
-        print(f'    FAILED ({result}) — trying retry button...')
-        time.sleep(2)
-        if _click_retry_on_error(page):
-            time.sleep(3)
-            errors_before = _count_errors(page)
-            result = poll_generation(page, errors_before=errors_before)
-            if result != 'success':
-                print(f'    Retry also failed ({result})')
-        else:
-            print(f'    Retry button not found')
+        print(f'    FAILED ({result}) — starting retry cycle...')
+        result = _retry_on_server_error(page, max_retries=4, media='img')
 
     # Rate limit on NB Pro → fallback to Nano Banana 2, retry
     if result == 'rate_limit':
@@ -2987,8 +3039,8 @@ def review_nano_banana(page, clip, manifest, component, attempt, prompt_override
     prompt_full = prompt_a + ref_suffix
 
     uploaded = upload_ingredients(page, ingredients)
-    if uploaded == 0 and any('персонаж' in str(p).lower() for p in ingredients):
-        print('  FAILED: no character refs uploaded')
+    if ingredients and uploaded < len(ingredients):
+        print(f'  ABORT: only {uploaded}/{len(ingredients)} ingredients uploaded — skipping to avoid generation without refs')
         return []
 
     attempt_dir = REVIEW_DIR / clip_id / component / f'attempt_{attempt}'
@@ -3371,8 +3423,8 @@ def _veo_setup_and_generate(page, prompt, first_frame, last_frame, num_variants,
     take_screenshot(page, f'veo_{batch_label}_frames_loaded')
 
     if not _check_frame_slots_have_images(page):
-        print(f'  WARNING: Frame slots do not have images!')
-        take_screenshot(page, f'veo_{batch_label}_no_frames_warning')
+        take_screenshot(page, f'veo_{batch_label}_no_frames_abort')
+        raise RuntimeError(f'VEO frame slots empty for {batch_label} — aborting before Generate to avoid wasting quota')
 
     project_url = page.url.split('/edit/')[0].split('?')[0]
 
@@ -3399,25 +3451,21 @@ def review_veo_batch(page, clip, clip_id, prompt, first_frame, last_frame, attem
     print(f'\n  --- VEO {batch_label} for {clip_id} (x{num_variants}) ---')
     validate_veo_prompt(prompt, f'{clip_id}/veo_{batch_label}')
 
-    project_url, capture, errors_before = _veo_setup_and_generate(
-        page, prompt, first_frame, last_frame, num_variants, batch_label)
+    try:
+        project_url, capture, errors_before = _veo_setup_and_generate(
+            page, prompt, first_frame, last_frame, num_variants, batch_label)
+    except RuntimeError as e:
+        print(f'  VEO {batch_label} SKIPPED: {e}')
+        return []
 
     result = poll_generation(page, errors_before=errors_before,
                              timeout_sec=GENERATION_TIMEOUT, media='video')
 
-    # On server_error: try clicking "Повторить" button once
+    # On server_error: click "Повторить" multiple times with backoff
     if result == 'server_error':
-        print(f'  VEO {batch_label} server error — trying retry button...')
-        time.sleep(2)
-        if _click_retry_on_error(page):
-            time.sleep(3)
-            errors_before = _count_errors(page)
-            result = poll_generation(page, errors_before=errors_before,
-                                     timeout_sec=GENERATION_TIMEOUT, media='video')
-            if result != 'success':
-                print(f'  VEO {batch_label} retry also failed ({result})')
-        else:
-            print(f'  VEO {batch_label} retry button not found')
+        print(f'  VEO {batch_label} server error — starting retry cycle...')
+        result = _retry_on_server_error(page, max_retries=4, media='video',
+                                        timeout_sec=GENERATION_TIMEOUT)
 
     if result != 'success':
         # Back off after failed generation to avoid throttling
@@ -4049,34 +4097,39 @@ def do_chain(pw, scenes_filter=None, clip_filter=None, use_builtin_chromium=Fals
     summary = {'generated': [], 'skipped': [], 'blocked': []}
     total_generated = 0
     consecutive_failures = 0  # track consecutive generation failures for retry logic
-    MAX_CONSECUTIVE_FAILURES = 3  # after this many, pause 30 min
-    MAX_RETRY_PAUSES = 2  # max number of 30-min pauses before giving up
+    MAX_CONSECUTIVE_FAILURES = 3  # after this many, do a retry pause
+    MAX_RETRY_PAUSES = 1  # single retry pause before giving up
+    RETRY_PAUSE_MIN = 5  # duration of retry pause in minutes
     retry_pauses_done = 0
 
-    # Distribute scenes across bots — only scenes that still have work
+    # Distribute pending components evenly across bots (round-robin by component, not by scene).
+    # All bots compute the same list and pick their slice via `i % num_bots == bot_idx`,
+    # so the assignment is deterministic and rebalances on every restart.
     num_bots = _num_bots_override or len(ACCOUNTS)
     bot_idx = _current_account_idx  # 0-based
 
-    def _scenes_with_work():
-        """Return set of scene IDs that still have pending clips."""
-        pending = []
+    def _components_with_work():
+        """Return ordered list of (clip_id, component) pairs that are still pending."""
+        tasks = []
         for sid, sclips in scenes.items():
             for clip in sclips:
-                m = load_manifest(clip['clip_id'])
+                cid = clip['clip_id']
+                m = load_manifest(cid)
+                is_skip_last = m.get('skip_last', False) or not clip.get('nano_banana_prompt_last')
                 for comp in ('nb_first', 'nb_last', 'veo'):
+                    if comp == 'nb_last' and is_skip_last:
+                        continue
+                    if comp == 'veo' and not clip.get('veo_prompt'):
+                        continue
                     st = m['components'].get(comp, {}).get('status', 'pending')
-                    if st not in ('accepted', 'generated', 'needs_manual_work'):
-                        pending.append(sid)
-                        break
-                else:
-                    continue
-                break
-        return pending
+                    if st in ('accepted', 'generated', 'needs_manual_work', 'skipped'):
+                        continue
+                    tasks.append((cid, comp))
+        return tasks
 
-    work_scenes = _scenes_with_work()
-    my_scenes = {sid for i, sid in enumerate(work_scenes) if i % num_bots == bot_idx}
-    print(f'  Bot {bot_idx + 1}/{num_bots}: assigned {len(my_scenes)}/{len(work_scenes)} scenes with work (total {len(scenes)})')
-    print(f'  My scenes: {sorted(my_scenes)}')
+    work_tasks = _components_with_work()
+    my_tasks = {t for i, t in enumerate(work_tasks) if i % num_bots == bot_idx}
+    print(f'  Bot {bot_idx + 1}/{num_bots}: assigned {len(my_tasks)}/{len(work_tasks)} pending components (total clips {sum(len(c) for c in scenes.values())})')
 
     # Keep looping until no more progress can be made
     max_passes = 50  # safety limit
@@ -4089,14 +4142,17 @@ def do_chain(pw, scenes_filter=None, clip_filter=None, use_builtin_chromium=Fals
 
         # Re-distribute on each pass in case other bots finished
         if pass_num > 1:
-            work_scenes = _scenes_with_work()
-            my_scenes = {sid for i, sid in enumerate(work_scenes) if i % num_bots == bot_idx}
-            print(f'  Bot {bot_idx + 1}: {len(my_scenes)}/{len(work_scenes)} scenes with work')
+            work_tasks = _components_with_work()
+            my_tasks = {t for i, t in enumerate(work_tasks) if i % num_bots == bot_idx}
+            print(f'  Bot {bot_idx + 1}: {len(my_tasks)}/{len(work_tasks)} pending components')
 
         verbose = (pass_num == 1)  # verbose logging on first pass
 
+        # Optimization: skip scenes that have no tasks for this bot at all
+        my_clips = {cid for cid, _ in my_tasks}
+
         for sid, scene_clips in scenes.items():
-            if sid not in my_scenes:
+            if not any(clip['clip_id'] in my_clips for clip in scene_clips):
                 continue
             for clip_idx, clip in enumerate(scene_clips):
                 cid = clip['clip_id']
@@ -4115,6 +4171,10 @@ def do_chain(pw, scenes_filter=None, clip_filter=None, use_builtin_chromium=Fals
                     if component == 'nb_last' and (not clip.get('nano_banana_prompt_last') or is_skip_last):
                         continue
                     if component == 'veo' and not clip.get('veo_prompt'):
+                        continue
+
+                    # Component not assigned to this bot in the current distribution
+                    if (cid, component) not in my_tasks:
                         continue
 
                     status = manifest['components'][component].get('status', 'pending')
@@ -4231,15 +4291,17 @@ def do_chain(pw, scenes_filter=None, clip_filter=None, use_builtin_chromium=Fals
                             consecutive_failures += 1
                             failures_this_pass += 1
 
-                    # If too many consecutive failures, pause 30 min before continuing
+                    # If too many consecutive failures, short pause before continuing
                     if consecutive_failures >= MAX_CONSECUTIVE_FAILURES and retry_pauses_done < MAX_RETRY_PAUSES:
                         retry_pauses_done += 1
-                        wait_min = 30
+                        wait_min = RETRY_PAUSE_MIN
                         print(f'\n  {"!"*60}')
                         print(f'  {consecutive_failures} consecutive failures — pausing {wait_min} min (pause {retry_pauses_done}/{MAX_RETRY_PAUSES})')
                         print(f'  {"!"*60}')
                         import time as _time
-                        _time.sleep(wait_min * 60)
+                        for remaining in range(wait_min, 0, -1):
+                            print(f'    Retry pause: {remaining} min remaining...')
+                            _time.sleep(60)
                         consecutive_failures = 0
                         print(f'  Resuming after {wait_min} min pause...')
 
@@ -4248,10 +4310,12 @@ def do_chain(pw, scenes_filter=None, clip_filter=None, use_builtin_chromium=Fals
         if progress_this_pass == 0:
             if failures_this_pass > 0 and retry_pauses_done < MAX_RETRY_PAUSES:
                 retry_pauses_done += 1
-                wait_min = 30
+                wait_min = RETRY_PAUSE_MIN
                 print(f'\n  No progress but {failures_this_pass} failures — pausing {wait_min} min (pause {retry_pauses_done}/{MAX_RETRY_PAUSES})')
                 import time as _time
-                _time.sleep(wait_min * 60)
+                for remaining in range(wait_min, 0, -1):
+                    print(f'    Retry pause: {remaining} min remaining...')
+                    _time.sleep(60)
                 consecutive_failures = 0
                 print(f'  Resuming after {wait_min} min pause...')
                 continue
@@ -4498,12 +4562,8 @@ def do_generate_location(pw, prompt, output_path, num_variants=4, project_id=Non
     result = poll_generation(page, errors_before=errors_before)
 
     if result == 'server_error':
-        print(f'    FAILED ({result}) — trying retry...')
-        time.sleep(2)
-        if _click_retry_on_error(page):
-            time.sleep(3)
-            errors_before = _count_errors(page)
-            result = poll_generation(page, errors_before=errors_before)
+        print(f'    FAILED ({result}) — starting retry cycle...')
+        result = _retry_on_server_error(page, max_retries=4, media='img')
 
     # Rate limit on NB Pro → fallback to Nano Banana 2
     if result == 'rate_limit':
@@ -5183,6 +5243,7 @@ def main():
     parser.add_argument('--bot-count', type=int, default=1, help='Total number of bots for task distribution')
     parser.add_argument('--filter', type=str, default=None, help='JSON filter for selected characters/locations/angles')
 
+    global _num_bots_override
     args = parser.parse_args()
     _current_account_idx = args.account - 1
     _num_bots_override = args.num_bots

@@ -1,6 +1,6 @@
 import { spawn, exec, ChildProcess } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { existsSync, mkdirSync, createWriteStream, WriteStream } from 'node:fs';
+import { resolve, dirname } from 'node:path';
 import { EventEmitter } from 'node:events';
 
 const isWindows = process.platform === 'win32';
@@ -12,6 +12,7 @@ export interface BotRunnerOptions {
   cwd: string;
   env?: Record<string, string>;
   timeoutMs?: number;
+  logFile?: string;
 }
 
 export interface BotLogLine {
@@ -31,6 +32,10 @@ export class BotRunner extends EventEmitter {
   private _startedAt: string | null = null;
   private _log: BotLogLine[] = [];
   private timeoutTimer: ReturnType<typeof setTimeout> | null = null;
+  private logStream: WriteStream | null = null;
+  private logFilePath: string | null = null;
+
+  get logFile(): string | null { return this.logFilePath; }
 
   get isRunning(): boolean { return this._isRunning; }
   get exitCode(): number | null { return this._exitCode; }
@@ -60,6 +65,20 @@ export class BotRunner extends EventEmitter {
     this._exitCode = null;
     this._startedAt = new Date().toISOString();
     this._isRunning = true;
+
+    // Open log file (truncate — keeps the most recent run)
+    this.closeLogStream();
+    if (options.logFile) {
+      try {
+        mkdirSync(dirname(options.logFile), { recursive: true });
+        this.logStream = createWriteStream(options.logFile, { flags: 'w', encoding: 'utf-8' });
+        this.logFilePath = options.logFile;
+      } catch (err) {
+        // Non-fatal: continue without file logging
+        this.logStream = null;
+        this.logFilePath = null;
+      }
+    }
 
     const allArgs = [options.botScript, ...options.args];
     this.addLog('stdout', `Starting: ${options.pythonPath} ${allArgs.join(' ')}`);
@@ -95,6 +114,7 @@ export class BotRunner extends EventEmitter {
       this.clearTimeout();
       const msg = signal ? `Killed by signal ${signal}` : `Exited with code ${code}`;
       this.addLog('stdout', msg);
+      this.closeLogStream();
       this.emit('exit', { code, signal });
     });
 
@@ -179,9 +199,22 @@ export class BotRunner extends EventEmitter {
       text,
     };
     this._log.push(entry);
-    // Ограничиваем лог 1000 строками
+    // Ограничиваем лог в памяти 1000 строками
     if (this._log.length > 1000) {
       this._log = this._log.slice(-800);
+    }
+    // В файл пишем без ограничений, чтобы после краша всё было на диске
+    if (this.logStream && !this.logStream.destroyed) {
+      try {
+        this.logStream.write(`[${entry.timestamp}] [${stream}] ${text}\n`);
+      } catch { /* ignore */ }
+    }
+  }
+
+  private closeLogStream(): void {
+    if (this.logStream) {
+      try { this.logStream.end(); } catch { /* ignore */ }
+      this.logStream = null;
     }
   }
 
