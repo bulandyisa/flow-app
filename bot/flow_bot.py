@@ -4102,6 +4102,23 @@ def do_chain(pw, scenes_filter=None, clip_filter=None, use_builtin_chromium=Fals
     RETRY_PAUSE_MIN = 5  # duration of retry pause in minutes
     retry_pauses_done = 0
 
+    # Persist a default manifest for every clip that doesn't have one on disk yet.
+    # Without this step, clips that no bot has reached are invisible in the UI as
+    # "Chain-blocked" (the dashboard treats a missing manifest file as blocked) and
+    # they don't show up consistently for distribution. Idempotent — files that
+    # already exist are left alone.
+    prefilled = 0
+    for sid, sclips in scenes.items():
+        for clip in sclips:
+            cid = clip['clip_id']
+            path = REVIEW_DIR / cid / 'manifest.json'
+            if path.exists():
+                continue
+            save_manifest(cid, load_manifest(cid))
+            prefilled += 1
+    if prefilled:
+        print(f'  Pre-created {prefilled} default manifests for clips without one on disk')
+
     # Distribute pending components evenly across bots (round-robin by component, not by scene).
     # All bots compute the same list and pick their slice via `i % num_bots == bot_idx`,
     # so the assignment is deterministic and rebalances on every restart.
